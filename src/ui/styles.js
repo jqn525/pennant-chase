@@ -28,4 +28,5 @@ export const overlay = { position: "fixed", inset: 0, background: "#0A1810E6", d
 
 export const globalCss = `@import url('https://fonts.googleapis.com/css2?family=Alfa+Slab+One&family=IBM+Plex+Mono:wght@400;600&display=swap');
   button:focus-visible { outline: 2px solid ${C.amber}; outline-offset: 2px; }
-  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }`;
+  @keyframes statPop { 0% { transform: scale(1.7); color: ${C.grass}; } 100% { transform: scale(1); } }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }`;

@@ -9,6 +9,7 @@ export const C = {
   amber: "#FFB627",
   red: "#D9584A",
   dirt: "#C89B6C",
+  grass: "#7BC96F",
 };
 
 export const FIRST = ["Ace", "Dutch", "Lefty", "Mo", "Ry", "Cal", "Boog", "Vida", "Sal", "Iz", "Tuck", "Roxie", "Gus", "Pep", "Bo", "Nix", "Sky", "Duke", "Wren", "Marta"];

@@ -1,11 +1,18 @@
 // ── The batted-ball engine ──
 // Returns a rich outcome object; caller applies it to game state.
+// All skill effects are measured RELATIVE to the league's statBase, so a
+// player who is +2 above his league plays like a star at every level, and
+// every league produces realistic baseball numbers (BA ~.250-.290,
+// K% rising as you climb, homers rare in Little League, common in the Show).
 
 import { gauss } from "./utils.js";
 
-export function resolveAtBat(batter, pitcher, fielders, fence) {
-  const kChance = Math.min(0.55, Math.max(0.05, 0.10 + pitcher.stuff * 0.018 - batter.contact * 0.011 - batter.eye * 0.003));
-  const bbChance = Math.min(0.3, Math.max(0.02, 0.05 + batter.eye * 0.014 - pitcher.control * 0.010));
+const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+
+export function resolveAtBat(batter, pitcher, fielders, fence, base = 5) {
+  const rel = (v) => v - base;
+  const kChance = clamp(0.14 + base * 0.006 + rel(pitcher.stuff) * 0.030 - rel(batter.contact) * 0.020 - rel(batter.eye) * 0.008, 0.06, 0.5);
+  const bbChance = clamp(0.085 + rel(batter.eye) * 0.022 - rel(pitcher.control) * 0.020, 0.02, 0.22);
   const r = Math.random();
   if (r < kChance) return { type: "K", text: `strikes out swinging.` };
   if (r < kChance + bbChance) return { type: "BB", text: `works a walk.` };
@@ -16,14 +23,7 @@ export function resolveAtBat(batter, pitcher, fielders, fence) {
     const spray = (gauss() * 2 - 1) * 55 + batter.pull * 18;
     // Launch profile
     const lr = Math.random();
-    const launch = lr < 0.38 ? "ground" : lr < 0.7 ? "liner" : "fly";
-    // Distance from power
-    const pow = batter.power;
-    const dist = launch === "ground"
-      ? 40 + gauss() * 110
-      : launch === "liner"
-        ? 70 + pow * 11 + gauss() * 90
-        : 90 + pow * 13 + gauss() * 110;
+    const launch = lr < 0.44 ? "ground" : lr < 0.68 ? "liner" : "fly";
 
     const side = spray < 0 ? "left" : "right";
     const deg = Math.abs(spray).toFixed(0);
@@ -37,8 +37,17 @@ export function resolveAtBat(batter, pitcher, fielders, fence) {
       continue; // foul ball, swing again
     }
 
-    // Fair ball. Fence distance at this angle (shallow at corners, deep in center)
+    // Fair ball. Fence distance at this angle (shallow at corners, deep in center).
+    // Carry is a SHARE of the fence distance, so every park plays to scale.
     const fenceHere = fence.center - (fence.center - fence.corner) * (Math.abs(spray) / 45);
+    const pow = rel(batter.power);
+    const carry = launch === "ground"
+      ? 0.12 + gauss() * 0.5
+      : launch === "liner"
+        ? 0.34 + pow * 0.035 + gauss() * 0.6
+        : 0.46 + base * 0.006 + pow * 0.04 + gauss() * 0.7;
+    const dist = carry * fenceHere;
+
     if (launch !== "ground" && dist > fenceHere) {
       return { type: "HR", text: `CRUSHES it ${deg}° ${side}-${Math.abs(spray) < 12 ? "center" : "field"}, ${dist.toFixed(0)} ft — over the ${fenceHere.toFixed(0)}-ft fence, GONE!`, dist };
     }
@@ -48,14 +57,16 @@ export function resolveAtBat(batter, pitcher, fielders, fence) {
     let fielderPos;
     if (infield) {
       fielderPos = spray < -22 ? "3B" : spray < -4 ? "SS" : spray < 14 ? "2B" : "1B";
-      if (dist < 55) fielderPos = Math.random() < 0.5 ? "C" : fielderPos;
+      if (dist < fenceHere * 0.2) fielderPos = Math.random() < 0.5 ? "C" : fielderPos;
     } else {
       fielderPos = spray < -15 ? "LF" : spray < 15 ? "CF" : "RF";
     }
     const fielder = fielders.find((f) => f.pos === fielderPos) || fielders[0];
 
-    const catchBase = launch === "ground" ? (infield ? 0.58 : 0.1) : launch === "fly" ? (infield ? 0.75 : 0.5) : 0.24;
-    const catchChance = Math.min(0.95, catchBase + fielder.defense * 0.03);
+    // Contact skill makes harder-to-field contact; defense converts chances.
+    // Low leagues field worse (kids boot balls) — more action, authentically.
+    const catchBase = launch === "ground" ? (infield ? 0.78 : 0.45) : launch === "fly" ? (infield ? 0.93 : 0.82) : 0.32;
+    const catchChance = clamp(catchBase - (14 - base) * 0.007 + rel(fielder.defense) * 0.025 - rel(batter.contact) * 0.022, 0.05, 0.97);
     const desc = launch === "ground" ? "grounder" : launch === "liner" ? "sharp liner" : "fly ball";
 
     if (Math.random() < catchChance) {
@@ -63,11 +74,12 @@ export function resolveAtBat(batter, pitcher, fielders, fence) {
     }
 
     // It's a hit. Bases from depth + speed.
-    const deep = dist > fenceHere * 0.72;
-    const gapper = dist > fenceHere * 0.58 && launch !== "ground";
+    const spd = rel(batter.speed);
+    const deep = dist > fenceHere * 0.78;
+    const gapper = dist > fenceHere * 0.6 && launch !== "ground";
     let bases = 1;
-    if (deep && Math.random() < 0.35 + batter.speed * 0.03) bases = 3;
-    else if (gapper || Math.random() < batter.speed * 0.02) bases = 2;
+    if (deep && Math.random() < 0.14 + spd * 0.04) bases = 3;
+    else if ((gapper && Math.random() < 0.7) || Math.random() < 0.05 + spd * 0.02) bases = 2;
     const call = bases === 3 ? "it rolls to the wall — TRIPLE!" : bases === 2 ? `past ${fielder.name} — stand-up double.` : `drops in front of ${fielder.name} (${fielderPos}) for a single.`;
     return { type: "HIT", bases, text: `laces a ${desc} ${deg}° ${side}, ${dist.toFixed(0)} ft — ${call}`, dist };
   }

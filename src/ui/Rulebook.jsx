@@ -15,7 +15,8 @@ const SECTIONS = [
     "7. On a hit, depth plus batter Speed decides single, double, or triple. Runners advance station to station.",
   ]],
   ["YOUR ROSTER", ["Nine position players, one starter, one reliever. Everyone has individual attributes — tap a player in the Roster tab to train them with money. Your starter tires after facing enough batters (Stamina); the reliever takes over automatically.", "BA and K% shown are real season stats, accumulated from actual at-bats."]],
-  ["MONEY AND FANS", ["Wins pay gate receipts scaled by your fan base; losses still pay a floor (the diehards show up). Fans grow with wins and home runs.", "At 200 fans you can open the merch stand — passive income every second, boosted by star players (any player averaging 8+ in their attributes sells jerseys). In Triple-A, a TV deal triples it."]],
+  ["MONEY AND FANS", ["Wins pay gate receipts scaled by your fan base; losses still pay a floor (the diehards show up). Fans grow with wins and home runs. Winning a pennant also pays a league signing bonus.", "At 200 fans you can open the merch stand — passive income every second, boosted by star players (any player averaging 8+ in their attributes sells jerseys). In Triple-A, a TV deal triples it."]],
+  ["THE PRO SHOP", ["Unlocks in High School Ball. Buy equipment — bats, gloves, cleats, shades, pitcher gear — for individual players. Each item boosts one attribute (+1 Standard, +2 Pro, +3 Elite); a player holds one of each item type and a higher tier replaces the lower.", "Stock is limited each league (3 Standard, 2 Pro, only 1 Elite of everything), so choose who gets the good stuff. The shelves fully restock every time you're promoted."]],
   ["OPPONENTS", ["Every opponent team is generated with a trait — HR Sluggers, Defensive Wizards, Small Ball, Pitching Factory, Grinders — that shapes their stats. Their batted balls run through the same physics engine as yours."]],
 ];
 

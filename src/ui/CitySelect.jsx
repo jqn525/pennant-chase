@@ -5,7 +5,7 @@ import { panel, globalCss, MONO, SLAB } from "./styles.js";
 
 export default function CitySelect({ onPick }) {
   return (
-    <div style={{ minHeight: "100vh", background: C.green, color: C.cream, fontFamily: MONO, padding: 16 }}>
+    <div style={{ minHeight: "100dvh", background: C.green, color: C.cream, fontFamily: MONO, padding: "calc(12px + env(safe-area-inset-top)) calc(12px + env(safe-area-inset-right)) calc(12px + env(safe-area-inset-bottom)) calc(12px + env(safe-area-inset-left))", boxSizing: "border-box" }}>
       <style>{globalCss}</style>
       <div style={{ maxWidth: 720, margin: "40px auto", textAlign: "center" }}>
         <h1 style={{ fontFamily: SLAB, fontSize: 30, letterSpacing: 1 }}>

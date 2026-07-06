@@ -1,11 +1,44 @@
-// ── Ballpark tab: scoreboard, controls, play-by-play, park info ──
+// ── Ballpark tab: scoreboard, controls, play-by-play, live game stats, park info ──
 
 import { C, LEAGUES } from "../game/constants.js";
 import { fmt } from "../game/utils.js";
 import { panel, btn, bulb, SLAB } from "./styles.js";
 import { BallIcon } from "./Icons.jsx";
+import StatTable from "./StatTable.jsx";
 
-export default function BallparkTab({ g, city, league, tier, record, fans, champ, log, auto, cityBonus, onSimStep, onToggleAuto, onStartGame, onPromote }) {
+const abbrev = (name) => name.slice(0, 3).toUpperCase();
+
+// One Apple-Sports-style comparison row: visitors on the left, our club on the right
+function CompareRow({ label, a, b }) {
+  const max = Math.max(a, b, 1);
+  return (
+    <div style={{ marginBottom: 8 }}>
+      <div style={{ display: "flex", alignItems: "baseline", fontSize: 13, fontVariantNumeric: "tabular-nums" }}>
+        <span style={{ width: 34 }}>{a}</span>
+        <span style={{ flex: 1, textAlign: "center", fontSize: 10, letterSpacing: 1.5, color: C.creamDim }}>{label}</span>
+        <span style={{ width: 34, textAlign: "right" }}>{b}</span>
+      </div>
+      <div style={{ display: "flex", gap: 4, marginTop: 3 }}>
+        <div style={{ flex: 1, display: "flex", justifyContent: "flex-end" }}>
+          <div style={{ width: `${(a / max) * 100}%`, height: 3, background: C.creamDim, borderRadius: 2 }} />
+        </div>
+        <div style={{ flex: 1 }}>
+          <div style={{ width: `${(b / max) * 100}%`, height: 3, background: C.amber, borderRadius: 2 }} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const EMPTY_LINE = { ab: 0, h: 0, d: 0, t: 0, hr: 0, bb: 0, k: 0, r: 0, rbi: 0 };
+
+export default function BallparkTab({ g, city, league, tier, record, fans, champ, log, auto, cityBonus, roster, onSimStep, onToggleAuto, onStartGame, onPromote }) {
+  const box = g?.box;
+  const total = (side, key) => Object.values(box[side]).reduce((n, line) => n + line[key], 0);
+  const gameRows = (batters, side) => batters.map((p) => {
+    const s = box[side][p.id] || EMPTY_LINE;
+    return { p, cells: [s.ab, s.r, s.h, s.hr, s.rbi, s.bb, s.k], dim: !s.ab && !s.bb };
+  });
   return (
     <div style={{ display: "flex", flexWrap: "wrap", gap: 14, marginTop: 2 }}>
       <div style={{ flex: "2 1 400px", minWidth: 300 }}>
@@ -71,9 +104,45 @@ export default function BallparkTab({ g, city, league, tier, record, fans, champ
               fontSize: 12, lineHeight: 1.5, padding: "4px 0", borderBottom: `1px solid ${C.greenLine}44`,
               color: l.kind === "out" ? C.creamDim : l.kind === "hr" ? C.amber : l.kind === "win" ? C.dirt : l.kind === "sys" ? C.creamDim : C.cream,
               fontStyle: l.kind === "sys" ? "italic" : "normal",
-            }}>{l.text}</div>
+            }}>
+              {l.team && (
+                <span style={{
+                  display: "inline-block", fontSize: 9, letterSpacing: 1, fontWeight: 700, fontStyle: "normal",
+                  padding: "1px 5px", borderRadius: 3, marginRight: 7, verticalAlign: "1px",
+                  background: l.side === "us" ? C.amber : "transparent",
+                  color: l.side === "us" ? C.green : C.creamDim,
+                  border: `1px solid ${l.side === "us" ? C.amber : C.creamDim}`,
+                }}>{abbrev(l.team)}</span>
+              )}
+              {l.text}
+            </div>
           ))}
         </div>
+
+        {/* Live game stats — team comparison + both box scores */}
+        {g && box && (
+          <>
+            <div style={{ ...panel, padding: 12, marginTop: 10 }}>
+              <div style={{ fontSize: 10, color: C.creamDim, letterSpacing: 2, marginBottom: 8 }}>
+                GAME STATS {g.over ? "· FINAL" : ""}
+              </div>
+              <div style={{ display: "flex", fontSize: 11, marginBottom: 10, letterSpacing: 1 }}>
+                <span style={{ color: C.creamDim }}>{abbrev(g.opp.name)} {g.opp.name}</span>
+                <span style={{ marginLeft: "auto", color: C.amber }}>{city.name} {abbrev(city.name)}</span>
+              </div>
+              <CompareRow label="HITS" a={total("them", "h")} b={total("us", "h")} />
+              <CompareRow label="HOME RUNS" a={total("them", "hr")} b={total("us", "hr")} />
+              <CompareRow label="EXTRA-BASE HITS" a={total("them", "d") + total("them", "t") + total("them", "hr")} b={total("us", "d") + total("us", "t") + total("us", "hr")} />
+              <CompareRow label="STRIKEOUTS" a={total("them", "k")} b={total("us", "k")} />
+              <CompareRow label="WALKS" a={total("them", "bb")} b={total("us", "bb")} />
+              <CompareRow label="LEFT ON BASE" a={g.box.lobThem} b={g.box.lobUs} />
+            </div>
+            <StatTable style={{ marginTop: 10 }} title={`${city.name.toUpperCase()} HITTING · this game`}
+              cols={["AB", "R", "H", "HR", "RBI", "BB", "K"]} rows={gameRows(roster.batters, "us")} />
+            <StatTable style={{ marginTop: 10 }} title={`${g.opp.name.toUpperCase()} HITTING · this game`}
+              cols={["AB", "R", "H", "HR", "RBI", "BB", "K"]} rows={gameRows(g.opp.batters, "them")} />
+          </>
+        )}
       </div>
 
       {/* Park info */}

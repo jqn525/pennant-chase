@@ -1,11 +1,13 @@
-// ── Front Office tab: revenue streams and club summary ──
+// ── Front Office tab: revenue streams, club summary, save management ──
 
+import { useState } from "react";
 import { C, LEAGUES } from "../game/constants.js";
 import { fmt } from "../game/utils.js";
 import { panel, btn } from "./styles.js";
 import { CoinIcon, FansIcon } from "./Icons.jsx";
 
-export default function FrontOfficeTab({ roster, city, league, tier, fans, money, merch, tv, champ, isStar, onBuyMerch, onBuyTv }) {
+export default function FrontOfficeTab({ roster, city, league, tier, fans, money, merch, tv, champ, isStar, onBuyMerch, onBuyTv, onNewFranchise }) {
+  const [armed, setArmed] = useState(false);
   return (
     <div style={{ display: "flex", flexWrap: "wrap", gap: 14, marginTop: 2 }}>
       <div style={{ flex: "1 1 300px", minWidth: 280 }}>
@@ -29,6 +31,20 @@ export default function FrontOfficeTab({ roster, city, league, tier, fans, money
           City edge: {city.label}<br />
           League: {league.name} ({tier + 1}/{LEAGUES.length})<br />
           {champ ? "World Series Champions." : `Path: ${LEAGUES.slice(tier).map((l) => l.name).join(" → ")}`}
+        </div>
+      </div>
+      <div style={{ flex: "1 1 100%" }}>
+        <div style={{ ...panel, padding: 12 }}>
+          <div style={{ fontSize: 10, color: C.creamDim, letterSpacing: 2, marginBottom: 6 }}>SAVE FILE</div>
+          <div style={{ fontSize: 11, color: C.creamDim, marginBottom: 8 }}>
+            Your franchise auto-saves on this device after every play. Close the browser any time — you'll pick up where you left off.
+          </div>
+          <button
+            onClick={() => (armed ? onNewFranchise() : setArmed(true))}
+            onBlur={() => setArmed(false)}
+            style={{ ...btn(true), borderColor: C.red, color: C.red }}>
+            {armed ? "Are you sure? Tap again to erase everything" : "Sell the club — start a new franchise"}
+          </button>
         </div>
       </div>
     </div>
