@@ -9,7 +9,7 @@ import { gauss } from "./utils.js";
 
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 
-export function resolveAtBat(batter, pitcher, fielders, fence, base = 5) {
+export function resolveAtBat(batter, pitcher, fielders, fence, base = 5, sit = {}) {
   const rel = (v) => v - base;
   const kChance = clamp(0.14 + base * 0.012 + rel(pitcher.stuff) * 0.030 - rel(batter.contact) * 0.020 - rel(batter.eye) * 0.008, 0.06, 0.5);
   const bbChance = clamp(0.085 + rel(batter.eye) * 0.022 - rel(pitcher.control) * 0.020, 0.02, 0.22);
@@ -69,6 +69,18 @@ export function resolveAtBat(batter, pitcher, fielders, fence, base = 5) {
     const desc = launch === "ground" ? "grounder" : launch === "liner" ? "sharp liner" : "fly ball";
 
     if (Math.random() < catchChance) {
+      // Even routine plays get booted now and then — sure hands boot fewer
+      const errChance = clamp(0.025 - rel(fielder.defense) * 0.006, 0.004, 0.07);
+      if (Math.random() < errChance) {
+        return { type: "E", text: `hits a ${desc} ${deg}° ${side} — ${fielder.name} (${fielderPos}) boots it! Error, everybody safe.` };
+      }
+      // Ground ball, force at second, fewer than two outs: chance to turn two
+      if (launch === "ground" && infield && sit.forceOn1 && sit.outs < 2) {
+        const dpChance = clamp(0.5 + rel(fielder.defense) * 0.03, 0.2, 0.8);
+        if (Math.random() < dpChance) {
+          return { type: "DP", text: `raps a grounder ${deg}° ${side} — ${fielder.name} (${fielderPos}) starts it, around the horn, TWO!` };
+        }
+      }
       return { type: "OUT", text: `hits a ${desc} ${deg}° ${side}, ${dist.toFixed(0)} ft — ${fielder.name} (${fielderPos}) makes the play.` };
     }
 

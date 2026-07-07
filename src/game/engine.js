@@ -8,13 +8,15 @@ import { resolveAtBat } from "./atBat.js";
 import { eff } from "./gear.js";
 import { LEAGUE, ECON, gateMult } from "./constants.js";
 
+const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+
 // A fresh live-game object. `home` = whether OUR club is the home team.
 export const newGame = (opp, home, oppIdx) => ({
   opp, oppIdx, home,
   inning: 1, half: "top", outs: 0, bases: [null, null, null],
   us: 0, them: 0, usIdx: 0, themIdx: 0, spFaced: 0, usingRP: false,
   over: false, hrUs: 0, result: null,
-  box: { us: {}, them: {}, lobUs: 0, lobThem: 0 },
+  box: { us: {}, them: {}, lobUs: 0, lobThem: 0, errUs: 0, errThem: 0 },
   statAcc: {}, // player id -> {statKey: delta}, flushed by the caller
 });
 
@@ -40,12 +42,6 @@ export function stepAtBat(g, ctx, events) {
     pitcher = eff(g.usingRP ? ctx.rp : ctx.sp);
     g.spFaced++;
   }
-  const fielders = (weBat
-    ? [...g.opp.batters, { ...g.opp.sp }]
-    : [...ctx.batters, { ...(g.usingRP ? ctx.rp : ctx.sp) }]).map(eff);
-
-  const out = resolveAtBat(batter, pitcher, fielders, ctx.fence, ctx.statBase);
-  const who = `${batter.name} (${batter.pos})`;
   const side = weBat ? "us" : "them";
   const teamName = weBat ? ctx.cityName : g.opp.name;
 
@@ -61,6 +57,30 @@ export function stepAtBat(g, ctx, events) {
     const a = g.statAcc[pid] || (g.statAcc[pid] = {});
     a[key] = (a[key] || 0) + n;
   };
+
+  // Wild pitch: with runners aboard, a low-Control arm sometimes lets one go.
+  // Consumes the moment — the at-bat continues next tick.
+  if (g.bases.some(Boolean) && Math.random() < clamp(0.018 - (pitcher.control - ctx.statBase) * 0.004, 0.004, 0.05)) {
+    const third = g.bases[2];
+    if (third) {
+      weBat ? g.us++ : g.them++;
+      if (track) acc(third.id, "r");
+      if (trackP) acc(pitcher.id, "raP");
+      gb(third.id, "r");
+    }
+    g.bases = [null, g.bases[0], g.bases[1]];
+    emit(`Wild pitch! It skips to the backstop and the runners move up${third ? " — a run scores!" : "."}`, third ? "hr" : "play", side, teamName);
+    // a wild pitch can end the game on a walk-off
+    if (g.half === "bottom" && g.inning >= ctx.innings && (g.home ? g.us : g.them) > (g.home ? g.them : g.us)) finish(g);
+    return;
+  }
+
+  const fielders = (weBat
+    ? [...g.opp.batters, { ...g.opp.sp }]
+    : [...ctx.batters, { ...(g.usingRP ? ctx.rp : ctx.sp) }]).map(eff);
+
+  const out = resolveAtBat(batter, pitcher, fielders, ctx.fence, ctx.statBase, { forceOn1: !!g.bases[0], outs: g.outs });
+  const who = `${batter.name} (${batter.pos})`;
 
   if (out.type === "K") {
     if (track) { acc(batter.id, "ab"); acc(batter.id, "k"); }
@@ -90,6 +110,28 @@ export function stepAtBat(g, ctx, events) {
     gb(batter.id, "ab");
     g.outs++;
     emit(`${who} ${out.text}`, weBat ? "out" : "play", side, teamName);
+  } else if (out.type === "DP") {
+    // ground ball double play: batter and the runner on first are both out
+    if (track) acc(batter.id, "ab");
+    if (trackP) acc(pitcher.id, "outsP", 2);
+    gb(batter.id, "ab");
+    g.outs += 2;
+    g.bases[0] = null;
+    emit(`${who} ${out.text}`, weBat ? "out" : "play", side, teamName);
+  } else if (out.type === "E") {
+    // booted ball: batter safe, everyone moves up a base, no hit awarded
+    if (track) acc(batter.id, "ab");
+    gb(batter.id, "ab");
+    if (weBat) g.box.errThem++; else g.box.errUs++;
+    const third = g.bases[2];
+    if (third) {
+      weBat ? g.us++ : g.them++;
+      if (track) acc(third.id, "r");
+      if (trackP) acc(pitcher.id, "raP");
+      gb(third.id, "r");
+    }
+    g.bases = [batter, g.bases[0], g.bases[1]];
+    emit(`${who} ${out.text}${third ? " A run scores!" : ""}`, "play", side, teamName);
   } else {
     // HR or HIT
     if (track) { acc(batter.id, "ab"); acc(batter.id, "h"); }

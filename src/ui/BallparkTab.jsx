@@ -1,5 +1,6 @@
 // ── Ballpark tab: live scoreboard, speed controls, play-by-play, game stats, standings ──
 
+import { useState } from "react";
 import { C, LEAGUE } from "../game/constants.js";
 import { panel, btn, bulb } from "./styles.js";
 import StatTable from "./StatTable.jsx";
@@ -31,6 +32,7 @@ function CompareRow({ label, a, b }) {
 const EMPTY_LINE = { ab: 0, h: 0, d: 0, t: 0, hr: 0, bb: 0, k: 0, r: 0, rbi: 0 };
 
 export default function BallparkTab({ g, city, year, phase, playoffs, gameIndex, standings, rivals, log, speed, paused, roster, onSetSpeed, onTogglePause }) {
+  const [radioOpen, setRadioOpen] = useState(false);
   const box = g?.box;
   const total = (side, key) => Object.values(box[side]).reduce((n, line) => n + line[key], 0);
   const gameRows = (batters, side) => batters.map((p) => {
@@ -46,11 +48,11 @@ export default function BallparkTab({ g, city, year, phase, playoffs, gameIndex,
     statusLeft = `GAME ${Math.min(gameIndex + (g && !g.over ? 1 : 0), LEAGUE.seasonGames) || 1}/${LEAGUE.seasonGames}`;
   }
 
-  // Line score rows: away team always on top
-  const teamRows = g ? (g.home
-    ? [[g.opp.name, g.them, g.half === "top" && !g.over, false], [city.name, g.us, g.half === "bottom" && !g.over, true]]
-    : [[city.name, g.us, g.half === "top" && !g.over, true], [g.opp.name, g.them, g.half === "bottom" && !g.over, false]])
-    : [["VISITORS", "–", false, false], [city.name, "–", false, true]];
+  // Line score rows: away team always on top. [name, R, H, E, atBat, isUs]
+  const hitsOf = (sideKey) => (box ? Object.values(box[sideKey]).reduce((n, l) => n + l.h, 0) : "–");
+  const usRow = g ? [city.name, g.us, hitsOf("us"), box.errUs ?? 0, g.half === (g.home ? "bottom" : "top") && !g.over, true] : [city.name, "–", "–", "–", false, true];
+  const oppRow = g ? [g.opp.name, g.them, hitsOf("them"), box.errThem ?? 0, g.half === (g.home ? "top" : "bottom") && !g.over, false] : ["VISITORS", "–", "–", "–", false, false];
+  const teamRows = g && !g.home ? [usRow, oppRow] : [oppRow, usRow];
 
   // Standings, sorted
   const names = [city.name, ...(rivals || []).map((r) => r.name)];
@@ -70,20 +72,28 @@ export default function BallparkTab({ g, city, year, phase, playoffs, gameIndex,
     <div style={{ display: "flex", flexWrap: "wrap", gap: 14, marginTop: 2 }}>
       <div style={{ flex: "2 1 400px", minWidth: 300 }}>
         {/* Line score — fixed-size scoreboard, never reflows */}
-        <div style={{ ...panel, padding: 12, height: 132, boxSizing: "border-box", display: "flex", flexDirection: "column", justifyContent: "space-between", overflow: "hidden" }}>
+        <div style={{ ...panel, padding: 12, height: 148, boxSizing: "border-box", display: "flex", flexDirection: "column", justifyContent: "space-between", overflow: "hidden" }}>
           <div style={{ fontSize: 12, height: 16, display: "flex", gap: 14, whiteSpace: "nowrap" }}>
             <span style={{ color: C.creamDim }}>{statusLeft}</span>
             <span>{g && !g.over ? `${g.half === "top" ? "TOP" : "BOT"} ${g.inning} · ${g.outs} OUT${g.outs === 1 ? "" : "S"}` : paused ? "PAUSED" : " "}</span>
             <span style={{ color: C.creamDim, marginLeft: "auto" }}>YEAR {year}</span>
           </div>
 
-          <div style={{ display: "flex", alignItems: "center", gap: 12, height: 52 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, height: 66 }}>
             <div style={{ flex: 1, minWidth: 0 }}>
-              {teamRows.map(([name, score, atBat, isUs], i) => (
+              <div style={{ display: "flex", height: 12, fontSize: 9, color: C.creamDim, letterSpacing: 1 }}>
+                <span style={{ flex: 1 }} />
+                <span style={{ width: 40, textAlign: "right" }}>R</span>
+                <span style={{ width: 34, textAlign: "right" }}>H</span>
+                <span style={{ width: 30, textAlign: "right" }}>E</span>
+              </div>
+              {teamRows.map(([name, r, h, e, atBat, isUs], i) => (
                 <div key={i} style={{ display: "flex", alignItems: "baseline", height: 26 }}>
                   <span style={{ width: 10, color: C.amber, fontSize: 11 }}>{atBat ? "▸" : " "}</span>
                   <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 14, color: isUs ? C.cream : C.creamDim }}>{name}</span>
-                  <span style={{ ...bulb, fontSize: 19, fontWeight: 600, width: 56, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{score}</span>
+                  <span style={{ ...bulb, fontSize: 19, fontWeight: 600, width: 40, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{r}</span>
+                  <span style={{ width: 34, textAlign: "right", fontSize: 13, color: isUs ? C.cream : C.creamDim, fontVariantNumeric: "tabular-nums" }}>{h}</span>
+                  <span style={{ width: 30, textAlign: "right", fontSize: 13, color: isUs ? C.cream : C.creamDim, fontVariantNumeric: "tabular-nums" }}>{e}</span>
                 </div>
               ))}
             </div>
@@ -108,10 +118,14 @@ export default function BallparkTab({ g, city, year, phase, playoffs, gameIndex,
           </div>
         </div>
 
-        {/* Play-by-play */}
-        <div style={{ ...panel, padding: 12, marginTop: 10, height: 360, overflowY: "auto" }}>
-          <div style={{ fontSize: 10, color: C.creamDim, letterSpacing: 2, marginBottom: 8 }}>RADIO CALL · PLAY-BY-PLAY</div>
-          {log.map((l) => (
+        {/* Play-by-play — collapsed to a slim strip by default */}
+        <div style={{ ...panel, padding: 12, marginTop: 10, height: radioOpen ? 360 : 122, overflowY: radioOpen ? "auto" : "hidden", boxSizing: "border-box" }}>
+          <button onClick={() => setRadioOpen((o) => !o)}
+            style={{ display: "flex", width: "100%", alignItems: "center", background: "transparent", border: "none", padding: 0, marginBottom: 8, cursor: "pointer", fontFamily: "inherit" }}>
+            <span style={{ fontSize: 10, color: C.creamDim, letterSpacing: 2 }}>RADIO CALL · PLAY-BY-PLAY</span>
+            <span style={{ marginLeft: "auto", fontSize: 10, color: C.dirt, letterSpacing: 1 }}>{radioOpen ? "▴ COLLAPSE" : "▾ EXPAND"}</span>
+          </button>
+          {(radioOpen ? log : log.slice(0, 3)).map((l) => (
             <div key={l.id} style={{
               fontSize: 12, lineHeight: 1.5, padding: "4px 0", borderBottom: `1px solid ${C.greenLine}44`,
               color: l.kind === "out" ? C.creamDim : l.kind === "hr" ? C.amber : l.kind === "win" ? C.dirt : l.kind === "sys" ? C.creamDim : C.cream,
