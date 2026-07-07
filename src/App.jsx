@@ -436,13 +436,32 @@ export default function App() {
     window.location.reload();
   };
 
+  // ── Backup codes: the whole franchise as a copyable string ──
+  const getBackupCode = () => {
+    saveNow();
+    const raw = localStorage.getItem(SAVE_KEY);
+    return raw ? btoa(unescape(encodeURIComponent(raw))) : "";
+  };
+  const restoreBackup = (code) => {
+    try {
+      const json = decodeURIComponent(escape(atob(code.replace(/\s/g, ""))));
+      const s = JSON.parse(json);
+      if (s?.version !== 3 || !s.city || !s.roster) return "That code doesn't look like a Pennant Chase backup.";
+      localStorage.setItem(SAVE_KEY, json);
+      window.location.reload();
+      return null;
+    } catch {
+      return "Couldn't read that code. Make sure you copied the whole thing, then try again.";
+    }
+  };
+
   const stat = (id) => seasonStats[id] || EMPTY_STAT;
 
   const g = gameRef.current;
   const selected = roster ? [...roster.batters, roster.sp, roster.rp].find((p) => p.id === selectedId) : null;
 
   // ── City selection screen ──
-  if (!city) return <CitySelect onPick={foundClub} />;
+  if (!city) return <CitySelect onPick={foundClub} onRestore={restoreBackup} />;
 
   return (
     <div style={{ minHeight: "100dvh", background: C.green, color: C.cream, fontFamily: MONO, padding: "calc(12px + env(safe-area-inset-top)) calc(12px + env(safe-area-inset-right)) calc(12px + env(safe-area-inset-bottom)) calc(12px + env(safe-area-inset-left))", boxSizing: "border-box" }}>
@@ -493,6 +512,7 @@ export default function App() {
             roster={roster} city={city} fans={fans} money={money}
             merch={merch} tv={tv} isStar={isStar} history={history} trophies={trophies}
             onBuyMerch={buyMerch} onBuyTv={buyTv} onNewFranchise={newFranchise}
+            getBackupCode={getBackupCode} onRestore={restoreBackup}
           />
         )}
       </div>

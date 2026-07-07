@@ -6,8 +6,25 @@ import { fmt } from "../game/utils.js";
 import { panel, btn } from "./styles.js";
 import { CoinIcon, FansIcon } from "./Icons.jsx";
 
-export default function FrontOfficeTab({ roster, city, fans, money, merch, tv, isStar, history, trophies, onBuyMerch, onBuyTv, onNewFranchise }) {
+export default function FrontOfficeTab({ roster, city, fans, money, merch, tv, isStar, history, trophies, onBuyMerch, onBuyTv, onNewFranchise, getBackupCode, onRestore }) {
   const [armed, setArmed] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [manualCode, setManualCode] = useState(null); // shown if clipboard is unavailable
+  const [restoreOpen, setRestoreOpen] = useState(false);
+  const [pasted, setPasted] = useState("");
+  const [restoreErr, setRestoreErr] = useState(null);
+
+  const copyBackup = async () => {
+    const code = getBackupCode();
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopied(true);
+      setManualCode(null);
+      setTimeout(() => setCopied(false), 2500);
+    } catch {
+      setManualCode(code); // clipboard blocked — show the code to copy by hand
+    }
+  };
   return (
     <div style={{ display: "flex", flexWrap: "wrap", gap: 14, marginTop: 2 }}>
       <div style={{ flex: "1 1 300px", minWidth: 280 }}>
@@ -69,6 +86,37 @@ export default function FrontOfficeTab({ roster, city, fans, money, merch, tv, i
           <div style={{ fontSize: 11, color: C.creamDim, marginBottom: 8 }}>
             Your franchise auto-saves on this device. Close the browser any time — the season waits for you (only the merch stand keeps selling).
           </div>
+          <div style={{ fontSize: 11, color: C.creamDim, marginBottom: 8 }}>
+            <span style={{ color: C.cream }}>Backup codes:</span> copy one now and then, and keep it somewhere safe (a note, an email to yourself).
+            If the phone ever clears the save — or you switch devices — paste the code back in and the whole franchise returns.
+          </div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
+            <button onClick={copyBackup} style={{ ...btn(true) }}>
+              {copied ? "✓ Copied to clipboard" : "Copy backup code"}
+            </button>
+            <button onClick={() => { setRestoreOpen((o) => !o); setRestoreErr(null); }} style={{ ...btn(true) }}>
+              Restore from a code
+            </button>
+          </div>
+          {manualCode && (
+            <div style={{ marginBottom: 8 }}>
+              <div style={{ fontSize: 10, color: C.creamDim, marginBottom: 4 }}>Couldn't reach the clipboard — press and hold to select and copy:</div>
+              <textarea readOnly value={manualCode} onFocus={(e) => e.target.select()}
+                style={{ width: "100%", height: 70, background: "#0A1810", color: C.cream, border: `1px solid ${C.greenLine}`, borderRadius: 4, fontFamily: "monospace", fontSize: 10, boxSizing: "border-box" }} />
+            </div>
+          )}
+          {restoreOpen && (
+            <div style={{ marginBottom: 8 }}>
+              <textarea value={pasted} onChange={(e) => setPasted(e.target.value)} placeholder="Paste a backup code here"
+                style={{ width: "100%", height: 70, background: "#0A1810", color: C.cream, border: `1px solid ${C.greenLine}`, borderRadius: 4, fontFamily: "monospace", fontSize: 10, boxSizing: "border-box" }} />
+              <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 6 }}>
+                <button onClick={() => setRestoreErr(onRestore(pasted))} style={{ ...btn(pasted.trim().length > 0) }}>
+                  Restore — replaces the current save
+                </button>
+                {restoreErr && <span style={{ fontSize: 10, color: C.red }}>{restoreErr}</span>}
+              </div>
+            </div>
+          )}
           <button
             onClick={() => (armed ? onNewFranchise() : setArmed(true))}
             onBlur={() => setArmed(false)}
