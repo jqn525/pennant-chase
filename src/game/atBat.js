@@ -11,7 +11,7 @@ const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 
 export function resolveAtBat(batter, pitcher, fielders, fence, base = 5) {
   const rel = (v) => v - base;
-  const kChance = clamp(0.14 + base * 0.006 + rel(pitcher.stuff) * 0.030 - rel(batter.contact) * 0.020 - rel(batter.eye) * 0.008, 0.06, 0.5);
+  const kChance = clamp(0.14 + base * 0.012 + rel(pitcher.stuff) * 0.030 - rel(batter.contact) * 0.020 - rel(batter.eye) * 0.008, 0.06, 0.5);
   const bbChance = clamp(0.085 + rel(batter.eye) * 0.022 - rel(pitcher.control) * 0.020, 0.02, 0.22);
   const r = Math.random();
   if (r < kChance) return { type: "K", text: `strikes out swinging.` };
@@ -64,9 +64,8 @@ export function resolveAtBat(batter, pitcher, fielders, fence, base = 5) {
     const fielder = fielders.find((f) => f.pos === fielderPos) || fielders[0];
 
     // Contact skill makes harder-to-field contact; defense converts chances.
-    // Low leagues field worse (kids boot balls) — more action, authentically.
     const catchBase = launch === "ground" ? (infield ? 0.78 : 0.45) : launch === "fly" ? (infield ? 0.93 : 0.82) : 0.32;
-    const catchChance = clamp(catchBase - (14 - base) * 0.007 + rel(fielder.defense) * 0.025 - rel(batter.contact) * 0.022, 0.05, 0.97);
+    const catchChance = clamp(catchBase + rel(fielder.defense) * 0.025 - rel(batter.contact) * 0.022, 0.05, 0.97);
     const desc = launch === "ground" ? "grounder" : launch === "liner" ? "sharp liner" : "fly ball";
 
     if (Math.random() < catchChance) {

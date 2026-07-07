@@ -1,9 +1,7 @@
-// ── Ballpark tab: scoreboard, controls, play-by-play, live game stats, park info ──
+// ── Ballpark tab: live scoreboard, speed controls, play-by-play, game stats, standings ──
 
-import { C, LEAGUES } from "../game/constants.js";
-import { fmt } from "../game/utils.js";
-import { panel, btn, bulb, SLAB } from "./styles.js";
-import { BallIcon } from "./Icons.jsx";
+import { C, LEAGUE } from "../game/constants.js";
+import { panel, btn, bulb } from "./styles.js";
 import StatTable from "./StatTable.jsx";
 
 const abbrev = (name) => name.slice(0, 3).toUpperCase();
@@ -32,35 +30,59 @@ function CompareRow({ label, a, b }) {
 
 const EMPTY_LINE = { ab: 0, h: 0, d: 0, t: 0, hr: 0, bb: 0, k: 0, r: 0, rbi: 0 };
 
-export default function BallparkTab({ g, city, league, tier, record, fans, champ, log, auto, cityBonus, roster, onSimStep, onToggleAuto, onStartGame, onPromote }) {
+export default function BallparkTab({ g, city, year, phase, playoffs, gameIndex, standings, rivals, log, speed, paused, roster, onSetSpeed, onTogglePause }) {
   const box = g?.box;
   const total = (side, key) => Object.values(box[side]).reduce((n, line) => n + line[key], 0);
   const gameRows = (batters, side) => batters.map((p) => {
     const s = box[side][p.id] || EMPTY_LINE;
     return { p, cells: [s.ab, s.r, s.h, s.hr, s.rbi, s.bb, s.k], dim: !s.ab && !s.bb };
   });
+
+  // Status line: where are we in the season?
+  let statusLeft;
+  if (phase === "playoffs" && playoffs) {
+    statusLeft = `${playoffs.round === "semi" ? "SEMIFINAL" : "PENNANT CUP"} · SERIES ${playoffs.wins.us}-${playoffs.wins.them}`;
+  } else {
+    statusLeft = `GAME ${Math.min(gameIndex + (g && !g.over ? 1 : 0), LEAGUE.seasonGames) || 1}/${LEAGUE.seasonGames}`;
+  }
+
+  // Line score rows: away team always on top
+  const teamRows = g ? (g.home
+    ? [[g.opp.name, g.them, g.half === "top" && !g.over, false], [city.name, g.us, g.half === "bottom" && !g.over, true]]
+    : [[city.name, g.us, g.half === "top" && !g.over, true], [g.opp.name, g.them, g.half === "bottom" && !g.over, false]])
+    : [["VISITORS", "–", false, false], [city.name, "–", false, true]];
+
+  // Standings, sorted
+  const names = [city.name, ...(rivals || []).map((r) => r.name)];
+  const table = standings
+    .map((t, i) => ({ i, name: names[i] || "—", w: t.w, l: t.l, pct: t.w + t.l ? t.w / (t.w + t.l) : 0 }))
+    .sort((a, b) => b.w - a.w || a.l - b.l);
+  const leader = table[0];
+
+  const speedBtn = (val, label) => (
+    <button key={label} onClick={() => onSetSpeed(val)}
+      style={{ ...btn(true), width: 52, textAlign: "center", padding: "8px 0", border: `1px solid ${!paused && speed === val ? C.amber : C.greenLine}`, background: !paused && speed === val ? "#3A2E10" : "transparent", color: !paused && speed === val ? C.amber : C.creamDim }}>
+      {label}
+    </button>
+  );
+
   return (
     <div style={{ display: "flex", flexWrap: "wrap", gap: 14, marginTop: 2 }}>
       <div style={{ flex: "2 1 400px", minWidth: 300 }}>
         {/* Line score — fixed-size scoreboard, never reflows */}
         <div style={{ ...panel, padding: 12, height: 132, boxSizing: "border-box", display: "flex", flexDirection: "column", justifyContent: "space-between", overflow: "hidden" }}>
-          {/* Row 1: status line (fixed height) */}
           <div style={{ fontSize: 12, height: 16, display: "flex", gap: 14, whiteSpace: "nowrap" }}>
-            <span style={{ color: C.creamDim, width: 64 }}>{g && !g.over ? `${g.half === "top" ? "TOP" : "BOT"} ${g.inning}` : "PREGAME"}</span>
-            <span style={{ width: 64 }}>{g && !g.over ? `${g.outs} OUT${g.outs === 1 ? "" : "S"}` : " "}</span>
-            <span style={{ color: C.creamDim, marginLeft: "auto" }}>PENNANT {record.w}/{league.winsNeeded}</span>
+            <span style={{ color: C.creamDim }}>{statusLeft}</span>
+            <span>{g && !g.over ? `${g.half === "top" ? "TOP" : "BOT"} ${g.inning} · ${g.outs} OUT${g.outs === 1 ? "" : "S"}` : paused ? "PAUSED" : " "}</span>
+            <span style={{ color: C.creamDim, marginLeft: "auto" }}>YEAR {year}</span>
           </div>
 
-          {/* Row 2: two-line score grid + diamond (fixed columns) */}
           <div style={{ display: "flex", alignItems: "center", gap: 12, height: 52 }}>
             <div style={{ flex: 1, minWidth: 0 }}>
-              {[
-                [g ? g.opp.name : "VISITORS", g ? g.them : "–", g && g.half === "top" && !g.over],
-                [city.name, g ? g.us : "–", g && g.half === "bottom" && !g.over],
-              ].map(([name, score, atBat], i) => (
+              {teamRows.map(([name, score, atBat, isUs], i) => (
                 <div key={i} style={{ display: "flex", alignItems: "baseline", height: 26 }}>
-                  <span style={{ width: 10, color: C.amber, fontSize: 11 }}>{atBat ? "▸" : " "}</span>
-                  <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 14, color: i === 1 ? C.cream : C.creamDim }}>{name}</span>
+                  <span style={{ width: 10, color: C.amber, fontSize: 11 }}>{atBat ? "▸" : " "}</span>
+                  <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 14, color: isUs ? C.cream : C.creamDim }}>{name}</span>
                   <span style={{ ...bulb, fontSize: 19, fontWeight: 600, width: 56, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{score}</span>
                 </div>
               ))}
@@ -74,25 +96,15 @@ export default function BallparkTab({ g, city, league, tier, record, fans, champ
             </svg>
           </div>
 
-          {/* Row 3: controls (fixed height, buttons swap in place) */}
+          {/* Speed controls — the game plays itself; you set the tempo */}
           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", height: 34 }}>
-            {g && !g.over ? (
-              <>
-                <button style={{ ...btn(true), width: 130, textAlign: "center" }} onClick={onSimStep}>Next at-bat</button>
-                <button style={{ ...btn(true), width: 110, textAlign: "center" }} onClick={onToggleAuto}>{auto ? "Pause" : "Auto-sim"}</button>
-              </>
-            ) : (
-              <>
-                {record.w >= league.winsNeeded && !champ && (
-                  <button style={{ ...btn(true), borderColor: C.dirt, color: C.dirt, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis", maxWidth: 220 }} onClick={onPromote}>
-                    {tier >= LEAGUES.length - 1 ? "Win the World Series" : `Claim pennant → ${LEAGUES[tier + 1].name}`}
-                  </button>
-                )}
-                <button style={{ ...btn(true), width: 150, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontFamily: SLAB, fontSize: 14 }} onClick={onStartGame}>
-                  <BallIcon color={C.amber} size={16} /> PLAY BALL
-                </button>
-              </>
-            )}
+            <button onClick={onTogglePause}
+              style={{ ...btn(true), width: 52, textAlign: "center", padding: "8px 0", border: `1px solid ${paused ? C.amber : C.greenLine}`, background: paused ? "#3A2E10" : "transparent", color: paused ? C.amber : C.creamDim }}>
+              {paused ? "▶" : "❚❚"}
+            </button>
+            {speedBtn(1, "1×")}
+            {speedBtn(4, "4×")}
+            {speedBtn("max", "MAX")}
           </div>
         </div>
 
@@ -120,7 +132,7 @@ export default function BallparkTab({ g, city, league, tier, record, fans, champ
         </div>
 
         {/* Live game stats — team comparison + both box scores */}
-        {g && box && (
+        {g && box && roster && (
           <>
             <div style={{ ...panel, padding: 12, marginTop: 10 }}>
               <div style={{ fontSize: 10, color: C.creamDim, letterSpacing: 2, marginBottom: 8 }}>
@@ -145,25 +157,44 @@ export default function BallparkTab({ g, city, league, tier, record, fans, champ
         )}
       </div>
 
-      {/* Park info */}
+      {/* Standings + scout */}
       <div style={{ flex: "1 1 260px", minWidth: 240 }}>
         <div style={{ ...panel, padding: 12 }}>
-          <div style={{ fontSize: 10, color: C.creamDim, letterSpacing: 2, marginBottom: 8 }}>THIS LEAGUE</div>
-          <div style={{ fontSize: 12, lineHeight: 1.8 }}>
-            {league.name}<br />
-            Fences: {league.fenceCorner} ft corners, {league.fenceCenter} ft center<br />
-            {league.innings} innings per game<br />
-            Win: ~${fmt(league.payWin * (1 + fans / 1000))} · Loss floor: ${fmt(league.payFloor * (cityBonus("floor") ? 2 : 1))}<br />
-            Pennant at {league.winsNeeded} wins
+          <div style={{ fontSize: 10, color: C.creamDim, letterSpacing: 2, marginBottom: 8 }}>
+            STANDINGS · TOP {LEAGUE.playoffTeams} MAKE THE PLAYOFFS
           </div>
+          <table style={{ borderCollapse: "collapse", fontSize: 11, width: "100%" }}>
+            <thead>
+              <tr style={{ borderBottom: `1px solid ${C.greenLine}` }}>
+                <th style={{ textAlign: "left", padding: "3px 4px", color: C.creamDim, fontWeight: 400 }}>CLUB</th>
+                {["W", "L", "PCT", "GB"].map((h) => <th key={h} style={{ textAlign: "right", padding: "3px 4px", color: C.creamDim, fontWeight: 400 }}>{h}</th>)}
+              </tr>
+            </thead>
+            <tbody>
+              {table.map((row, pos) => (
+                <tr key={row.i} style={{
+                  color: row.i === 0 ? C.amber : C.cream,
+                  fontWeight: row.i === 0 ? 600 : 400,
+                  borderBottom: pos === LEAGUE.playoffTeams - 1 ? `1px dashed ${C.dirt}` : `1px solid ${C.greenLine}33`,
+                }}>
+                  <td style={{ padding: "4px 4px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 110 }}>{row.name}</td>
+                  <td style={{ textAlign: "right", padding: "4px 4px", fontVariantNumeric: "tabular-nums" }}>{row.w}</td>
+                  <td style={{ textAlign: "right", padding: "4px 4px", fontVariantNumeric: "tabular-nums" }}>{row.l}</td>
+                  <td style={{ textAlign: "right", padding: "4px 4px", fontVariantNumeric: "tabular-nums" }}>{row.pct.toFixed(3).replace(/^0/, "")}</td>
+                  <td style={{ textAlign: "right", padding: "4px 4px", fontVariantNumeric: "tabular-nums" }}>{pos === 0 ? "—" : (((leader.w - row.w) + (row.l - leader.l)) / 2).toFixed(1).replace(/\.0$/, "")}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
+
         {g && !g.over && (
           <div style={{ ...panel, padding: 12, marginTop: 10 }}>
             <div style={{ fontSize: 10, color: C.creamDim, letterSpacing: 2, marginBottom: 8 }}>OPPONENT SCOUT</div>
             <div style={{ fontSize: 12, lineHeight: 1.7 }}>
-              {g.opp.name} — <span style={{ color: C.amber }}>{g.opp.trait.label}</span><br />
-              <span style={{ color: C.creamDim }}>{g.opp.trait.desc}</span><br />
-              Their ace: {g.opp.sp.name} (Stuff {g.opp.sp.stuff}, Control {g.opp.sp.control})
+              {g.opp.name}<br />
+              Their ace: {g.opp.sp.name} (Stuff {g.opp.sp.stuff}, Control {g.opp.sp.control})<br />
+              <span style={{ color: C.creamDim }}>Rivals retool every winter. Keep up.</span>
             </div>
           </div>
         )}

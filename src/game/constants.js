@@ -33,15 +33,46 @@ export const TRAITS = [
   { id: "balanced", label: "Well Drilled", desc: "no weaknesses, no stars", mod: { contact: 1, defense: 1 } },
 ];
 
-export const OPP_NAMES = ["River Cats", "Mudhens", "Growlers", "Sock Puppets", "Steel", "Bisons", "Comets", "Sandgnats", "Thunderheads", "Ospreys", "Copperheads", "Night Owls"];
+// The one and only league. Everything is tuned around its statBase.
+export const LEAGUE = {
+  name: "The Bigs",
+  statBase: 6,
+  innings: 9,
+  seasonGames: 154, // 22 vs each of 7 rivals
+  playoffTeams: 4,
+  fenceCorner: 330,
+  fenceCenter: 410,
+  payWin: 60,    // × gateMult(fans)
+  payFloor: 20,  // + fans × 0.02
+  fansPerWin: 8, // + 2 per HR
+};
 
-export const LEAGUES = [
-  { name: "Little League", statBase: 2, winsNeeded: 3, payWin: 25, payFloor: 8, fansPerWin: 12, innings: 3, fenceCorner: 130, fenceCenter: 175 },
-  { name: "High School Ball", statBase: 4, winsNeeded: 4, payWin: 60, payFloor: 20, fansPerWin: 30, innings: 3, fenceCorner: 190, fenceCenter: 250 },
-  { name: "Single-A", statBase: 7, winsNeeded: 5, payWin: 160, payFloor: 55, fansPerWin: 70, innings: 5, fenceCorner: 270, fenceCenter: 340 },
-  { name: "Triple-A", statBase: 10, winsNeeded: 6, payWin: 420, payFloor: 140, fansPerWin: 160, innings: 5, fenceCorner: 315, fenceCenter: 390 },
-  { name: "Major League", statBase: 14, winsNeeded: 8, payWin: 1100, payFloor: 350, fansPerWin: 420, innings: 7, fenceCorner: 330, fenceCenter: 410 },
-];
+// Gate multiplier from fan base, capped so income plateaus instead of running away
+export const gateMult = (fans) => 1 + Math.min(fans, 2000) / 1000;
+
+// The seven clubs you will battle forever
+export const RIVAL_NAMES = ["River Cats", "Mudhens", "Growlers", "Steel", "Bisons", "Copperheads", "Night Owls"];
+
+export const ECON = {
+  startMoney: 200,
+  startFans: 25,
+  playoffWinPay: 500,     // per playoff game won
+  semisSeriesPay: 1500,   // winning a semifinal series
+  cupPay: 10000,          // winning the Pennant Cup
+  cupFans: 500,
+  playoffFans: 150,       // made the playoffs (missed = -5% fans)
+  merchCost: 150, merchFans: 200,
+  tvCost: 2500, tvFans: 2500,
+  offlineCapHours: 8,     // merch keeps selling while away, up to this
+  offlineRate: 1.0,       // tunable damper on away income
+  trainBase: 25,          // training cost = trainBase × 1.5^stat
+};
+
+// Rival offseason improvement: +1 stat bumps = CREEP.base + finishIndex (0=1st),
+// +CREEP.cellarBonus extra for the last-place club. Standing still = falling behind.
+// Rubber band: rivals trailing the PLAYER's rating gain up to rubberCap extra
+// points (rubber × rating gap), so a dynasty gets hunted down within a few years.
+export const CREEP = { base: 8, cellarBonus: 4, rubber: 8, rubberCap: 30 };
 
 export const POSITIONS = ["C", "1B", "2B", "3B", "SS", "LF", "CF", "RF", "DH"];
 export const BAT_STATS = ["contact", "power", "eye", "speed", "defense"];

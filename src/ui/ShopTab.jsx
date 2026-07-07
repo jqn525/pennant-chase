@@ -1,6 +1,6 @@
 // ── Pro Shop tab: buy equipment for individual players, RPG style ──
-// Limited stock per league (3 Standard / 2 Pro / 1 Elite of each item);
-// the shelves restock every time the club is promoted.
+// Limited stock per season (3 Standard / 2 Pro / 1 Elite of each item);
+// the shelves restock every offseason.
 
 import { useState } from "react";
 import { C } from "../game/constants.js";
@@ -8,18 +8,8 @@ import { fmt } from "../game/utils.js";
 import { panel, btn } from "./styles.js";
 import { GEAR, TIER_NAMES, gearCost } from "../game/gear.js";
 
-export default function ShopTab({ roster, money, tier, shopStock, onBuy }) {
+export default function ShopTab({ roster, money, shopStock, onBuy }) {
   const [pick, setPick] = useState(null); // {slot, tier} — armed item awaiting a player
-
-  if (tier < 1) {
-    return (
-      <div style={{ ...panel, padding: 16, marginTop: 2, fontSize: 12, lineHeight: 1.8, color: C.creamDim }}>
-        <div style={{ fontSize: 10, letterSpacing: 2, marginBottom: 8 }}>THE PRO SHOP · LOCKED</div>
-        Little League equipment is hand-me-downs and duct tape. The Pro Shop opens once you reach
-        <span style={{ color: C.amber }}> High School Ball</span> — win the Little League pennant to get there.
-      </div>
-    );
-  }
 
   const itemCard = (item) => {
     const stock = shopStock?.[item.slot] || {};
@@ -34,7 +24,7 @@ export default function ShopTab({ roster, money, tier, shopStock, onBuy }) {
         <div style={{ display: "flex", gap: 6, marginTop: 8, flexWrap: "wrap" }}>
           {[1, 2, 3].map((t) => {
             const left = stock[t] ?? 0;
-            const cost = gearCost(t, tier);
+            const cost = gearCost(t);
             const armed = pick && pick.slot === item.slot && pick.tier === t;
             const ok = left > 0;
             return (
@@ -52,11 +42,11 @@ export default function ShopTab({ roster, money, tier, shopStock, onBuy }) {
         {pick && pick.slot === item.slot && (
           <div style={{ marginTop: 8, borderTop: `1px solid ${C.greenLine}`, paddingTop: 8 }}>
             <div style={{ fontSize: 10, color: C.creamDim, letterSpacing: 2, marginBottom: 6 }}>
-              OUTFIT A PLAYER · {TIER_NAMES[pick.tier]} {item.label} · ${fmt(gearCost(pick.tier, tier))}
+              OUTFIT A PLAYER · {TIER_NAMES[pick.tier]} {item.label} · ${fmt(gearCost(pick.tier))}
             </div>
             {players.map((p) => {
               const owned = p.gear?.[item.slot] ?? 0;
-              const cost = gearCost(pick.tier, tier);
+              const cost = gearCost(pick.tier);
               const can = owned < pick.tier && money >= cost;
               return (
                 <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "3px 0", fontSize: 12 }}>
@@ -83,7 +73,7 @@ export default function ShopTab({ roster, money, tier, shopStock, onBuy }) {
   return (
     <div style={{ marginTop: 2 }}>
       <div style={{ fontSize: 10, color: C.creamDim, letterSpacing: 2, margin: "6px 0 10px" }}>
-        THE PRO SHOP · one of each slot per player · higher tier replaces lower · shelves restock when you're promoted
+        THE PRO SHOP · one of each slot per player · higher tier replaces lower · shelves restock every offseason
       </div>
       <div style={{ fontSize: 10, color: C.dirt, letterSpacing: 2, marginBottom: 6 }}>BATTER GEAR</div>
       {GEAR.filter((i) => i.role === "bat").map(itemCard)}

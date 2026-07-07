@@ -3,7 +3,7 @@
 // Tier number IS the stat bonus (+1/+2/+3). Players without gear (opponents,
 // old saves) pass through eff() untouched.
 
-import { LEAGUES } from "./constants.js";
+import { LEAGUE } from "./constants.js";
 
 export const TIER_NAMES = { 1: "Standard", 2: "Pro", 3: "Elite" };
 
@@ -33,9 +33,9 @@ export const eff = (p) => {
   return q;
 };
 
-// ~1.5 / 4 / 9 wins' pay at the current level
-export const gearCost = (itemTier, leagueTier) =>
-  Math.ceil(LEAGUES[leagueTier].payWin * [0, 1.5, 4, 9][itemTier]);
+// ~5 / 15 / 35 wins' pay — gear is a luxury that takes seasons to accumulate
+export const gearCost = (itemTier) =>
+  Math.ceil(LEAGUE.payWin * [0, 5, 15, 35][itemTier]);
 
 // Per-league shelf: 3 Standard, 2 Pro, 1 Elite of every item. Restocks on promotion.
 export const freshStock = () => {
@@ -60,7 +60,7 @@ export const ovr = (p) => {
 };
 
 // Team talent vs the league level, as a letter grade
-export const talentGrade = (roster, statBase) => {
+export const talentGrade = (roster, statBase = LEAGUE.statBase) => {
   const all = [...roster.batters, roster.sp, roster.rp];
   const diff = all.reduce((n, p) => n + ovr(p), 0) / all.length - statBase;
   return diff >= 2.5 ? "S" : diff >= 1.5 ? "A" : diff >= 0.5 ? "B" : diff >= -0.5 ? "C" : "D";

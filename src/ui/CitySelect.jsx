@@ -12,7 +12,8 @@ export default function CitySelect({ onPick }) {
           PENNANT<span style={{ color: C.amber }}> CHASE</span>
         </h1>
         <p style={{ color: C.creamDim, fontSize: 13 }}>
-          Found a club. Start in Little League. Claw your way to the Majors.
+          Found a club in the Bigs. Eight teams, 154 games a season, one Pennant Cup —
+          and the seasons never stop. Your rivals get better every winter. Will you?
           Pick your city — each comes with a permanent edge.
         </p>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 12, justifyContent: "center", marginTop: 20 }}>

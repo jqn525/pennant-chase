@@ -15,7 +15,7 @@ const ops = (s) => (s.ab ? ((s.h + s.bb) / (s.ab + s.bb) + (s.h + s.d + 2 * s.t 
 const ip = (s) => (s.outsP ? `${Math.floor(s.outsP / 3)}.${s.outsP % 3}` : "—");
 const era = (s) => (s.outsP ? ((s.raP * 27) / s.outsP).toFixed(2) : "—");
 
-export default function RosterTab({ roster, league, selected, selectedId, onSelect, stat, isStar, money, trainCost, onTrain, lineupLocked, onMoveBatter, onAutoLineup }) {
+export default function RosterTab({ roster, league, selected, selectedId, onSelect, stat, isStar, money, trainCost, onTrain, onMoveBatter, onAutoLineup }) {
   const arrowBtn = {
     flex: 1, width: 34, background: "transparent", border: `1px solid ${C.greenLine}`,
     borderRadius: 4, color: C.creamDim, fontSize: 10, cursor: "pointer", padding: 0,
@@ -41,7 +41,7 @@ export default function RosterTab({ roster, league, selected, selectedId, onSele
               : <>ERA {era(s)} · K {s.kP} · IP {ip(s)}</>}
           </span>
         </button>
-        {order != null && !lineupLocked && (
+        {order != null && (
           <span style={{ display: "flex", flexDirection: "column", gap: 3 }}>
             <button style={arrowBtn} aria-label={`move ${p.name} up`} onClick={() => onMoveBatter(p.id, -1)}>▲</button>
             <button style={arrowBtn} aria-label={`move ${p.name} down`} onClick={() => onMoveBatter(p.id, 1)}>▼</button>
@@ -61,15 +61,13 @@ export default function RosterTab({ roster, league, selected, selectedId, onSele
                 BATTING ORDER · tap a player to train
               </span>
               <button onClick={onAutoLineup}
-                style={{ ...btn(!lineupLocked), marginLeft: "auto", fontSize: 10, letterSpacing: 1, padding: "5px 8px" }}>
+                style={{ ...btn(true), marginLeft: "auto", fontSize: 10, letterSpacing: 1, padding: "5px 8px" }}>
                 AUTO-SET ORDER
               </button>
             </div>
-            {lineupLocked && (
-              <div style={{ fontSize: 10, color: C.creamDim, fontStyle: "italic", marginBottom: 8 }}>
-                Game in progress — the order unlocks after the final out.
-              </div>
-            )}
+            <div style={{ fontSize: 10, color: C.creamDim, fontStyle: "italic", marginBottom: 8 }}>
+              Changes take effect from the next game.
+            </div>
             {roster.batters.map((p, i) => row(p, i + 1))}
             {[roster.sp, roster.rp].map((p) => row(p, null))}
           </div>
@@ -130,7 +128,7 @@ export default function RosterTab({ roster, league, selected, selectedId, onSele
       </div>
 
       <StatTable
-        title="BATTING · running career totals"
+        title="BATTING · this season"
         cols={["AB", "R", "H", "2B", "3B", "HR", "RBI", "BB", "K", "AVG", "OBP", "SLG", "OPS"]}
         rows={roster.batters.map((p) => {
           const s = stat(p.id);
@@ -138,7 +136,7 @@ export default function RosterTab({ roster, league, selected, selectedId, onSele
         })}
       />
       <StatTable
-        title="PITCHING · running career totals"
+        title="PITCHING · this season"
         cols={["IP", "H", "R", "BB", "K", "ERA"]}
         rows={[roster.sp, roster.rp].map((p) => {
           const s = stat(p.id);
