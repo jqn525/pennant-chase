@@ -31,6 +31,14 @@ export const FansIcon = ({ size = 12, color = C.cream }) => (
   </svg>
 );
 
+export const TrophyIcon = ({ size = 12, color = C.amber }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <path d="M7 4h10v5a5 5 0 0 1-10 0z" stroke={color} strokeWidth="1.8" strokeLinejoin="round" />
+    <path d="M7 5H4a3 3 0 0 0 3 4M17 5h3a3 3 0 0 1-3 4" stroke={color} strokeWidth="1.6" strokeLinecap="round" />
+    <path d="M12 14v4M8.5 20h7M10 18h4" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
+  </svg>
+);
+
 export const RulebookIcon = ({ size = 16, color = C.cream }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
     <path d="M5 4a2 2 0 0 1 2-2h12v18H7a2 2 0 0 0-2 2z" stroke={color} strokeWidth="1.8" strokeLinejoin="round" />

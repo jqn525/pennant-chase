@@ -10,8 +10,8 @@ import { genRoster, seedUid } from "./game/generators.js";
 import { newGame, stepAtBat, playGameInstant, settleGame } from "./game/engine.js";
 import { makeRivals, makeSchedule, teamRating, quickSim, simSeries, seedOrder, runOffseason, ageRoster } from "./game/season.js";
 import { eff, isStar, talentGrade, gearCost, freshStock, GEAR, TIER_NAMES } from "./game/gear.js";
-import { panel, bulb, tabBtn, globalCss, MONO, SLAB } from "./ui/styles.js";
-import { RulebookIcon } from "./ui/Icons.jsx";
+import { tabBtn, globalCss, MONO } from "./ui/styles.js";
+import Scoreboard from "./ui/Scoreboard.jsx";
 import CitySelect from "./ui/CitySelect.jsx";
 import Rulebook from "./ui/Rulebook.jsx";
 import BallparkTab from "./ui/BallparkTab.jsx";
@@ -452,40 +452,12 @@ export default function App() {
 
       <div style={{ maxWidth: 1020, margin: "0 auto" }}>
         {/* Header */}
-        <div style={{ ...panel, padding: "12px 16px", display: "flex", flexWrap: "wrap", gap: 16, alignItems: "baseline", borderBottom: `3px solid ${C.amber}` }}>
-          <h1 style={{ fontFamily: SLAB, fontSize: 20, margin: 0 }}>
-            {city.name.toUpperCase()}<span style={{ color: C.amber }}> BASEBALL</span>
-          </h1>
-          {[
-            ["YEAR", year, 46],
-            ["RECORD", `${standings[0].w}-${standings[0].l}`, 74],
-            ["MONEY", "$" + fmt(money), 92],
-            ["FANS", fmt(fans), 66],
-            ["TALENT", roster ? talentGrade(roster) : "—", 56],
-            ["CUPS", trophies, 46],
-          ].map(([l, v, w]) => (
-            <div key={l} style={{ width: w, flexShrink: 0 }}>
-              <div style={{ fontSize: 10, color: C.creamDim, letterSpacing: 2 }}>{l}</div>
-              <div style={{ ...bulb, fontSize: 17, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", fontVariantNumeric: "tabular-nums" }}>{v}</div>
-            </div>
-          ))}
-          <div style={{ width: 96, flexShrink: 0 }}>
-            <div style={{ fontSize: 10, color: C.creamDim, letterSpacing: 2 }}>FORM · LAST 10</div>
-            <div style={{ display: "flex", gap: 3, alignItems: "center", height: 22 }}>
-              {form.length === 0 && <span style={{ fontSize: 11, color: C.creamDim }}>—</span>}
-              {form.map((r, i) => (
-                <span key={i} title={r} style={{
-                  width: 7, height: 7, borderRadius: "50%",
-                  background: r === "W" ? C.amber : "transparent",
-                  border: `1px solid ${r === "W" ? C.amber : C.creamDim}`,
-                }} />
-              ))}
-            </div>
-          </div>
-          <button onClick={() => setShowHelp(true)} style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6, background: "transparent", border: `1px solid ${C.greenLine}`, borderRadius: 4, color: C.cream, fontFamily: MONO, fontSize: 11, padding: "6px 10px", cursor: "pointer" }}>
-            <RulebookIcon /> RULEBOOK
-          </button>
-        </div>
+        <Scoreboard
+          city={city} year={year} record={standings[0]} money={money} fans={fans}
+          talent={roster ? talentGrade(roster) : "—"} trophies={trophies} form={form}
+          phase={phase} playoffs={playoffs} gameIndex={gameIndex}
+          onHelp={() => setShowHelp(true)}
+        />
 
         {/* Tabs */}
         <div style={{ display: "flex", gap: 6, marginTop: 14 }}>
