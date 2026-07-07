@@ -87,12 +87,12 @@ export default function BallparkTab({ g, city, year, phase, playoffs, gameIndex,
                 </div>
               ))}
             </div>
-            <svg width="46" height="46" viewBox="0 0 46 46" aria-label="bases" style={{ flexShrink: 0 }}>
-              {[[23, 6, g && !g.over && g.bases[1]], [40, 23, g && !g.over && g.bases[0]], [6, 23, g && !g.over && g.bases[2]]].map(([x, y, occ], i) => (
-                <rect key={i} x={x - 5} y={y - 5} width="10" height="10" transform={`rotate(45 ${x} ${y})`}
-                  fill={occ ? C.amber : "none"} stroke={C.creamDim} strokeWidth="1.5" />
+            <svg width="52" height="44" viewBox="0 0 52 44" aria-label="bases" style={{ flexShrink: 0 }}>
+              {/* classic three-base triangle: 2B top, 1B lower right, 3B lower left */}
+              {[[26, 12, g && !g.over && g.bases[1]], [39, 27, g && !g.over && g.bases[0]], [13, 27, g && !g.over && g.bases[2]]].map(([x, y, occ], i) => (
+                <rect key={i} x={x - 6.5} y={y - 6.5} width="13" height="13" transform={`rotate(45 ${x} ${y})`}
+                  fill={occ ? C.amber : "none"} stroke={occ ? C.amber : C.creamDim} strokeWidth="1.5" />
               ))}
-              <rect x={18} y={35} width="10" height="10" transform="rotate(45 23 40)" fill="none" stroke={C.creamDim} strokeWidth="1.5" />
             </svg>
           </div>
 
