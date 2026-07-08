@@ -4,6 +4,7 @@ import { useState } from "react";
 import { C, LEAGUE } from "../game/constants.js";
 import { panel, btn, bulb } from "./styles.js";
 import StatTable from "./StatTable.jsx";
+import FieldView from "./FieldView.jsx";
 
 const abbrev = (name) => name.slice(0, 3).toUpperCase();
 
@@ -117,6 +118,9 @@ export default function BallparkTab({ g, city, year, phase, playoffs, gameIndex,
             {speedBtn("max", "MAX")}
           </div>
         </div>
+
+        {/* Live spray chart */}
+        <FieldView g={g} />
 
         {/* Play-by-play — collapsed to a slim strip by default */}
         <div style={{ ...panel, padding: 12, marginTop: 10, height: radioOpen ? 360 : 122, overflowY: radioOpen ? "auto" : "hidden", boxSizing: "border-box" }}>

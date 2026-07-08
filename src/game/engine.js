@@ -17,6 +17,7 @@ export const newGame = (opp, home, oppIdx) => ({
   us: 0, them: 0, usIdx: 0, themIdx: 0, spFaced: 0, usingRP: false,
   over: false, hrUs: 0, result: null,
   box: { us: {}, them: {}, lobUs: 0, lobThem: 0, errUs: 0, errThem: 0 },
+  balls: [], // every ball in play this game: {spray, dist, t} for the field view
   statAcc: {}, // player id -> {statKey: delta}, flushed by the caller
 });
 
@@ -81,6 +82,12 @@ export function stepAtBat(g, ctx, events) {
 
   const out = resolveAtBat(batter, pitcher, fielders, ctx.fence, ctx.statBase, { forceOn1: !!g.bases[0], outs: g.outs });
   const who = `${batter.name} (${batter.pos})`;
+
+  // Field view: record where the ball landed
+  if (out.dist != null && g.balls.length < 100) {
+    const t = out.type === "HR" ? "hr" : out.type === "HIT" ? "hit" : out.type === "E" ? "err" : "out";
+    g.balls.push({ spray: out.spray, dist: Math.round(out.dist), t });
+  }
 
   if (out.type === "K") {
     if (track) { acc(batter.id, "ab"); acc(batter.id, "k"); }
