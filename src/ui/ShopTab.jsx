@@ -6,7 +6,7 @@ import { useState } from "react";
 import { C, RARITY } from "../game/constants.js";
 import { fmt } from "../game/utils.js";
 import { panel, btn } from "./styles.js";
-import { GEAR } from "../game/gear.js";
+import { GEAR, GEAR_ART, gearArtUrl } from "../game/gear.js";
 
 const rarityStyle = {
   1: { color: C.creamDim, glow: "none" },
@@ -49,17 +49,23 @@ export default function ShopTab({ roster, money, shopItems, onBuy }) {
         return (
           <div key={item.id} style={{ ...panel, padding: 12, marginBottom: 10, border: `1px solid ${armed ? C.amber : C.greenLine}` }}>
             <button onClick={() => setPickId(armed ? null : item.id)}
-              style={{ display: "block", width: "100%", background: "transparent", border: "none", padding: 0, cursor: "pointer", textAlign: "left", fontFamily: "inherit", color: C.cream }}>
-              <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
-                <span style={{ fontWeight: 700, fontSize: 14, color: rs.color, textShadow: rs.glow }}>{item.name}</span>
-                <span style={{ fontSize: 9, letterSpacing: 1.5, color: rs.color, border: `1px solid ${rs.color}`, borderRadius: 3, padding: "1px 5px" }}>{RARITY[item.rarity].name}</span>
-                <span style={{ fontSize: 10, color: C.creamDim }}>{def.label}</span>
-                <span style={{ marginLeft: "auto", fontSize: 13, color: afford ? C.amber : C.red, fontVariantNumeric: "tabular-nums" }}>${fmt(item.cost)}</span>
-              </div>
-              <div style={{ fontSize: 11, marginTop: 4 }}>
-                <Boosts boosts={item.boosts} />
-                <span style={{ color: C.creamDim }}> — {def.flavor}</span>
-              </div>
+              style={{ display: "flex", gap: 10, alignItems: "center", width: "100%", background: "transparent", border: "none", padding: 0, cursor: "pointer", textAlign: "left", fontFamily: "inherit", color: C.cream }}>
+              {GEAR_ART.has(item.slot) && (
+                <img src={gearArtUrl(item.slot)} alt={def.label} width={40} height={40}
+                  style={{ imageRendering: "pixelated", flexShrink: 0, filter: item.rarity === 3 ? `drop-shadow(0 0 5px ${C.red})` : item.rarity === 2 ? `drop-shadow(0 0 4px ${C.amber}AA)` : "none" }} />
+              )}
+              <span style={{ flex: 1, minWidth: 0 }}>
+                <span style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
+                  <span style={{ fontWeight: 700, fontSize: 14, color: rs.color, textShadow: rs.glow }}>{item.name}</span>
+                  <span style={{ fontSize: 9, letterSpacing: 1.5, color: rs.color, border: `1px solid ${rs.color}`, borderRadius: 3, padding: "1px 5px" }}>{RARITY[item.rarity].name}</span>
+                  <span style={{ fontSize: 10, color: C.creamDim }}>{def.label}</span>
+                  <span style={{ marginLeft: "auto", fontSize: 13, color: afford ? C.amber : C.red, fontVariantNumeric: "tabular-nums" }}>${fmt(item.cost)}</span>
+                </span>
+                <span style={{ display: "block", fontSize: 11, marginTop: 4 }}>
+                  <Boosts boosts={item.boosts} />
+                  <span style={{ color: C.creamDim }}> — {def.flavor}</span>
+                </span>
+              </span>
             </button>
 
             {armed && (

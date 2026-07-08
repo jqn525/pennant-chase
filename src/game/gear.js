@@ -6,6 +6,10 @@
 
 import { LEAGUE, RARITY, BAT_STATS, PIT_STATS } from "./constants.js";
 
+// Slots with pixel-art sprites in public/gear/<slot>.png (48×48, transparent)
+export const GEAR_ART = new Set(["bat"]);
+export const gearArtUrl = (slot) => `${import.meta.env.BASE_URL}gear/${slot}.png`;
+
 export const GEAR = [
   { slot: "bat", label: "Bat", stat: "power", role: "bat", flavor: "More carry off the barrel" },
   { slot: "batGloves", label: "Batting Gloves", stat: "contact", role: "bat", flavor: "Better feel, squarer contact" },

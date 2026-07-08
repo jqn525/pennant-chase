@@ -6,7 +6,7 @@ import { C, BAT_STATS, PIT_STATS, STAT_INFO, PLAYER_TRAITS, RARITY } from "../ga
 import { fmt } from "../game/utils.js";
 import { btn, MONO, SLAB } from "./styles.js";
 import { StarIcon } from "./Icons.jsx";
-import { GEAR, gearBonus, ovr } from "../game/gear.js";
+import { GEAR, GEAR_ART, gearArtUrl, gearBonus, ovr } from "../game/gear.js";
 import Modal from "./Modal.jsx";
 
 const avg3 = (num, den) => (den ? (num / den).toFixed(3).replace(/^0/, "") : "—");
@@ -103,16 +103,21 @@ export default function PlayerCard({ player, isOwn, onClose, money, league, stat
               return (
                 <button key={g.slot} onClick={() => setSlotOpen(open ? null : g.slot)}
                   style={{
-                    flex: "1 1 56px", minWidth: 56, height: 52, borderRadius: 6, cursor: "pointer",
+                    flex: "1 1 56px", minWidth: 56, height: GEAR_ART.has(g.slot) ? 68 : 52, borderRadius: 6, cursor: "pointer",
                     background: item ? "#0A1810" : "transparent", fontFamily: MONO,
                     border: item ? `1.5px solid ${rarityColor[item.rarity] || C.creamDim}` : `1.5px dashed ${C.greenLine}`,
                     color: item ? rarityColor[item.rarity] || C.cream : C.creamDim,
                     boxShadow: item?.rarity === 3 ? `0 0 8px ${C.red}55` : "none",
                     display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2,
                   }}>
-                  <span style={{ fontSize: 9, letterSpacing: 1 }}>{g.label.toUpperCase().slice(0, 9)}</span>
+                  {GEAR_ART.has(g.slot) ? (
+                    <img src={gearArtUrl(g.slot)} alt={g.label} width={30} height={30}
+                      style={{ imageRendering: "pixelated", opacity: item ? 1 : 0.25, filter: item ? "none" : "grayscale(1)" }} />
+                  ) : (
+                    <span style={{ fontSize: 9, letterSpacing: 1 }}>{g.label.toUpperCase().slice(0, 9)}</span>
+                  )}
                   <span style={{ fontSize: 8, color: item ? C.cream : C.greenLine, maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", padding: "0 3px" }}>
-                    {item ? item.name : "empty"}
+                    {item ? item.name : GEAR_ART.has(g.slot) ? g.label : "empty"}
                   </span>
                 </button>
               );
