@@ -4,7 +4,6 @@ import { useState } from "react";
 import { C, LEAGUE } from "../game/constants.js";
 import { panel, btn, bulb } from "./styles.js";
 import StatTable from "./StatTable.jsx";
-import { PlayIcon, PauseIcon } from "./Icons.jsx";
 import FieldView from "./FieldView.jsx";
 
 const abbrev = (name) => name.slice(0, 3).toUpperCase();
@@ -33,7 +32,7 @@ function CompareRow({ label, a, b }) {
 
 const EMPTY_LINE = { ab: 0, h: 0, d: 0, t: 0, hr: 0, bb: 0, k: 0, r: 0, rbi: 0 };
 
-export default function BallparkTab({ g, city, year, phase, playoffs, gameIndex, standings, rivals, log, speed, paused, roster, onSetSpeed, onTogglePause, onOpenCard, series }) {
+export default function BallparkTab({ g, city, year, phase, playoffs, gameIndex, standings, rivals, log, paused, roster, onOpenCard, series }) {
   const [radioOpen, setRadioOpen] = useState(false);
   const box = g?.box;
   const total = (side, key) => Object.values(box[side]).reduce((n, line) => n + line[key], 0);
@@ -65,18 +64,11 @@ export default function BallparkTab({ g, city, year, phase, playoffs, gameIndex,
     .sort((a, b) => b.w - a.w || a.l - b.l);
   const leader = table[0];
 
-  const speedBtn = (val, label) => (
-    <button key={label} onClick={() => onSetSpeed(val)}
-      style={{ ...btn(true), width: 52, textAlign: "center", padding: "8px 0", border: `1px solid ${!paused && speed === val ? C.amber : C.greenLine}`, background: !paused && speed === val ? "#3A2E10" : "transparent", color: !paused && speed === val ? C.amber : C.creamDim }}>
-      {label}
-    </button>
-  );
-
   return (
     <div style={{ display: "flex", flexWrap: "wrap", gap: 14, marginTop: 2 }}>
       <div style={{ flex: "2 1 400px", minWidth: 300 }}>
         {/* Line score — fixed-size scoreboard, never reflows */}
-        <div style={{ ...panel, padding: 12, height: 148, boxSizing: "border-box", display: "flex", flexDirection: "column", justifyContent: "space-between", overflow: "hidden" }}>
+        <div style={{ ...panel, padding: 12, height: 108, boxSizing: "border-box", display: "flex", flexDirection: "column", justifyContent: "space-between", overflow: "hidden" }}>
           <div style={{ fontSize: 12, height: 16, display: "flex", gap: 14, whiteSpace: "nowrap" }}>
             <span style={{ color: C.creamDim }}>{statusLeft}</span>
             <span>{g && !g.over ? `${g.half === "top" ? "TOP" : "BOT"} ${g.inning} · ${g.outs} OUT${g.outs === 1 ? "" : "S"}` : paused ? "PAUSED" : " "}</span>
@@ -114,16 +106,6 @@ export default function BallparkTab({ g, city, year, phase, playoffs, gameIndex,
             </svg>
           </div>
 
-          {/* Speed controls — the game plays itself; you set the tempo */}
-          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", height: 34 }}>
-            <button onClick={onTogglePause}
-              style={{ ...btn(true), width: 52, textAlign: "center", padding: "8px 0", border: `1px solid ${paused ? C.amber : C.greenLine}`, background: paused ? "#3A2E10" : "transparent", color: paused ? C.amber : C.creamDim }}>
-              {paused ? <PlayIcon size={13} color={C.amber} /> : <PauseIcon size={13} color={C.creamDim} />}
-            </button>
-            {speedBtn(1, "1×")}
-            {speedBtn(4, "4×")}
-            {speedBtn("max", "MAX")}
-          </div>
         </div>
 
         {/* Live spray chart */}

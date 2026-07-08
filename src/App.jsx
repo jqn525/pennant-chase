@@ -621,6 +621,9 @@ export default function App() {
           city={city} year={year} record={standings[0]} money={money} fans={fans}
           talent={roster ? talentGrade(roster) : "—"} trophies={trophies} form={form}
           phase={phase} playoffs={playoffs} gameIndex={gameIndex} series={series}
+          speed={speed} paused={paused}
+          onSetSpeed={(sp) => { setSpeed(sp); setPaused(false); }}
+          onTogglePause={() => setPaused((p) => !p)}
           onHelp={() => setShowHelp(true)}
         />
 

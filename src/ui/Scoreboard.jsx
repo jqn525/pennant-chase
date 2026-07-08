@@ -3,7 +3,7 @@
 import { C, LEAGUE } from "../game/constants.js";
 import { fmt } from "../game/utils.js";
 import { panel, bulb, MONO, SLAB } from "./styles.js";
-import { CoinIcon, FansIcon, StarIcon, TrophyIcon, RulebookIcon } from "./Icons.jsx";
+import { CoinIcon, FansIcon, StarIcon, TrophyIcon, RulebookIcon, PlayIcon, PauseIcon } from "./Icons.jsx";
 
 const BOARD_BG = "#0A1810";
 
@@ -20,7 +20,7 @@ function Cell({ label, icon, value, flex = "1 1 0" }) {
   );
 }
 
-export default function Scoreboard({ city, year, record, money, fans, talent, trophies, form, phase, playoffs, gameIndex, series, onHelp }) {
+export default function Scoreboard({ city, year, record, money, fans, talent, trophies, form, phase, playoffs, gameIndex, series, onHelp, speed, paused, onSetSpeed, onTogglePause }) {
   // Where are we in the season?
   let ticker;
   if (phase === "draft") {
@@ -69,6 +69,23 @@ export default function Scoreboard({ city, year, record, money, fans, talent, tr
             ))}
           </span>
           <span style={{ marginLeft: "auto", fontSize: 10, color: C.dirt, letterSpacing: 1.5, whiteSpace: "nowrap" }}>{ticker}</span>
+        </div>
+
+        {/* Tempo controls — reachable from every tab (pause mid-shopping!) */}
+        <div style={{ display: "flex", gap: 6, borderTop: `1px solid ${C.greenLine}33`, padding: "6px 8px" }}>
+          <button onClick={onTogglePause} aria-label={paused ? "resume" : "pause"}
+            style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "7px 0", background: paused ? "#3A2E10" : "transparent", border: `1px solid ${paused ? C.amber : C.greenLine}`, borderRadius: 4, cursor: "pointer" }}>
+            {paused ? <PlayIcon size={12} color={C.amber} /> : <PauseIcon size={12} color={C.creamDim} />}
+          </button>
+          {[[1, "1×"], [4, "4×"], ["max", "MAX"]].map(([val, label]) => {
+            const active = !paused && speed === val;
+            return (
+              <button key={label} onClick={() => onSetSpeed(val)}
+                style={{ flex: 1, fontFamily: MONO, fontSize: 11, padding: "7px 0", background: active ? "#3A2E10" : "transparent", border: `1px solid ${active ? C.amber : C.greenLine}`, borderRadius: 4, color: active ? C.amber : C.creamDim, cursor: "pointer" }}>
+                {label}
+              </button>
+            );
+          })}
         </div>
       </div>
     </div>
