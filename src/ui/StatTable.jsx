@@ -7,7 +7,7 @@ const th = { padding: "3px 7px", textAlign: "right", color: C.creamDim, fontWeig
 const td = { padding: "3px 7px", textAlign: "right", fontVariantNumeric: "tabular-nums" };
 const tdName = { ...td, textAlign: "left", whiteSpace: "nowrap", fontWeight: 600 };
 
-export default function StatTable({ title, cols, rows, style }) {
+export default function StatTable({ title, cols, rows, style, onRow }) {
   return (
     <div style={{ ...panel, padding: 12, marginTop: 14, ...style }}>
       <div style={{ fontSize: 10, color: C.creamDim, letterSpacing: 2, marginBottom: 6 }}>{title}</div>
@@ -21,7 +21,8 @@ export default function StatTable({ title, cols, rows, style }) {
           </thead>
           <tbody>
             {rows.map(({ p, cells, dim }) => (
-              <tr key={p.id} style={{ borderBottom: `1px solid ${C.greenLine}44`, color: dim ? C.creamDim : C.cream }}>
+              <tr key={p.id} onClick={onRow ? () => onRow(p) : undefined}
+                style={{ borderBottom: `1px solid ${C.greenLine}44`, color: dim ? C.creamDim : C.cream, cursor: onRow ? "pointer" : "default" }}>
                 <td style={tdName}>{p.pos} {p.name}</td>
                 {cells.map((v, i) => <td key={i} style={td}>{v}</td>)}
               </tr>

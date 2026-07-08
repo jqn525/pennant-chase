@@ -32,7 +32,7 @@ function CompareRow({ label, a, b }) {
 
 const EMPTY_LINE = { ab: 0, h: 0, d: 0, t: 0, hr: 0, bb: 0, k: 0, r: 0, rbi: 0 };
 
-export default function BallparkTab({ g, city, year, phase, playoffs, gameIndex, standings, rivals, log, speed, paused, roster, onSetSpeed, onTogglePause }) {
+export default function BallparkTab({ g, city, year, phase, playoffs, gameIndex, standings, rivals, log, speed, paused, roster, onSetSpeed, onTogglePause, onOpenCard }) {
   const [radioOpen, setRadioOpen] = useState(false);
   const box = g?.box;
   const total = (side, key) => Object.values(box[side]).reduce((n, line) => n + line[key], 0);
@@ -170,9 +170,9 @@ export default function BallparkTab({ g, city, year, phase, playoffs, gameIndex,
               <CompareRow label="LEFT ON BASE" a={g.box.lobThem} b={g.box.lobUs} />
             </div>
             <StatTable style={{ marginTop: 10 }} title={`${city.name.toUpperCase()} HITTING · this game`}
-              cols={["AB", "R", "H", "HR", "RBI", "BB", "K"]} rows={gameRows(roster.batters, "us")} />
-            <StatTable style={{ marginTop: 10 }} title={`${g.opp.name.toUpperCase()} HITTING · this game`}
-              cols={["AB", "R", "H", "HR", "RBI", "BB", "K"]} rows={gameRows(g.opp.batters, "them")} />
+              cols={["AB", "R", "H", "HR", "RBI", "BB", "K"]} rows={gameRows(roster.batters, "us")} onRow={onOpenCard} />
+            <StatTable style={{ marginTop: 10 }} title={`${g.opp.name.toUpperCase()} HITTING · this game · tap to scout`}
+              cols={["AB", "R", "H", "HR", "RBI", "BB", "K"]} rows={gameRows(g.opp.batters, "them")} onRow={onOpenCard} />
           </>
         )}
       </div>

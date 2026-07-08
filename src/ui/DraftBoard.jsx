@@ -4,7 +4,7 @@ import { C, PLAYER_TRAITS, BAT_STATS, PIT_STATS } from "../game/constants.js";
 import { fmt } from "../game/utils.js";
 import { panel, btn, SLAB } from "./styles.js";
 
-export default function DraftBoard({ draftClass, roster, money, year, onSign, onClose }) {
+export default function DraftBoard({ draftClass, roster, money, year, onSign, onClose, onView }) {
   const releasedFor = (rook) => {
     if (rook.pos === "SP") return roster.sp;
     if (rook.pos === "RP") return roster.rp;
@@ -32,7 +32,10 @@ export default function DraftBoard({ draftClass, roster, money, year, onSign, on
           <div key={rook.id} style={{ ...panel, padding: 10, marginBottom: 8 }}>
             <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
               <span style={{ width: 26, color: C.creamDim, fontSize: 12 }}>{rook.pos}</span>
-              <span style={{ fontWeight: 700, fontSize: 13 }}>{rook.name}</span>
+              <button onClick={() => onView?.(rook)}
+                style={{ fontWeight: 700, fontSize: 13, background: "transparent", border: "none", color: C.cream, cursor: "pointer", padding: 0, fontFamily: "inherit", textDecoration: "underline", textDecorationColor: `${C.creamDim}66` }}>
+                {rook.name}
+              </button>
               {trait && <span style={{ fontSize: 9, letterSpacing: 1, color: C.amber, border: `1px solid ${C.amber}55`, borderRadius: 3, padding: "1px 5px" }}>{trait.label.toUpperCase()}</span>}
               <span style={{ marginLeft: "auto", fontSize: 12, color: afford ? C.amber : C.red, fontVariantNumeric: "tabular-nums" }}>${fmt(rook.signCost)}</span>
             </div>

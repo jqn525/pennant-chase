@@ -11,6 +11,7 @@ import { newGame, stepAtBat, playGameInstant, settleGame } from "./game/engine.j
 import { makeRivals, makeSchedule, teamRating, quickSim, simSeries, seedOrder, runOffseason, ageRoster } from "./game/season.js";
 import { eff, isStar, talentGrade, genShipment, playerValue, GEAR } from "./game/gear.js";
 import DraftBoard from "./ui/DraftBoard.jsx";
+import PlayerCard from "./ui/PlayerCard.jsx";
 import { tabBtn, globalCss, MONO } from "./ui/styles.js";
 import Scoreboard from "./ui/Scoreboard.jsx";
 import CitySelect from "./ui/CitySelect.jsx";
@@ -89,7 +90,7 @@ export default function App() {
   const [paused, setPaused] = useState(false);
 
   // ── UI state ──
-  const [selectedId, setSelectedId] = useState(null);
+  const [cardId, setCardId] = useState(null); // player card pop-up
   const [log, setLog] = useState([]);
   const [tab, setTab] = useState("game");
   const [showHelp, setShowHelp] = useState(false);
@@ -559,7 +560,18 @@ export default function App() {
   const stat = (id) => seasonStats[id] || EMPTY_STAT;
 
   const g = gameRef.current;
-  const selected = roster ? [...roster.batters, roster.sp, roster.rp].find((p) => p.id === selectedId) : null;
+  // Resolve the card's player fresh each render (training/trades update live)
+  const findPlayer = (id) => {
+    const own = roster && [...roster.batters, roster.sp, roster.rp].find((p) => p.id === id);
+    if (own) return { player: own, isOwn: true };
+    const riv = rivals?.flatMap((r) => [...r.batters, r.sp]).find((p) => p.id === id);
+    if (riv) return { player: riv, isOwn: false };
+    const rook = draftClass?.find((p) => p.id === id);
+    if (rook) return { player: rook, isOwn: false };
+    return null;
+  };
+  const cardView = cardId != null ? findPlayer(cardId) : null;
+  const openCard = (p) => setCardId(p.id);
 
   // ── City selection screen ──
   if (!city) return <CitySelect onPick={foundClub} onRestore={restoreBackup} />;
@@ -586,9 +598,18 @@ export default function App() {
           ))}
         </div>
 
+        {cardView && (
+          <PlayerCard
+            player={cardView.player} isOwn={cardView.isOwn} onClose={() => setCardId(null)}
+            money={money} league={LEAGUE} stat={stat} isStar={isStar}
+            trainCost={trainCost} onTrain={train}
+            tradeQuote={tradeQuote} onTrade={makeTrade} rivals={rivals}
+          />
+        )}
+
         {tab === "game" && phase === "draft" && draftClass && (
           <DraftBoard draftClass={draftClass} roster={roster} money={money} year={year}
-            onSign={signRookie} onClose={closeDraft} />
+            onSign={signRookie} onClose={closeDraft} onView={openCard} />
         )}
 
         {tab === "game" && (
@@ -598,6 +619,7 @@ export default function App() {
             log={log} speed={speed} paused={paused} roster={roster}
             onSetSpeed={(sp) => { setSpeed(sp); setPaused(false); }}
             onTogglePause={() => setPaused((p) => !p)}
+            onOpenCard={openCard}
           />
         )}
 
@@ -607,10 +629,8 @@ export default function App() {
 
         {tab === "roster" && roster && (
           <RosterTab
-            roster={roster} league={LEAGUE} selected={selected} selectedId={selectedId} onSelect={setSelectedId}
-            stat={stat} isStar={isStar} money={money} trainCost={trainCost} onTrain={train}
-            onMoveBatter={moveBatter} onAutoLineup={autoLineup}
-            rivals={rivals} tradeQuote={tradeQuote} onTrade={makeTrade}
+            roster={roster} stat={stat} isStar={isStar}
+            onMoveBatter={moveBatter} onAutoLineup={autoLineup} onOpenCard={openCard}
           />
         )}
 
