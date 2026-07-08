@@ -8,7 +8,7 @@ import { C, LEAGUE, ECON, TRADE, BAT_STATS, PIT_STATS } from "./game/constants.j
 import { fmt } from "./game/utils.js";
 import { genRoster, seedUid, genDraftClass, vetPot, rollPot, pickTrait } from "./game/generators.js";
 import { newGame, stepAtBat, playGameInstant, settleGame } from "./game/engine.js";
-import { makeRivals, makeSchedule, teamRating, quickSim, simSeries, seedOrder, runOffseason, ageRoster } from "./game/season.js";
+import { makeRivals, makeSchedule, teamRating, quickSim, simSeries, seedOrder, runOffseason, ageRoster, seriesInfo } from "./game/season.js";
 import { eff, isStar, talentGrade, genShipment, playerValue, GEAR } from "./game/gear.js";
 import DraftBoard from "./ui/DraftBoard.jsx";
 import PlayerCard from "./ui/PlayerCard.jsx";
@@ -573,6 +573,17 @@ export default function App() {
   const cardView = cardId != null ? findPlayer(cardId) : null;
   const openCard = (p) => setCardId(p.id);
 
+  // Current series position (regular season only) + shop restock note
+  const series = phase === "regular" && schedule && gameIndex < LEAGUE.seasonGames
+    ? seriesInfo(schedule, gameIndex, form) : null;
+  const restockNote = phase === "draft"
+    ? "WINTER CATALOG IN STOCK — new shipments resume with the season"
+    : phase === "playoffs"
+      ? "NEW SHIPMENT WHEN THE NEXT PLAYOFF ROUND BEGINS"
+      : series
+        ? (series.gamesLeft <= 1 ? "NEW SHIPMENT AFTER THIS GAME" : `NEW SHIPMENT IN ${series.gamesLeft} GAMES`)
+        : "NEW SHIPMENT WITH THE NEXT SERIES";
+
   // ── City selection screen ──
   if (!city) return <CitySelect onPick={foundClub} onRestore={restoreBackup} />;
 
@@ -587,7 +598,7 @@ export default function App() {
         <Scoreboard
           city={city} year={year} record={standings[0]} money={money} fans={fans}
           talent={roster ? talentGrade(roster) : "—"} trophies={trophies} form={form}
-          phase={phase} playoffs={playoffs} gameIndex={gameIndex}
+          phase={phase} playoffs={playoffs} gameIndex={gameIndex} series={series}
           onHelp={() => setShowHelp(true)}
         />
 
@@ -619,12 +630,12 @@ export default function App() {
             log={log} speed={speed} paused={paused} roster={roster}
             onSetSpeed={(sp) => { setSpeed(sp); setPaused(false); }}
             onTogglePause={() => setPaused((p) => !p)}
-            onOpenCard={openCard}
+            onOpenCard={openCard} series={series}
           />
         )}
 
         {tab === "shop" && roster && (
-          <ShopTab roster={roster} money={money} shopItems={shopItems} onBuy={buyGear} />
+          <ShopTab roster={roster} money={money} shopItems={shopItems} onBuy={buyGear} restockNote={restockNote} />
         )}
 
         {tab === "roster" && roster && (

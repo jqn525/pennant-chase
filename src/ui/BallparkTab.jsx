@@ -32,7 +32,7 @@ function CompareRow({ label, a, b }) {
 
 const EMPTY_LINE = { ab: 0, h: 0, d: 0, t: 0, hr: 0, bb: 0, k: 0, r: 0, rbi: 0 };
 
-export default function BallparkTab({ g, city, year, phase, playoffs, gameIndex, standings, rivals, log, speed, paused, roster, onSetSpeed, onTogglePause, onOpenCard }) {
+export default function BallparkTab({ g, city, year, phase, playoffs, gameIndex, standings, rivals, log, speed, paused, roster, onSetSpeed, onTogglePause, onOpenCard, series }) {
   const [radioOpen, setRadioOpen] = useState(false);
   const box = g?.box;
   const total = (side, key) => Object.values(box[side]).reduce((n, line) => n + line[key], 0);
@@ -85,7 +85,11 @@ export default function BallparkTab({ g, city, year, phase, playoffs, gameIndex,
           <div style={{ display: "flex", alignItems: "center", gap: 12, height: 66 }}>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: "flex", height: 12, fontSize: 9, color: C.creamDim, letterSpacing: 1 }}>
-                <span style={{ flex: 1 }} />
+                <span style={{ flex: 1, minWidth: 0, overflow: "hidden", whiteSpace: "nowrap", color: C.dirt }}>
+                  {phase === "playoffs" && playoffs
+                    ? `${playoffs.round === "semi" ? "SEMIS" : "CUP"} · GAME ${playoffs.gameNo + 1} · SERIES ${playoffs.wins.us}-${playoffs.wins.them}`
+                    : series ? `SERIES · GAME ${series.gameInSeries} OF ${series.len} · ${series.w}-${series.l}` : ""}
+                </span>
                 <span style={{ width: 40, textAlign: "right" }}>R</span>
                 <span style={{ width: 34, textAlign: "right" }}>H</span>
                 <span style={{ width: 30, textAlign: "right" }}>E</span>

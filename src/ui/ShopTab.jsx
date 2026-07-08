@@ -25,13 +25,16 @@ const Boosts = ({ boosts }) => (
   </span>
 );
 
-export default function ShopTab({ roster, money, shopItems, onBuy }) {
+export default function ShopTab({ roster, money, shopItems, onBuy, restockNote }) {
   const [pickId, setPickId] = useState(null); // armed item awaiting a player
 
   return (
     <div style={{ marginTop: 2 }}>
-      <div style={{ fontSize: 10, color: C.creamDim, letterSpacing: 2, margin: "6px 0 10px" }}>
-        THE PRO SHOP · THIS SHIPMENT ONLY — new stock every series · unbought gear ships out
+      <div style={{ fontSize: 10, color: C.creamDim, letterSpacing: 2, margin: "6px 0 4px" }}>
+        THE PRO SHOP · THIS SHIPMENT ONLY — unbought gear ships out
+      </div>
+      <div style={{ fontSize: 11, color: C.amber, letterSpacing: 1, marginBottom: 10 }}>
+        ⏱ {restockNote}
       </div>
 
       {(!shopItems || shopItems.length === 0) && (

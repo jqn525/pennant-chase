@@ -20,7 +20,7 @@ function Cell({ label, icon, value, flex = "1 1 0" }) {
   );
 }
 
-export default function Scoreboard({ city, year, record, money, fans, talent, trophies, form, phase, playoffs, gameIndex, onHelp }) {
+export default function Scoreboard({ city, year, record, money, fans, talent, trophies, form, phase, playoffs, gameIndex, series, onHelp }) {
   // Where are we in the season?
   let ticker;
   if (phase === "draft") {
@@ -28,7 +28,7 @@ export default function Scoreboard({ city, year, record, money, fans, talent, tr
   } else if (phase === "playoffs" && playoffs) {
     ticker = `${playoffs.round === "semi" ? "SEMIFINAL" : "PENNANT CUP"} · SERIES ${playoffs.wins.us}-${playoffs.wins.them}`;
   } else {
-    ticker = `GAME ${Math.min(gameIndex + 1, LEAGUE.seasonGames)} OF ${LEAGUE.seasonGames}`;
+    ticker = `GAME ${Math.min(gameIndex + 1, LEAGUE.seasonGames)} OF ${LEAGUE.seasonGames}${series ? ` · SERIES ${series.w}-${series.l}` : ""}`;
   }
 
   return (

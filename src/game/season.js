@@ -112,6 +112,22 @@ export const ageRoster = (roster) => {
   };
 };
 
+// Where are we in the current series? Uses the schedule (series = consecutive
+// games vs the same club at the same park) and recent form for the series score.
+export const seriesInfo = (schedule, gameIndex, form) => {
+  if (!schedule || gameIndex >= schedule.length) return null;
+  const cur = schedule[gameIndex];
+  let start = gameIndex;
+  while (start > 0 && schedule[start - 1].opp === cur.opp && schedule[start - 1].home === cur.home) start--;
+  let end = gameIndex;
+  while (end + 1 < schedule.length && schedule[end + 1].opp === cur.opp && schedule[end + 1].home === cur.home) end++;
+  const len = end - start + 1;
+  const played = gameIndex - start; // completed games this series
+  const results = form.slice(Math.max(0, form.length - played));
+  const w = results.filter((r) => r === "W").length;
+  return { gameInSeries: played + 1, len, w, l: played - w, gamesLeft: len - played };
+};
+
 export const pct = (t) => (t.w + t.l ? t.w / (t.w + t.l) : 0);
 export const gamesBehind = (leader, t) => ((leader.w - t.w) + (t.l - leader.l)) / 2;
 
