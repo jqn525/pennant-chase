@@ -1,8 +1,9 @@
 // ── Equipment: procedurally generated loot and effective-stat helpers ──
 // Gear lives on the player as p.gear = { bat: item, cleats: item } (slot -> item).
-// An item: { id, slot, rarity 1..3, name, boosts: {stat: ±n}, cost }.
-// Primary boost = the slot's stat (+1/+2/+3 by rarity); RARE and LEGENDARY
-// items also roll a secondary side-effect on another stat (+1 or -1).
+// An item: { id, slot, rarity 1..3, name, boosts: {stat: ±percent}, cost }.
+// Boosts are PERCENTAGES of the player's rating (+5/+10/+15% by rarity;
+// secondaries ±4%), applied multiplicatively and capped at 99 — gear can
+// push a rating toward perfect, never past it.
 
 import { LEAGUE, RARITY, BAT_STATS, PIT_STATS } from "./constants.js";
 
@@ -37,13 +38,13 @@ export const genItem = (rarity, slotDef) => {
   const [pre, post] = NAMES[def.slot];
   let name = `${pick(pre)} ${pick(post)}`;
   if (rarity === 3) name = `The ${name}`;
-  const boosts = { [def.stat]: rarity };
+  const boosts = { [def.stat]: RARITY[rarity].pct };
   let costMult = 1;
   if (rarity >= 2) {
     const pool = (def.role === "bat" ? BAT_STATS : PIT_STATS).filter((s) => s !== def.stat);
     const stat = pick(pool);
     const plus = Math.random() < 0.6;
-    boosts[stat] = plus ? 1 : -1;
+    boosts[stat] = plus ? 4 : -4;
     costMult = plus ? 1.2 : 0.8;
   }
   return {
@@ -66,30 +67,37 @@ export const genShipment = (n = 6, weights = null) => {
   return Array.from({ length: n }, (_, i) => genItem(rollRarity(weights), slots[i % slots.length]));
 };
 
-// Sum of gear boosts for one stat. Tolerates the pre-loot save format
-// (slot -> tier number) just in case migration is skipped.
-export const gearBonus = (p, stat) => {
+// Total gear percentage applying to one stat
+const gearPct = (p, stat) => {
   if (!p.gear) return 0;
-  let n = 0;
+  let pct = 0;
   for (const def of GEAR) {
     const item = p.gear[def.slot];
     if (!item) continue;
-    if (typeof item === "number") { if (def.stat === stat) n += item; }
-    else if (item.boosts?.[stat]) n += item.boosts[stat];
+    if (typeof item === "number") { if (def.stat === stat) pct += item * 5; } // legacy tiers ≈ 5/10/15%
+    else if (item.boosts?.[stat]) pct += item.boosts[stat];
   }
-  return n;
+  return pct;
 };
 
-// Effective player: base stats + all gear boosts (never below 1).
+// Effective rating after gear: multiplicative, capped at 99, floored at 1
+const boosted = (v, pct) => Math.min(LEAGUE.statCap, Math.max(1, Math.round(v * (1 + pct / 100))));
+
+// The point delta gear adds to one stat (for display: "78 +9")
+export const gearBonus = (p, stat) => {
+  const pct = gearPct(p, stat);
+  return pct ? boosted(p[stat], pct) - p[stat] : 0;
+};
+
+// Effective player: ratings with all gear percentages applied.
 // Identity for gearless players (opponents without equipment, fresh rosters).
 export const eff = (p) => {
   if (!p.gear) return p;
   const q = { ...p };
-  for (const def of GEAR) {
-    const item = p.gear[def.slot];
-    if (!item) continue;
-    if (typeof item === "number") q[def.stat] = (q[def.stat] ?? 0) + item;
-    else for (const s in item.boosts) q[s] = Math.max(1, (q[s] ?? 0) + item.boosts[s]);
+  const stats = p.role === "bat" ? BAT_STATS : PIT_STATS;
+  for (const s of stats) {
+    const pct = gearPct(p, s);
+    if (pct) q[s] = boosted(q[s], pct);
   }
   return q;
 };
@@ -97,8 +105,8 @@ export const eff = (p) => {
 export const isStar = (p) => {
   const e = eff(p);
   return p.role === "bat"
-    ? (e.contact + e.power + e.eye + e.speed) / 4 >= 8
-    : (e.stuff + e.control) / 2 >= 8;
+    ? (e.contact + e.power + e.eye + e.speed) / 4 >= 73
+    : (e.stuff + e.control) / 2 >= 73;
 };
 
 // Player overall: mean of effective attributes for his role
@@ -110,11 +118,11 @@ export const ovr = (p) => {
 };
 
 // Trade value: how far above the league floor a player plays
-export const playerValue = (p, perOvr) => Math.max(50, (ovr(p) - LEAGUE.statBase + 1) * perOvr);
+export const playerValue = (p, perOvr) => Math.max(50, (ovr(p) - LEAGUE.statBase + 4) * perOvr);
 
 // Team talent vs the league level, as a letter grade
 export const talentGrade = (roster, statBase = LEAGUE.statBase) => {
   const all = [...roster.batters, roster.sp, roster.rp];
   const diff = all.reduce((n, p) => n + ovr(p), 0) / all.length - statBase;
-  return diff >= 2.5 ? "S" : diff >= 1.5 ? "A" : diff >= 0.5 ? "B" : diff >= -0.5 ? "C" : "D";
+  return diff >= 10 ? "S" : diff >= 6 ? "A" : diff >= 2 ? "B" : diff >= -2 ? "C" : "D";
 };

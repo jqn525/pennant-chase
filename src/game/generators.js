@@ -1,6 +1,6 @@
 // ── Player, roster, rival-team, and draft-class generation ──
 
-import { FIRST, LAST, POSITIONS, TRAITS, BAT_STATS, PIT_STATS, PLAYER_TRAITS, LEAGUE, DRAFT } from "./constants.js";
+import { FIRST, LAST, POSITIONS, TRAITS, BAT_STATS, PIT_STATS, PLAYER_TRAITS, LEAGUE, DRAFT, CREEP } from "./constants.js";
 import { jitter } from "./utils.js";
 
 let uid = 1;
@@ -14,21 +14,21 @@ export const pickTrait = (role) => {
   return pool[(Math.random() * pool.length) | 0].id;
 };
 
-// Potential ceilings: at least +2 headroom over the rolled stat, clustering
-// around +4, hard-capped at league base + 8. Scouts can't teach what isn't there.
-const POT_CAP = () => LEAGUE.statBase + 8;
-export const rollPot = (p, keys, min = 2, spread = 5) => {
+// Potential ceilings: at least +8 headroom over the rolled stat, clustering
+// around +18, hard-capped at 97. Scouts can't teach what isn't there.
+const POT_CAP = () => LEAGUE.statCap - 2; // 97 — perfection stays out of reach
+export const rollPot = (p, keys, min = 8, spread = 20) => {
   const pot = {};
   for (const k of keys) pot[k] = Math.min(p[k] + min + ((Math.random() * spread) | 0), POT_CAP());
   return pot;
 };
-// Veterans acquired in trades have little left to learn: +1..+3
-export const vetPot = (p, keys) => rollPot(p, keys, 1, 3);
+// Veterans acquired in trades have little left to learn: +4..+12
+export const vetPot = (p, keys) => rollPot(p, keys, 4, 9);
 
 export const genBatter = (pos, base) => {
   const p = {
     id: uid++, name: rname(), pos, role: "bat",
-    contact: jitter(base), power: jitter(base), eye: jitter(base), speed: jitter(base), defense: jitter(base),
+    contact: jitter(base, 10), power: jitter(base, 10), eye: jitter(base, 10), speed: jitter(base, 10), defense: jitter(base, 10),
     pull: (Math.random() * 1.2 - 0.6), // negative = pulls left, positive = slices right
     trait: pickTrait("bat"),
   };
@@ -39,7 +39,7 @@ export const genBatter = (pos, base) => {
 export const genPitcher = (pos, base) => {
   const p = {
     id: uid++, name: rname(), pos, role: pos,
-    stuff: jitter(base), control: jitter(base), stamina: jitter(base), defense: jitter(base),
+    stuff: jitter(base, 10), control: jitter(base, 10), stamina: jitter(base, 10), defense: jitter(base, 10),
     trait: pickTrait("pit"),
   };
   p.pot = rollPot(p, PIT_STATS);
@@ -49,7 +49,7 @@ export const genPitcher = (pos, base) => {
 export const genRoster = (base) => ({
   batters: POSITIONS.map((p) => genBatter(p, base)),
   sp: genPitcher("SP", base),
-  rp: genPitcher("RP", Math.max(1, base - 1)),
+  rp: genPitcher("RP", Math.max(40, base - 4)),
 });
 
 // A persistent rival club: fixed name, fixed team trait, roster that lives in
@@ -58,7 +58,7 @@ export const genRoster = (base) => ({
 export const genRivalTeam = (name, traitId, base) => {
   const trait = TRAITS.find((t) => t.id === traitId);
   const m = trait.mod;
-  const b = (k) => Math.max(1, jitter(base) + (m[k] || 0));
+  const b = (k) => Math.min(LEAGUE.statCap, Math.max(40, jitter(base, 10) + (m[k] || 0)));
   return {
     name,
     traitId,
@@ -68,7 +68,7 @@ export const genRivalTeam = (name, traitId, base) => {
       pull: (Math.random() * 1.2 - 0.6),
       trait: pickTrait("bat"),
     })),
-    sp: { id: uid++, name: rname(), pos: "SP", role: "SP", stuff: b("stuff"), control: b("control"), stamina: jitter(base), defense: b("defense"), trait: pickTrait("pit") },
+    sp: { id: uid++, name: rname(), pos: "SP", role: "SP", stuff: b("stuff"), control: b("control"), stamina: jitter(base, 10), defense: b("defense"), trait: pickTrait("pit") },
   };
 };
 
@@ -84,7 +84,7 @@ export const creepRival = (team, points) => {
   for (const k of PIT_STATS) tSpots.push([t.sp, k]);
   for (let i = 0; i < points; i++) {
     const [p, k] = tSpots[(Math.random() * tSpots.length) | 0];
-    p[k] += 1;
+    p[k] = Math.min(LEAGUE.statCap, p[k] + CREEP.bump);
   }
   return t;
 };
@@ -92,7 +92,7 @@ export const creepRival = (team, points) => {
 // The winter draft class: raw rookies with big ceilings. The worse you
 // finished (finish 0 = champs, 7 = cellar), the better the prospects.
 export const genDraftClass = (finish) => {
-  const qBonus = Math.round(finish / 2); // 0..4 extra ceiling spread
+  const qBonus = Math.round(finish / 2) * 4; // worse finish = higher ceilings (new-unit spread)
   const base = LEAGUE.statBase;
   // guarantee at least one arm; the rest random field positions
   const slots = [Math.random() < 0.5 ? "SP" : "RP"];
@@ -100,9 +100,9 @@ export const genDraftClass = (finish) => {
   while (slots.length < DRAFT.classSize) slots.push(shuffled[slots.length - 1]);
   return slots.map((pos) => {
     const isPit = pos === "SP" || pos === "RP";
-    const p = isPit ? genPitcher(pos, Math.max(1, base - 1)) : genBatter(pos, Math.max(1, base - 1));
-    // rookies re-roll ceilings HIGH: +4..(+7+quality), capped
-    p.pot = rollPot(p, isPit ? PIT_STATS : BAT_STATS, 4, 4 + qBonus);
+    const p = isPit ? genPitcher(pos, base - 4) : genBatter(pos, base - 4);
+    // rookies re-roll ceilings HIGH: +16..(+31+quality), capped at 97
+    p.pot = rollPot(p, isPit ? PIT_STATS : BAT_STATS, 16, 16 + qBonus);
     const keys = isPit ? PIT_STATS : BAT_STATS;
     const headroom = keys.reduce((n, k) => n + (p.pot[k] - base), 0) / keys.length;
     p.signCost = Math.max(DRAFT.signBase, Math.round(DRAFT.signBase + headroom * DRAFT.signPerPot));

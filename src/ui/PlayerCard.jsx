@@ -36,7 +36,7 @@ export default function PlayerCard({ player, isOwn, onClose, money, league, stat
           <span style={{ fontSize: 12, color: "#5B6B5F", fontWeight: 700 }}>{player.pos}</span>
           {isStar?.(player) && <StarIcon size={14} color="#B8860B" />}
           <span style={{ marginLeft: "auto", fontFamily: SLAB, fontSize: 22, color: C.green }}>
-            {ovr(player).toFixed(1)}<span style={{ fontSize: 9, letterSpacing: 1 }}> OVR</span>
+            {ovr(player).toFixed(0)}<span style={{ fontSize: 9, letterSpacing: 1 }}> OVR</span>
           </span>
         </div>
 
@@ -60,7 +60,7 @@ export default function PlayerCard({ player, isOwn, onClose, money, league, stat
             const cost = isOwn && trainCost ? trainCost(player, k) : 0;
             const ok = isOwn && money >= cost && !peaked;
             const bonus = gearBonus(player, k);
-            const scale = league.statBase + 8;
+            const scale = league.statBase + 32;
             const pct = (v) => `${Math.min(100, (v / scale) * 100)}%`;
             const inner = (
               <>
@@ -133,7 +133,7 @@ export default function PlayerCard({ player, isOwn, onClose, money, league, stat
                     <span style={{ color: rarityColor[item.rarity], fontWeight: 700 }}>{item.name}</span>
                     <span style={{ letterSpacing: 1 }}> · {RARITY[item.rarity]?.name}</span> ·{" "}
                     {Object.entries(item.boosts).map(([st, n], i) => (
-                      <span key={st} style={{ color: n > 0 ? C.grass : C.red }}>{i > 0 ? " · " : ""}{n > 0 ? "+" : ""}{n} {st}</span>
+                      <span key={st} style={{ color: n > 0 ? C.grass : C.red }}>{i > 0 ? " · " : ""}{n > 0 ? "+" : ""}{n}% {st}</span>
                     ))}
                   </>
                 ) : (
@@ -168,7 +168,7 @@ export default function PlayerCard({ player, isOwn, onClose, money, league, stat
                   <div key={team.name} style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 0", fontSize: 11, borderBottom: `1px solid ${C.greenLine}33` }}>
                     <span style={{ flex: 1, minWidth: 0 }}>
                       <span style={{ fontWeight: 600 }}>{quote.them.name}</span>
-                      <span style={{ color: C.creamDim }}> · {team.name} · OVR {ovr(quote.them).toFixed(1)}{t ? ` · ${t.label}` : ""}</span>
+                      <span style={{ color: C.creamDim }}> · {team.name} · OVR {ovr(quote.them).toFixed(0)}{t ? ` · ${t.label}` : ""}</span>
                     </span>
                     <span style={{ fontSize: 10, color: quote.cash > 0 ? C.red : C.grass, whiteSpace: "nowrap" }}>
                       {quote.cash > 0 ? `pay $${fmt(quote.cash)}` : `get $${fmt(-quote.cash)}`}

@@ -33,7 +33,7 @@ export default function RosterTab({ roster, stat, isStar, onMoveBatter, onAutoLi
               {p.name}{isStar(p) && <StarIcon />}
             </span>
             {trait && <span style={{ fontSize: 8, letterSpacing: 1, color: C.amber, border: `1px solid ${C.amber}44`, borderRadius: 3, padding: "1px 4px", whiteSpace: "nowrap" }}>{trait.label.toUpperCase()}</span>}
-            <span style={{ fontSize: 10, color: C.amber }}>OVR {ovr(p).toFixed(1)}</span>
+            <span style={{ fontSize: 10, color: C.amber }}>OVR {ovr(p).toFixed(0)}</span>
           </span>
           <span style={{ display: "block", fontSize: 11, color: C.creamDim, marginLeft: 48, marginTop: 2 }}>
             {p.role === "bat"

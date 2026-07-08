@@ -6,8 +6,8 @@ import { genRivalTeam, creepRival } from "./generators.js";
 import { ovr } from "./gear.js";
 
 // Logistic win probability constants (calibrated against the real engine —
-// see v3-balance sim: engine win% vs mean-OVR gap fits K≈1.3)
-export const QS = { K: 1.3, H: 0.03 };
+// on the 0-100 scale one OVR point is worth K=0.325 of log-odds)
+export const QS = { K: 0.325, H: 0.03 };
 
 export const makeRivals = (base = LEAGUE.statBase) => {
   const traitIds = [...TRAITS.map((t) => t.id)];
@@ -100,7 +100,10 @@ export const ageRoster = (roster) => {
   const age = (p, keys) => {
     const q = { ...p };
     const above = keys.filter((k) => q[k] > LEAGUE.statBase);
-    if (above.length) q[above[(Math.random() * above.length) | 0]] -= 1;
+    if (above.length) {
+      const k = above[(Math.random() * above.length) | 0];
+      q[k] = Math.max(LEAGUE.statBase, q[k] - (2 + ((Math.random() * 4) | 0))); // lose 2-5 points
+    }
     return q;
   };
   const BAT = ["contact", "power", "eye", "speed", "defense"];

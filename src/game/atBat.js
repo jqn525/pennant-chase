@@ -14,18 +14,18 @@ export function resolveAtBat(batter, pitcher, fielders, fence, base = 5, sit = {
 
   // Personality traits: situational and stylistic tweaks on top of raw stats
   const bT = batter.trait, pT = pitcher.trait;
-  const clutchOn = bT === "clutch" && sit.runnersOn ? 1.5 : 0;
+  const clutchOn = bT === "clutch" && sit.runnersOn ? 6 : 0;
   const bContact = batter.contact + clutchOn;
   const bEye = batter.eye + clutchOn;
   const pStuff = pitcher.stuff
-    + (pT === "fireballer" ? 1.5 : 0) + (pT === "painter" ? -1 : 0)
-    + (pT === "iceman" && sit.runnersOn ? 1.5 : 0);
-  const pControl = pitcher.control + (pT === "painter" ? 1.5 : 0) + (pT === "fireballer" ? -1 : 0);
+    + (pT === "fireballer" ? 6 : 0) + (pT === "painter" ? -4 : 0)
+    + (pT === "iceman" && sit.runnersOn ? 6 : 0);
+  const pControl = pitcher.control + (pT === "painter" ? 6 : 0) + (pT === "fireballer" ? -4 : 0);
   const kAdj = (bT === "freeSwinger" ? 0.035 : 0) + (bT === "contactArtist" ? -0.03 : 0);
   const carryAdj = (bT === "freeSwinger" ? 0.05 : 0) + (bT === "contactArtist" ? -0.04 : 0);
 
-  const kChance = clamp(0.14 + base * 0.012 + rel(pStuff) * 0.030 - rel(bContact) * 0.020 - rel(bEye) * 0.008 + kAdj, 0.06, 0.5);
-  const bbChance = clamp(0.085 + rel(bEye) * 0.022 - rel(pControl) * 0.020, 0.02, 0.22);
+  const kChance = clamp(0.212 + rel(pStuff) * 0.0075 - rel(bContact) * 0.005 - rel(bEye) * 0.002 + kAdj, 0.06, 0.5);
+  const bbChance = clamp(0.085 + rel(bEye) * 0.0055 - rel(pControl) * 0.005, 0.02, 0.22);
   const r = Math.random();
   if (r < kChance) return { type: "K", text: `strikes out swinging.` };
   if (r < kChance + bbChance) return { type: "BB", text: `works a walk.` };
@@ -57,8 +57,8 @@ export function resolveAtBat(batter, pitcher, fielders, fence, base = 5, sit = {
     const carry = launch === "ground"
       ? 0.12 + gauss() * 0.5
       : launch === "liner"
-        ? 0.34 + carryAdj + pow * 0.035 + gauss() * 0.6
-        : 0.46 + carryAdj + base * 0.006 + pow * 0.04 + gauss() * 0.7;
+        ? 0.34 + carryAdj + pow * 0.00875 + gauss() * 0.6
+        : 0.496 + carryAdj + pow * 0.01 + gauss() * 0.7;
     const dist = carry * fenceHere;
 
     if (launch !== "ground" && dist > fenceHere) {
@@ -77,20 +77,20 @@ export function resolveAtBat(batter, pitcher, fielders, fence, base = 5, sit = {
     const fielder = fielders.find((f) => f.pos === fielderPos) || fielders[0];
 
     // Contact skill makes harder-to-field contact; defense converts chances.
-    const fDef = fielder.defense + (fielder.trait === "glovework" ? 1.5 : 0);
+    const fDef = fielder.defense + (fielder.trait === "glovework" ? 6 : 0);
     const catchBase = launch === "ground" ? (infield ? 0.78 : 0.45) : launch === "fly" ? (infield ? 0.93 : 0.82) : 0.32;
-    const catchChance = clamp(catchBase + rel(fDef) * 0.025 - rel(bContact) * 0.022, 0.05, 0.97);
+    const catchChance = clamp(catchBase + rel(fDef) * 0.00625 - rel(bContact) * 0.0055, 0.05, 0.97);
     const desc = launch === "ground" ? "grounder" : launch === "liner" ? "sharp liner" : "fly ball";
 
     if (Math.random() < catchChance) {
       // Even routine plays get booted now and then — sure hands boot fewer
-      const errChance = clamp(0.025 - rel(fDef) * 0.006, 0.004, 0.07);
+      const errChance = clamp(0.025 - rel(fDef) * 0.0015, 0.004, 0.07);
       if (Math.random() < errChance) {
         return { type: "E", text: `hits a ${desc} ${deg}° ${side} — ${fielder.name} (${fielderPos}) boots it! Error, everybody safe.`, spray, dist, launch };
       }
       // Ground ball, force at second, fewer than two outs: chance to turn two
       if (launch === "ground" && infield && sit.forceOn1 && sit.outs < 2) {
-        const dpChance = clamp(0.5 + rel(fDef) * 0.03, 0.2, 0.8);
+        const dpChance = clamp(0.5 + rel(fDef) * 0.0075, 0.2, 0.8);
         if (Math.random() < dpChance) {
           return { type: "DP", text: `raps a grounder ${deg}° ${side} — ${fielder.name} (${fielderPos}) starts it, around the horn, TWO!`, spray, dist, launch };
         }
@@ -99,12 +99,12 @@ export function resolveAtBat(batter, pitcher, fielders, fence, base = 5, sit = {
     }
 
     // It's a hit. Bases from depth + speed.
-    const spd = rel(batter.speed + (bT === "burner" ? 1.5 : 0));
+    const spd = rel(batter.speed + (bT === "burner" ? 6 : 0));
     const deep = dist > fenceHere * 0.78;
     const gapper = dist > fenceHere * 0.6 && launch !== "ground";
     let bases = 1;
-    if (deep && Math.random() < 0.14 + spd * 0.04) bases = 3;
-    else if ((gapper && Math.random() < 0.7) || Math.random() < 0.05 + spd * 0.02) bases = 2;
+    if (deep && Math.random() < 0.14 + spd * 0.01) bases = 3;
+    else if ((gapper && Math.random() < 0.7) || Math.random() < 0.05 + spd * 0.005) bases = 2;
     const call = bases === 3 ? "it rolls to the wall — TRIPLE!" : bases === 2 ? `past ${fielder.name} — stand-up double.` : `drops in front of ${fielder.name} (${fielderPos}) for a single.`;
     return { type: "HIT", bases, text: `laces a ${desc} ${deg}° ${side}, ${dist.toFixed(0)} ft — ${call}`, spray, dist, launch };
   }

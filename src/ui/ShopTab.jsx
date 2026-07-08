@@ -19,7 +19,7 @@ const Boosts = ({ boosts }) => (
     {Object.entries(boosts).map(([s, n], i) => (
       <span key={s} style={{ color: n > 0 ? C.grass : C.red, fontWeight: 600 }}>
         {i > 0 && <span style={{ color: C.creamDim }}> · </span>}
-        {n > 0 ? "+" : ""}{n} {s.toUpperCase()}
+        {n > 0 ? "+" : ""}{n}% {s.toUpperCase()}
       </span>
     ))}
   </span>

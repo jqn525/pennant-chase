@@ -49,19 +49,41 @@ if (SAVED?.roster) {
   seedUid(Math.max(...everyone.map((p) => p.id)) + 1);
 
   // Migrate older saves: backfill potentials + traits, convert tier gear to items
+  const oldScale = SAVED.scale !== 100;
+  const toNew = (v) => Math.min(LEAGUE.statCap, v * 4 + 41); // old 1-14 scale -> 0-100 (avg 6 -> 65), capped
   const upgrade = (p, withPot) => {
     const keys = p.role === "bat" ? BAT_STATS : PIT_STATS;
+    if (oldScale) {
+      for (const k of keys) p[k] = toNew(p[k]);
+      if (p.pot) for (const k of keys) p.pot[k] = toNew(p.pot[k]);
+      if (p.signCost) p.signCost = Math.round(p.signCost); // draft rookies keep price
+    }
     if (withPot && !p.pot) p.pot = rollPot(p, keys);
     if (!p.trait) p.trait = pickTrait(p.role === "bat" ? "bat" : "pit");
     if (p.gear) for (const def of GEAR) {
-      const t = p.gear[def.slot];
-      if (typeof t === "number") {
-        p.gear[def.slot] = { id: `legacy-${p.id}-${def.slot}`, slot: def.slot, rarity: t, name: `Old Faithful ${def.label}`, boosts: { [def.stat]: t }, cost: 0 };
+      const item = p.gear[def.slot];
+      if (typeof item === "number") {
+        p.gear[def.slot] = { id: `legacy-${p.id}-${def.slot}`, slot: def.slot, rarity: item, name: `Old Faithful ${def.label}`, boosts: { [def.stat]: item * 5 }, cost: 0 };
+      } else if (oldScale && item?.boosts) {
+        // flat point boosts become percentages: +1/+2/+3 -> 5/10/15%, ±1 secondary -> ±4%
+        for (const st in item.boosts) {
+          const n = item.boosts[st];
+          item.boosts[st] = Math.abs(n) >= 4 ? n : n > 0 ? n * 5 : n === -1 ? -4 : n * 5;
+        }
       }
     }
   };
   [...SAVED.roster.batters, SAVED.roster.sp, SAVED.roster.rp].forEach((p) => upgrade(p, true));
   (SAVED.rivals || []).forEach((r) => [...r.batters, r.sp].forEach((p) => upgrade(p, false)));
+  (SAVED.draftClass || []).forEach((p) => upgrade(p, true));
+  if (oldScale && SAVED.shopItems) {
+    for (const item of SAVED.shopItems) {
+      for (const st in item.boosts) {
+        const n = item.boosts[st];
+        item.boosts[st] = n > 0 && n <= 3 ? n * 5 : n === -1 ? -4 : n;
+      }
+    }
+  }
 }
 
 export default function App() {
@@ -117,7 +139,7 @@ export default function App() {
     const s = S.current;
     if (!s.city) return;
     localStorage.setItem(SAVE_KEY, JSON.stringify({
-      version: 3, lastSeen: Date.now(),
+      version: 3, scale: 100, lastSeen: Date.now(),
       city: s.city, money: s.money, fans: s.fans, roster: s.roster, merch: s.merch, tv: s.tv,
       seasonStats: s.seasonStats, shopItems: s.shopItems, draftClass: s.draftClass, form: s.form,
       year: s.year, phase: s.phase, rivals: s.rivals, schedule: s.schedule, rivalDays: s.rivalDays,
@@ -414,7 +436,7 @@ export default function App() {
 
   // ── GM actions (all apply from the NEXT game — the live game uses a snapshot) ──
   const trainCost = (p, key) => {
-    let c = ECON.trainBase * Math.pow(1.5, p[key]);
+    let c = ECON.trainBase * Math.pow(1.5, (p[key] - 41) / 4);
     if (cityBonus("train")) c *= 0.85;
     return Math.ceil(c);
   };
