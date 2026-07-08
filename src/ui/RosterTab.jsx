@@ -1,7 +1,8 @@
 // ── Roster tab: batting order and season stat tables. Tap any player for his card. ──
 
 import { C, PLAYER_TRAITS } from "../game/constants.js";
-import { panel, btn } from "./styles.js";
+import { btn } from "./styles.js";
+import Panel from "./Panel.jsx";
 import { StarIcon } from "./Icons.jsx";
 import StatTable from "./StatTable.jsx";
 import { ovr } from "../game/gear.js";
@@ -53,22 +54,19 @@ export default function RosterTab({ roster, stat, isStar, onMoveBatter, onAutoLi
 
   return (
     <div>
-      <div style={{ ...panel, padding: 12, marginTop: 2 }}>
+      <Panel title="BATTING ORDER" style={{ marginTop: 6 }}>
         <div style={{ display: "flex", alignItems: "center", marginBottom: 8, gap: 8 }}>
-          <span style={{ fontSize: 10, color: C.creamDim, letterSpacing: 2 }}>
-            BATTING ORDER · tap a player for his card
+          <span style={{ fontSize: 10, color: C.creamDim, fontStyle: "italic" }}>
+            Tap a player for his card. Order changes apply next game.
           </span>
           <button onClick={onAutoLineup}
             style={{ ...btn(true), marginLeft: "auto", fontSize: 10, letterSpacing: 1, padding: "5px 8px" }}>
             AUTO-SET ORDER
           </button>
         </div>
-        <div style={{ fontSize: 10, color: C.creamDim, fontStyle: "italic", marginBottom: 8 }}>
-          Order changes take effect from the next game.
-        </div>
         {roster.batters.map((p, i) => row(p, i + 1))}
         {[roster.sp, roster.rp].map((p) => row(p, null))}
-      </div>
+      </Panel>
 
       <StatTable
         title="BATTING · this season · tap a row for the player card"

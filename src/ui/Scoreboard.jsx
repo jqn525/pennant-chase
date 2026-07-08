@@ -3,7 +3,7 @@
 import { C, LEAGUE } from "../game/constants.js";
 import { fmt } from "../game/utils.js";
 import { panel, bulb, MONO, SLAB } from "./styles.js";
-import { CoinIcon, FansIcon, StarIcon, TrophyIcon, RulebookIcon, PlayIcon, PauseIcon } from "./Icons.jsx";
+import { CoinIcon, FansIcon, StarIcon, TrophyIcon, RulebookIcon, PlayIcon, PauseIcon, SoundOnIcon, SoundOffIcon } from "./Icons.jsx";
 
 const BOARD_BG = "#0A1810";
 
@@ -20,7 +20,7 @@ function Cell({ label, icon, value, flex = "1 1 0" }) {
   );
 }
 
-export default function Scoreboard({ city, year, record, money, fans, talent, trophies, form, phase, playoffs, gameIndex, series, onHelp, speed, paused, onSetSpeed, onTogglePause }) {
+export default function Scoreboard({ city, year, record, money, fans, talent, trophies, form, phase, playoffs, gameIndex, series, onHelp, speed, paused, sound, onSetSpeed, onTogglePause, onToggleSound }) {
   // Where are we in the season?
   let ticker;
   if (phase === "draft") {
@@ -86,6 +86,10 @@ export default function Scoreboard({ city, year, record, money, fans, talent, tr
               </button>
             );
           })}
+          <button onClick={onToggleSound} aria-label={sound ? "mute" : "unmute"}
+            style={{ width: 44, display: "flex", alignItems: "center", justifyContent: "center", padding: "7px 0", background: "transparent", border: `1px solid ${C.greenLine}`, borderRadius: 4, cursor: "pointer" }}>
+            {sound ? <SoundOnIcon size={13} color={C.cream} /> : <SoundOffIcon size={13} />}
+          </button>
         </div>
       </div>
     </div>

@@ -10,9 +10,11 @@ import { genRoster, seedUid, genDraftClass, vetPot, rollPot, pickTrait } from ".
 import { newGame, stepAtBat, playGameInstant, settleGame } from "./game/engine.js";
 import { makeRivals, makeSchedule, teamRating, quickSim, simSeries, seedOrder, runOffseason, ageRoster, seriesInfo } from "./game/season.js";
 import { eff, isStar, talentGrade, genShipment, playerValue, GEAR } from "./game/gear.js";
+import { sfx, play } from "./game/sfx.js";
+import TabBar from "./ui/TabBar.jsx";
 import DraftBoard from "./ui/DraftBoard.jsx";
 import PlayerCard from "./ui/PlayerCard.jsx";
-import { tabBtn, globalCss, MONO } from "./ui/styles.js";
+import { globalCss, MONO } from "./ui/styles.js";
 import Scoreboard from "./ui/Scoreboard.jsx";
 import CitySelect from "./ui/CitySelect.jsx";
 import Rulebook from "./ui/Rulebook.jsx";
@@ -110,6 +112,8 @@ export default function App() {
   const [trophies, setTrophies] = useState(SAVED?.trophies ?? 0);
   const [speed, setSpeed] = useState(SAVED?.speed ?? 1);
   const [paused, setPaused] = useState(false);
+  const [sound, setSound] = useState(SAVED?.sound ?? true);
+  sfx.enabled = sound;
 
   // ── UI state ──
   const [cardId, setCardId] = useState(null); // player card pop-up
@@ -126,7 +130,7 @@ export default function App() {
 
   // Fresh-state mirror so interval callbacks never read stale closures
   const S = useRef({});
-  S.current = { city, money, fans, roster, merch, tv, seasonStats, shopItems, draftClass, form, year, phase, rivals, schedule, rivalDays, gameIndex, standings, playoffs, history, trophies, speed };
+  S.current = { city, money, fans, roster, merch, tv, seasonStats, shopItems, draftClass, form, year, phase, rivals, schedule, rivalDays, gameIndex, standings, playoffs, history, trophies, speed, sound };
 
   const cityBonus = (k) => (city?.bonus === k);
 
@@ -144,10 +148,10 @@ export default function App() {
       seasonStats: s.seasonStats, shopItems: s.shopItems, draftClass: s.draftClass, form: s.form,
       year: s.year, phase: s.phase, rivals: s.rivals, schedule: s.schedule, rivalDays: s.rivalDays,
       gameIndex: s.gameIndex, standings: s.standings, playoffs: s.playoffs,
-      history: s.history, trophies: s.trophies, speed: s.speed,
+      history: s.history, trophies: s.trophies, speed: s.speed, sound: s.sound,
     }));
   }, []);
-  useEffect(() => { saveNow(); }, [city, money, fans, roster, merch, tv, seasonStats, shopItems, draftClass, form, year, phase, rivals, schedule, rivalDays, gameIndex, standings, playoffs, history, trophies, speed, saveNow]);
+  useEffect(() => { saveNow(); }, [city, money, fans, roster, merch, tv, seasonStats, shopItems, draftClass, form, year, phase, rivals, schedule, rivalDays, gameIndex, standings, playoffs, history, trophies, speed, sound, saveNow]);
   useEffect(() => {
     const iv = setInterval(() => { if (!document.hidden) saveNow(); }, 20000);
     return () => clearInterval(iv);
@@ -254,6 +258,7 @@ export default function App() {
     });
     setMoney((m) => m + res.moneyDelta);
     if (res.fansDelta) setFans((f) => f + res.fansDelta);
+    if (res.won && s.speed !== "max") play.cash();
     pushLog(res.text, res.kind);
     flushStats(g);
     setForm((f) => [...f, res.won ? "W" : "L"].slice(-10));
@@ -315,6 +320,7 @@ export default function App() {
     }
     if (p.wins.us >= need && p.round === "final") {
       pushLog(`— PENNANT CUP CHAMPIONS — ${s.city.name} take the final ${p.wins.us}-${p.wins.them}. $${fmt(ECON.cupPay)} and the parade lasts three days.`, "win");
+      play.fanfare();
       return offseason(0, true);
     }
     // we lost the series
@@ -405,7 +411,12 @@ export default function App() {
     const g = gameRef.current;
     const ev = [];
     stepAtBat(g, ctxRef.current, ev);
-    ev.forEach((e) => pushLog(e.text, e.kind, e.side, e.team));
+    ev.forEach((e) => {
+      pushLog(e.text, e.kind, e.side, e.team);
+      if (e.kind === "hr") play.homer();
+      else if (e.text.includes("boots it")) play.thud();
+      else if (/laces|stand-up double|TRIPLE|drops in front/.test(e.text)) play.crack();
+    });
     flushStats(g);
     if (g.over) settle(g);
   };
@@ -448,6 +459,7 @@ export default function App() {
       if (money < cost) return r;
       if (p[key] >= (p.pot?.[key] ?? Infinity)) return r; // peaked — nothing left to teach
       setMoney((m) => m - cost);
+      play.click();
       const upd = (o) => (o.id === pid ? { ...o, [key]: o[key] + 1 } : o);
       return { batters: r.batters.map(upd), sp: upd(r.sp), rp: upd(r.rp) };
     });
@@ -484,6 +496,7 @@ export default function App() {
     const upd = (o) => (o.id === pid ? { ...o, gear: { ...(o.gear || {}), [item.slot]: item } } : o);
     setRoster((r) => ({ ...r, batters: r.batters.map(upd), sp: upd(r.sp), rp: upd(r.rp) }));
     pushLog(`${p.name} equips ${item.name} (${boostText(item)}) — live from the next game.`, "win");
+    play.cash();
   };
 
   // ── Trades: position-for-position swaps with a rival club ──
@@ -518,6 +531,7 @@ export default function App() {
         : { ...team, sp: p })));
     const name = rivals[rivalIdx].name;
     pushLog(`TRADE: ${p.name} goes to the ${name} for ${q.name}${quote.cash > 0 ? ` plus $${fmt(quote.cash)} in considerations` : quote.cash < 0 ? ` — the ${name} throw in $${fmt(-quote.cash)}` : ""}. Gear travels with the players.`, "win");
+    play.cash();
   };
 
   // ── Draft day ──
@@ -535,6 +549,7 @@ export default function App() {
       return { ...r, batters: r.batters.map((b) => (b.pos === rook.pos ? signed : b)) };
     });
     pushLog(`SIGNED: ${rook.name} (${rook.pos}) for $${fmt(rook.signCost)}. ${released ? `${released.name} is released — his gear stays in the locker.` : ""}`, "win");
+    play.cash();
   };
   const closeDraft = () => {
     setDraftClass(null);
@@ -610,7 +625,7 @@ export default function App() {
   if (!city) return <CitySelect onPick={foundClub} onRestore={restoreBackup} />;
 
   return (
-    <div style={{ minHeight: "100dvh", background: C.green, color: C.cream, fontFamily: MONO, padding: "calc(12px + env(safe-area-inset-top)) calc(12px + env(safe-area-inset-right)) calc(12px + env(safe-area-inset-bottom)) calc(12px + env(safe-area-inset-left))", boxSizing: "border-box" }}>
+    <div style={{ minHeight: "100dvh", background: C.green, color: C.cream, fontFamily: MONO, padding: "calc(12px + env(safe-area-inset-top)) calc(12px + env(safe-area-inset-right)) calc(76px + env(safe-area-inset-bottom)) calc(12px + env(safe-area-inset-left))", boxSizing: "border-box" }}>
       <style>{globalCss}</style>
 
       {showHelp && <Rulebook onClose={() => setShowHelp(false)} />}
@@ -621,19 +636,14 @@ export default function App() {
           city={city} year={year} record={standings[0]} money={money} fans={fans}
           talent={roster ? talentGrade(roster) : "—"} trophies={trophies} form={form}
           phase={phase} playoffs={playoffs} gameIndex={gameIndex} series={series}
-          speed={speed} paused={paused}
+          speed={speed} paused={paused} sound={sound}
           onSetSpeed={(sp) => { setSpeed(sp); setPaused(false); }}
           onTogglePause={() => setPaused((p) => !p)}
+          onToggleSound={() => setSound((v) => !v)}
           onHelp={() => setShowHelp(true)}
         />
 
-        {/* Tabs */}
-        <div style={{ display: "flex", gap: 6, marginTop: 14 }}>
-          {[["game", "BALLPARK"], ["roster", "ROSTER"], ["shop", "SHOP"], ["club", "FRONT OFFICE"]].map(([id, label]) => (
-            <button key={id} onClick={() => setTab(id)} style={tabBtn(tab === id)}>{label}</button>
-          ))}
-        </div>
-
+        <div key={tab} style={{ animation: "screenIn .18s ease-out" }}>
         {cardView && (
           <PlayerCard
             player={cardView.player} isOwn={cardView.isOwn} onClose={() => setCardId(null)}
@@ -678,7 +688,9 @@ export default function App() {
             getBackupCode={getBackupCode} onRestore={restoreBackup}
           />
         )}
+        </div>
       </div>
+      <TabBar tab={tab} onTab={(id) => { setTab(id); play.click(); }} />
     </div>
   );
 }

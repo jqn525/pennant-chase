@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { C, ECON } from "../game/constants.js";
 import { fmt } from "../game/utils.js";
-import { panel, btn } from "./styles.js";
+import { btn } from "./styles.js";
+import Panel from "./Panel.jsx";
 import { CoinIcon, FansIcon, TrophyIcon } from "./Icons.jsx";
 
 export default function FrontOfficeTab({ roster, city, fans, money, merch, tv, isStar, history, trophies, onBuyMerch, onBuyTv, onNewFranchise, getBackupCode, onRestore }) {
@@ -28,8 +29,7 @@ export default function FrontOfficeTab({ roster, city, fans, money, merch, tv, i
   return (
     <div style={{ display: "flex", flexWrap: "wrap", gap: 14, marginTop: 2 }}>
       <div style={{ flex: "1 1 300px", minWidth: 280 }}>
-        <div style={{ ...panel, padding: 12 }}>
-          <div style={{ fontSize: 10, color: C.creamDim, letterSpacing: 2, marginBottom: 8 }}>REVENUE STREAMS</div>
+        <Panel title="REVENUE" style={{ marginTop: 6 }}>
           <button onClick={onBuyMerch} style={{ ...btn(!merch && money >= ECON.merchCost && fans >= ECON.merchFans), width: "100%", marginBottom: 6 }}>
             <span style={{ fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}><CoinIcon /> Merch stand {merch ? "· OPEN" : ""}</span>
             {!merch && <div style={{ fontSize: 10, color: C.creamDim }}>${ECON.merchCost} + {ECON.merchFans} fans. Sells every second — even while you're away (capped at {ECON.offlineCapHours}h). Stars sell more.</div>}
@@ -39,21 +39,17 @@ export default function FrontOfficeTab({ roster, city, fans, money, merch, tv, i
             <span style={{ fontWeight: 600 }}>Regional TV deal {tv ? "· SIGNED" : ""}</span>
             {!tv && <div style={{ fontSize: 10, color: C.creamDim }}>${fmt(ECON.tvCost)} · requires a merch stand and {fmt(ECON.tvFans)} fans. Doubles passive income.</div>}
           </button>
-        </div>
-        <div style={{ ...panel, padding: 12, marginTop: 14, fontSize: 12, lineHeight: 1.8 }}>
-          <div style={{ fontSize: 10, color: C.creamDim, letterSpacing: 2, marginBottom: 8 }}>THE CLUB</div>
+        </Panel>
+        <Panel title="THE CLUB" style={{ fontSize: 12, lineHeight: 1.8 }}>
           <span style={{ display: "flex", alignItems: "center", gap: 6 }}><FansIcon /> {fmt(fans)} fans in {city.name}</span>
           City edge: {city.label}
-        </div>
+        </Panel>
       </div>
 
       <div style={{ flex: "1 1 300px", minWidth: 280 }}>
-        <div style={{ ...panel, padding: 12 }}>
-          <div style={{ fontSize: 10, color: C.creamDim, letterSpacing: 2, marginBottom: 8 }}>
-            <span style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-              <span>TROPHY CASE · {trophies} PENNANT CUP{trophies === 1 ? "" : "S"}</span>
-              {Array.from({ length: Math.min(trophies, 10) }, (_, i) => <TrophyIcon key={i} size={13} />)}
-            </span>
+        <Panel title="TROPHY CASE" titleRight={`${trophies} CUP${trophies === 1 ? "" : "S"}`} style={{ marginTop: 6 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap", marginBottom: trophies ? 8 : 0 }}>
+            {Array.from({ length: Math.min(trophies, 12) }, (_, i) => <TrophyIcon key={i} size={15} />)}
           </div>
           {history.length === 0 ? (
             <div style={{ fontSize: 11, color: C.creamDim }}>No completed seasons yet. History is written every winter.</div>
@@ -80,12 +76,11 @@ export default function FrontOfficeTab({ roster, city, fans, money, merch, tv, i
               </table>
             </div>
           )}
-        </div>
+        </Panel>
       </div>
 
       <div style={{ flex: "1 1 100%" }}>
-        <div style={{ ...panel, padding: 12 }}>
-          <div style={{ fontSize: 10, color: C.creamDim, letterSpacing: 2, marginBottom: 6 }}>SAVE FILE</div>
+        <Panel title="SAVE FILE">
           <div style={{ fontSize: 11, color: C.creamDim, marginBottom: 8 }}>
             Your franchise auto-saves on this device. Close the browser any time — the season waits for you (only the merch stand keeps selling).
           </div>
@@ -126,7 +121,7 @@ export default function FrontOfficeTab({ roster, city, fans, money, merch, tv, i
             style={{ ...btn(true), border: `1px solid ${C.red}`, color: C.red }}>
             {armed ? "Are you sure? Tap again to erase everything" : "Sell the club — start a new franchise"}
           </button>
-        </div>
+        </Panel>
       </div>
     </div>
   );

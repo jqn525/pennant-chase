@@ -59,6 +59,53 @@ export const PauseIcon = ({ size = 12, color = C.cream }) => (
   </svg>
 );
 
+// Bottom navigation icons
+export const DiamondNavIcon = ({ size = 20, color = C.cream }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <rect x="7.5" y="7.5" width="9" height="9" transform="rotate(45 12 12)" stroke={color} strokeWidth="1.8" strokeLinejoin="round" />
+    <circle cx="12" cy="12" r="1.4" fill={color} />
+  </svg>
+);
+
+export const RosterNavIcon = ({ size = 20, color = C.cream }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <circle cx="9" cy="8" r="3.2" stroke={color} strokeWidth="1.8" />
+    <path d="M3.5 19c.4-3.4 2.6-5.4 5.5-5.4s5.1 2 5.5 5.4" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
+    <circle cx="17" cy="9.5" r="2.4" stroke={color} strokeWidth="1.6" />
+    <path d="M16 13.8c2.4.2 4 1.8 4.4 4.4" stroke={color} strokeWidth="1.6" strokeLinecap="round" />
+  </svg>
+);
+
+export const ShopNavIcon = ({ size = 20, color = C.cream }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <path d="M4 10.5 12 3l8 7.5V20a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z" stroke={color} strokeWidth="1.8" strokeLinejoin="round" />
+    <path d="M9 21v-6h6v6" stroke={color} strokeWidth="1.8" strokeLinejoin="round" />
+    <path d="M8 8.5h8" stroke={color} strokeWidth="1.4" strokeLinecap="round" />
+  </svg>
+);
+
+export const OfficeNavIcon = ({ size = 20, color = C.cream }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <rect x="5" y="4" width="14" height="17" stroke={color} strokeWidth="1.8" strokeLinejoin="round" />
+    <path d="M9 8h2M13 8h2M9 12h2M13 12h2M9 16h2M13 16h2" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
+    <path d="M10.5 21v-3h3v3" stroke={color} strokeWidth="1.5" />
+  </svg>
+);
+
+export const SoundOnIcon = ({ size = 12, color = C.cream }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <path d="M4 9v6h4l5 4V5L8 9z" fill={color} />
+    <path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" stroke={color} strokeWidth="1.7" strokeLinecap="round" />
+  </svg>
+);
+
+export const SoundOffIcon = ({ size = 12, color = C.creamDim }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <path d="M4 9v6h4l5 4V5L8 9z" fill={color} />
+    <path d="M16.5 9.5 21 14M21 9.5 16.5 14" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
+  </svg>
+);
+
 export const RulebookIcon = ({ size = 16, color = C.cream }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
     <path d="M5 4a2 2 0 0 1 2-2h12v18H7a2 2 0 0 0-2 2z" stroke={color} strokeWidth="1.8" strokeLinejoin="round" />

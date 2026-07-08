@@ -42,4 +42,6 @@ export const globalCss = `@import url('https://fonts.googleapis.com/css2?family=
   button:focus-visible { outline: 2px solid ${C.amber}; outline-offset: 2px; }
   @keyframes statPop { 0% { transform: scale(1.7); color: ${C.grass}; } 100% { transform: scale(1); } }
   @keyframes sheetUp { 0% { transform: translateY(36px); opacity: 0; } 100% { transform: translateY(0); opacity: 1; } }
+  @keyframes screenIn { 0% { transform: translateY(12px); opacity: 0; } 100% { transform: translateY(0); opacity: 1; } }
+  button:active { transform: scale(0.96); }
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }`;

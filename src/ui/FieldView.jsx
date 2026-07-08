@@ -1,7 +1,7 @@
 // ── Field view: top-down, to-scale spray chart of every ball in play ──
 
 import { C, LEAGUE } from "../game/constants.js";
-import { panel } from "./styles.js";
+import Panel from "./Panel.jsx";
 
 const W = 360, H = 208;
 const HOME = { x: W / 2, y: H - 14 };
@@ -45,10 +45,7 @@ export default function FieldView({ g }) {
   const lastP = last ? pt(last.spray, last.dist) : null;
 
   return (
-    <div style={{ ...panel, padding: 12, marginTop: 10 }}>
-      <div style={{ fontSize: 10, color: C.creamDim, letterSpacing: 2, marginBottom: 6 }}>
-        FIELD VIEW · BALLS IN PLAY THIS GAME
-      </div>
+    <Panel title="FIELD VIEW" titleRight="BALLS IN PLAY">
       <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: "auto", display: "block" }} aria-label="field view">
         {/* outfield grass wash */}
         <polygon points={`${HOME.x},${HOME.y} ${fencePts.join(" ")}`} fill="#1A3627" />
@@ -92,6 +89,6 @@ export default function FieldView({ g }) {
           </span>
         ))}
       </div>
-    </div>
+    </Panel>
   );
 }

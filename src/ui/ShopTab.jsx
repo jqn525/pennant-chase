@@ -6,6 +6,7 @@ import { useState } from "react";
 import { C, RARITY } from "../game/constants.js";
 import { fmt } from "../game/utils.js";
 import { panel, btn } from "./styles.js";
+import Panel from "./Panel.jsx";
 import { ClockIcon } from "./Icons.jsx";
 import { GEAR, GEAR_ART, gearArtUrl } from "../game/gear.js";
 
@@ -31,12 +32,14 @@ export default function ShopTab({ roster, money, shopItems, onBuy, restockNote }
 
   return (
     <div style={{ marginTop: 2 }}>
-      <div style={{ fontSize: 10, color: C.creamDim, letterSpacing: 2, margin: "6px 0 4px" }}>
-        THE PRO SHOP · THIS SHIPMENT ONLY — unbought gear ships out
-      </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: C.amber, letterSpacing: 1, marginBottom: 10 }}>
-        <ClockIcon size={12} /> {restockNote}
-      </div>
+      <Panel title="THE PRO SHOP" titleRight="THIS SHIPMENT ONLY" style={{ marginTop: 6, marginBottom: 12 }}>
+        <div style={{ fontSize: 10, color: C.creamDim, marginBottom: 6 }}>
+          Unbought gear ships out with the next delivery.
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: C.amber, letterSpacing: 1 }}>
+          <ClockIcon size={12} /> {restockNote}
+        </div>
+      </Panel>
 
       {(!shopItems || shopItems.length === 0) && (
         <div style={{ ...panel, padding: 14, fontSize: 12, color: C.creamDim }}>

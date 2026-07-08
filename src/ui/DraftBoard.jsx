@@ -2,7 +2,8 @@
 
 import { C, PLAYER_TRAITS, BAT_STATS, PIT_STATS } from "../game/constants.js";
 import { fmt } from "../game/utils.js";
-import { panel, btn, SLAB } from "./styles.js";
+import { panel, btn, PIXEL } from "./styles.js";
+import Panel from "./Panel.jsx";
 
 export default function DraftBoard({ draftClass, roster, money, year, onSign, onClose, onView }) {
   const releasedFor = (rook) => {
@@ -12,11 +13,7 @@ export default function DraftBoard({ draftClass, roster, money, year, onSign, on
   };
 
   return (
-    <div style={{ ...panel, padding: 14, marginTop: 14, border: `1px solid ${C.amber}` }}>
-      <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 4 }}>
-        <span style={{ fontFamily: SLAB, fontSize: 16, color: C.amber }}>DRAFT DAY</span>
-        <span style={{ fontSize: 10, color: C.creamDim, letterSpacing: 2 }}>THE YEAR {year} ROOKIE CLASS</span>
-      </div>
+    <Panel title="DRAFT DAY" titleRight={`YEAR ${year} CLASS`} style={{ background: C.greenPanel }} bg={C.greenPanel}>
       <div style={{ fontSize: 11, color: C.creamDim, marginBottom: 10 }}>
         Raw kids, big ceilings. Signing one releases your current player at that position —
         the rookie inherits his gear. The season won't start until you close the board.
@@ -39,11 +36,10 @@ export default function DraftBoard({ draftClass, roster, money, year, onSign, on
               {trait && <span style={{ fontSize: 9, letterSpacing: 1, color: C.amber, border: `1px solid ${C.amber}55`, borderRadius: 3, padding: "1px 5px" }}>{trait.label.toUpperCase()}</span>}
               <span style={{ marginLeft: "auto", fontSize: 12, color: afford ? C.amber : C.red, fontVariantNumeric: "tabular-nums" }}>${fmt(rook.signCost)}</span>
             </div>
-            <div style={{ fontSize: 10, color: C.creamDim, margin: "5px 0 6px", lineHeight: 1.7 }}>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 4, margin: "6px 0" }}>
               {keys.map((k) => (
-                <span key={k} style={{ marginRight: 10, whiteSpace: "nowrap" }}>
-                  {k} <span style={{ color: C.cream }}>{rook[k]}</span>
-                  <span style={{ color: C.grass }}>→{rook.pot[k]}</span>
+                <span key={k} style={{ whiteSpace: "nowrap", fontSize: 9, color: C.creamDim, border: `1px solid ${C.greenLine}`, borderRadius: 3, padding: "2px 5px" }}>
+                  {k} <span style={{ color: C.cream, fontWeight: 600 }}>{rook[k]}</span><span style={{ color: C.grass }}>→{rook.pot[k]}</span>
                 </span>
               ))}
             </div>
@@ -59,9 +55,9 @@ export default function DraftBoard({ draftClass, roster, money, year, onSign, on
         );
       })}
 
-      <button onClick={onClose} style={{ ...btn(true), width: "100%", textAlign: "center", fontFamily: SLAB, fontSize: 13, marginTop: 4 }}>
+      <button onClick={onClose} style={{ ...btn(true), width: "100%", textAlign: "center", fontFamily: PIXEL, fontSize: 10, padding: "12px 0", marginTop: 4, letterSpacing: 1 }}>
         CLOSE THE BOARD — PLAY BALL
       </button>
-    </div>
+    </Panel>
   );
 }
