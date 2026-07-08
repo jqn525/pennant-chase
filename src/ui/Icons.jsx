@@ -39,6 +39,26 @@ export const TrophyIcon = ({ size = 12, color = C.amber }) => (
   </svg>
 );
 
+export const ClockIcon = ({ size = 12, color = C.amber }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <circle cx="12" cy="12" r="9" stroke={color} strokeWidth="2" />
+    <path d="M12 7v5l3.5 2.5" stroke={color} strokeWidth="2" strokeLinecap="round" />
+  </svg>
+);
+
+export const PlayIcon = ({ size = 12, color = C.cream }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill={color} aria-hidden="true">
+    <path d="M7 4.5v15l13-7.5z" />
+  </svg>
+);
+
+export const PauseIcon = ({ size = 12, color = C.cream }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill={color} aria-hidden="true">
+    <rect x="6" y="4.5" width="4" height="15" rx="1" />
+    <rect x="14" y="4.5" width="4" height="15" rx="1" />
+  </svg>
+);
+
 export const RulebookIcon = ({ size = 16, color = C.cream }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
     <path d="M5 4a2 2 0 0 1 2-2h12v18H7a2 2 0 0 0-2 2z" stroke={color} strokeWidth="1.8" strokeLinejoin="round" />

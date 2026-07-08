@@ -6,6 +6,7 @@ import { useState } from "react";
 import { C, RARITY } from "../game/constants.js";
 import { fmt } from "../game/utils.js";
 import { panel, btn } from "./styles.js";
+import { ClockIcon } from "./Icons.jsx";
 import { GEAR, GEAR_ART, gearArtUrl } from "../game/gear.js";
 
 const rarityStyle = {
@@ -33,8 +34,8 @@ export default function ShopTab({ roster, money, shopItems, onBuy, restockNote }
       <div style={{ fontSize: 10, color: C.creamDim, letterSpacing: 2, margin: "6px 0 4px" }}>
         THE PRO SHOP · THIS SHIPMENT ONLY — unbought gear ships out
       </div>
-      <div style={{ fontSize: 11, color: C.amber, letterSpacing: 1, marginBottom: 10 }}>
-        ⏱ {restockNote}
+      <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: C.amber, letterSpacing: 1, marginBottom: 10 }}>
+        <ClockIcon size={12} /> {restockNote}
       </div>
 
       {(!shopItems || shopItems.length === 0) && (

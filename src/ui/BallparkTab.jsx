@@ -4,6 +4,7 @@ import { useState } from "react";
 import { C, LEAGUE } from "../game/constants.js";
 import { panel, btn, bulb } from "./styles.js";
 import StatTable from "./StatTable.jsx";
+import { PlayIcon, PauseIcon } from "./Icons.jsx";
 import FieldView from "./FieldView.jsx";
 
 const abbrev = (name) => name.slice(0, 3).toUpperCase();
@@ -117,7 +118,7 @@ export default function BallparkTab({ g, city, year, phase, playoffs, gameIndex,
           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", height: 34 }}>
             <button onClick={onTogglePause}
               style={{ ...btn(true), width: 52, textAlign: "center", padding: "8px 0", border: `1px solid ${paused ? C.amber : C.greenLine}`, background: paused ? "#3A2E10" : "transparent", color: paused ? C.amber : C.creamDim }}>
-              {paused ? "▶" : "❚❚"}
+              {paused ? <PlayIcon size={13} color={C.amber} /> : <PauseIcon size={13} color={C.creamDim} />}
             </button>
             {speedBtn(1, "1×")}
             {speedBtn(4, "4×")}

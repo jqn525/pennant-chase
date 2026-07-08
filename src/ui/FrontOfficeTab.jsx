@@ -4,7 +4,7 @@ import { useState } from "react";
 import { C, ECON } from "../game/constants.js";
 import { fmt } from "../game/utils.js";
 import { panel, btn } from "./styles.js";
-import { CoinIcon, FansIcon } from "./Icons.jsx";
+import { CoinIcon, FansIcon, TrophyIcon } from "./Icons.jsx";
 
 export default function FrontOfficeTab({ roster, city, fans, money, merch, tv, isStar, history, trophies, onBuyMerch, onBuyTv, onNewFranchise, getBackupCode, onRestore }) {
   const [armed, setArmed] = useState(false);
@@ -50,7 +50,10 @@ export default function FrontOfficeTab({ roster, city, fans, money, merch, tv, i
       <div style={{ flex: "1 1 300px", minWidth: 280 }}>
         <div style={{ ...panel, padding: 12 }}>
           <div style={{ fontSize: 10, color: C.creamDim, letterSpacing: 2, marginBottom: 8 }}>
-            TROPHY CASE · {trophies} PENNANT CUP{trophies === 1 ? "" : "S"} {trophies > 0 ? "🏆".repeat(Math.min(trophies, 10)) : ""}
+            <span style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+              <span>TROPHY CASE · {trophies} PENNANT CUP{trophies === 1 ? "" : "S"}</span>
+              {Array.from({ length: Math.min(trophies, 10) }, (_, i) => <TrophyIcon key={i} size={13} />)}
+            </span>
           </div>
           {history.length === 0 ? (
             <div style={{ fontSize: 11, color: C.creamDim }}>No completed seasons yet. History is written every winter.</div>
@@ -68,7 +71,7 @@ export default function FrontOfficeTab({ roster, city, fans, money, merch, tv, i
                   {[...history].reverse().map((h) => (
                     <tr key={h.year} style={{ color: h.cup ? C.amber : C.cream, fontWeight: h.cup ? 600 : 400, borderBottom: `1px solid ${C.greenLine}33` }}>
                       <td style={{ padding: "4px 6px" }}>{h.year}</td>
-                      <td style={{ padding: "4px 6px", textAlign: "right", whiteSpace: "nowrap" }}>{h.champion}{h.cup ? " 🏆" : ""}</td>
+                      <td style={{ padding: "4px 6px", textAlign: "right", whiteSpace: "nowrap" }}>{h.champion}{h.cup && <TrophyIcon size={11} />}</td>
                       <td style={{ padding: "4px 6px", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{h.playerRecord}</td>
                       <td style={{ padding: "4px 6px", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{h.finish}{["st", "nd", "rd"][h.finish - 1] || "th"}</td>
                     </tr>
@@ -92,7 +95,7 @@ export default function FrontOfficeTab({ roster, city, fans, money, merch, tv, i
           </div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
             <button onClick={copyBackup} style={{ ...btn(true) }}>
-              {copied ? "✓ Copied to clipboard" : "Copy backup code"}
+              {copied ? "Copied to clipboard" : "Copy backup code"}
             </button>
             <button onClick={() => { setRestoreOpen((o) => !o); setRestoreErr(null); }} style={{ ...btn(true) }}>
               Restore from a code
