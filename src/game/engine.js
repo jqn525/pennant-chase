@@ -6,7 +6,7 @@
 
 import { resolveAtBat } from "./atBat.js";
 import { eff } from "./gear.js";
-import { LEAGUE, ECON, gateMult } from "./constants.js";
+import { LEAGUE, ECON } from "./constants.js";
 
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 
@@ -235,24 +235,41 @@ export function playGameInstant(g, ctx) {
 }
 
 // Money and fans for a finished game. Pure — caller applies the deltas.
-export function settleGame(g, { fans, gateBonus, floorBonus, fansBonus, cityName, playoff }) {
+// formWins = wins in the last-10 form BEFORE this game; streak = trailing
+// consecutive wins before this game. Attendance is a share of the fan base:
+// 30% for a cold club up to 60% when the form is hot; playoffs sell out.
+export function settleGame(g, { fans, gateBonus, floorBonus, fansBonus, cityName, playoff, formWins = 0, streak = 0 }) {
   const won = g.us > g.them;
-  let moneyDelta, fansDelta = 0, text, kind;
+  let fansDelta = 0, kind;
   const score = won ? `${cityName} ${g.us}, ${g.opp.name} ${g.them}` : `${g.opp.name} ${g.them}, ${cityName} ${g.us}`;
-  if (playoff) {
-    moneyDelta = won ? ECON.playoffWinPay : LEAGUE.payFloor;
-    text = `FINAL (${playoff}): ${score}.${won ? ` Playoff gate: $${ECON.playoffWinPay}.` : ""}`;
-    kind = won ? "win" : "out";
-  } else if (won) {
-    moneyDelta = LEAGUE.payWin * gateMult(fans) * (gateBonus ? 1.25 : 1);
+
+  const rate = playoff ? 1 : Math.min(0.6, 0.3 + 0.03 * formWins);
+  const attendance = Math.round(Math.min(fans, ECON.attCap) * rate);
+  let gate = attendance * ECON.ticketPrice * (gateBonus ? 1.25 : 1);
+  gate += won ? ECON.gateWinBase : ECON.gateLossBase * (floorBonus ? 2 : 1);
+
+  let streakNote = "";
+  if (won) {
     fansDelta = LEAGUE.fansPerWin + g.hrUs * 2;
+    const run = streak + 1; // including this win
+    if (run >= 3) {
+      const mult = Math.min(ECON.streakMax, 1 + ECON.streakStep * (run - 2));
+      fansDelta = Math.round(fansDelta * mult);
+      streakNote = ` ${run} straight — the bandwagon rolls, +${fansDelta} fans!`;
+    }
     if (fansBonus) fansDelta = Math.round(fansDelta * 1.25);
-    text = `FINAL: ${score}. Gate receipts $${Math.round(moneyDelta)}, +${fansDelta} fans.`;
     kind = "win";
   } else {
-    moneyDelta = LEAGUE.payFloor * (floorBonus ? 2 : 1) + fans * 0.02;
-    text = `FINAL: ${score}. The faithful still show up — $${Math.round(moneyDelta)} at the gate.`;
     kind = "out";
+  }
+
+  let moneyDelta = gate;
+  let text;
+  if (playoff) {
+    if (won) moneyDelta += ECON.playoffWinPay;
+    text = `FINAL (${playoff}): ${score}. Sellout crowd of ${attendance} — gate $${Math.round(moneyDelta)}.`;
+  } else {
+    text = `FINAL: ${score}. ${attendance} in the seats — gate $${Math.round(gate)}.${won && !streakNote ? ` +${fansDelta} fans.` : ""}${streakNote}`;
   }
   return { won, moneyDelta, fansDelta, text, kind };
 }

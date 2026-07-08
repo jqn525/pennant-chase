@@ -4,7 +4,7 @@
 // the pure simulation lives in src/game/ and the screens in src/ui/.
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { C, LEAGUE, ECON, gateMult } from "./game/constants.js";
+import { C, LEAGUE, ECON } from "./game/constants.js";
 import { fmt } from "./game/utils.js";
 import { genRoster, seedUid } from "./game/generators.js";
 import { newGame, stepAtBat, playGameInstant, settleGame } from "./game/engine.js";
@@ -205,9 +205,12 @@ export default function App() {
     g.settled = true;
     const s = S.current;
     const playoffLabel = s.phase === "playoffs" ? (s.playoffs.round === "semi" ? "SEMIS" : "CUP") : null;
+    let streak = 0;
+    for (let i = s.form.length - 1; i >= 0 && s.form[i] === "W"; i--) streak++;
     const res = settleGame(g, {
       fans: s.fans, gateBonus: cityBonus("gate"), floorBonus: cityBonus("floor"),
       fansBonus: cityBonus("fans"), cityName: s.city.name, playoff: playoffLabel,
+      formWins: s.form.filter((f) => f === "W").length, streak,
     });
     setMoney((m) => m + res.moneyDelta);
     if (res.fansDelta) setFans((f) => f + res.fansDelta);

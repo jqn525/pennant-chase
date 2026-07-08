@@ -42,13 +42,9 @@ export const LEAGUE = {
   playoffTeams: 4,
   fenceCorner: 330,
   fenceCenter: 410,
-  payWin: 60,    // × gateMult(fans)
-  payFloor: 20,  // + fans × 0.02
-  fansPerWin: 8, // + 2 per HR
+  payWin: 60,    // legacy anchor: gear prices key off this
+  fansPerWin: 8, // + 2 per HR, streaks multiply it
 };
-
-// Gate multiplier from fan base, capped so income plateaus instead of running away
-export const gateMult = (fans) => 1 + Math.min(fans, 2000) / 1000;
 
 // The seven clubs you will battle forever
 export const RIVAL_NAMES = ["River Cats", "Mudhens", "Growlers", "Steel", "Bisons", "Copperheads", "Night Owls"];
@@ -56,6 +52,15 @@ export const RIVAL_NAMES = ["River Cats", "Mudhens", "Growlers", "Steel", "Bison
 export const ECON = {
   startMoney: 200,
   startFans: 25,
+  // Ticket sales: attendance = fans × (30% cold … 60% hot, by last-10 form),
+  // capped; playoff games sell out. Gate = base + attendance × ticketPrice.
+  ticketPrice: 0.11,
+  gateWinBase: 45,   // winners sell concessions
+  gateLossBase: 15,  // the diehards' floor
+  attCap: 2500,      // biggest crowd the old yard can hold
+  // Hot streaks: 3+ straight wins draw bandwagon fans, up to double growth
+  streakStep: 0.15,
+  streakMax: 2,
   playoffWinPay: 500,     // per playoff game won
   semisSeriesPay: 1500,   // winning a semifinal series
   cupPay: 10000,          // winning the Pennant Cup
