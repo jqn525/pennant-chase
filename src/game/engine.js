@@ -35,7 +35,8 @@ export function stepAtBat(g, ctx, events) {
   let pitcher;
   if (weBat) pitcher = eff(g.opp.sp);
   else {
-    const limit = 8 + ctx.sp.stamina * 2; // stamina has no gear item
+    // gear side-effects can touch stamina; workhorses go ~6 batters deeper
+    const limit = 8 + eff(ctx.sp).stamina * 2 + (ctx.sp.trait === "workhorse" ? 6 : 0);
     if (!g.usingRP && g.spFaced >= limit) {
       g.usingRP = true;
       emit(`${ctx.sp.name} is gassed after ${g.spFaced} batters. ${ctx.rp.name} jogs in from the pen.`, "sys");
@@ -61,7 +62,8 @@ export function stepAtBat(g, ctx, events) {
 
   // Wild pitch: with runners aboard, a low-Control arm sometimes lets one go.
   // Consumes the moment — the at-bat continues next tick.
-  if (g.bases.some(Boolean) && Math.random() < clamp(0.018 - (pitcher.control - ctx.statBase) * 0.004, 0.004, 0.05)) {
+  const wpControl = pitcher.control + (pitcher.trait === "painter" ? 1.5 : 0) + (pitcher.trait === "fireballer" ? -1 : 0);
+  if (g.bases.some(Boolean) && Math.random() < clamp(0.018 - (wpControl - ctx.statBase) * 0.004, 0.004, 0.05)) {
     const third = g.bases[2];
     if (third) {
       weBat ? g.us++ : g.them++;
@@ -80,7 +82,7 @@ export function stepAtBat(g, ctx, events) {
     ? [...g.opp.batters, { ...g.opp.sp }]
     : [...ctx.batters, { ...(g.usingRP ? ctx.rp : ctx.sp) }]).map(eff);
 
-  const out = resolveAtBat(batter, pitcher, fielders, ctx.fence, ctx.statBase, { forceOn1: !!g.bases[0], outs: g.outs });
+  const out = resolveAtBat(batter, pitcher, fielders, ctx.fence, ctx.statBase, { forceOn1: !!g.bases[0], outs: g.outs, runnersOn: g.bases.some(Boolean) });
   const who = `${batter.name} (${batter.pos})`;
 
   // Field view: record where the ball landed

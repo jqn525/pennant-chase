@@ -4,12 +4,13 @@
 // the pure simulation lives in src/game/ and the screens in src/ui/.
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { C, LEAGUE, ECON } from "./game/constants.js";
+import { C, LEAGUE, ECON, TRADE, BAT_STATS, PIT_STATS } from "./game/constants.js";
 import { fmt } from "./game/utils.js";
-import { genRoster, seedUid } from "./game/generators.js";
+import { genRoster, seedUid, genDraftClass, vetPot, rollPot, pickTrait } from "./game/generators.js";
 import { newGame, stepAtBat, playGameInstant, settleGame } from "./game/engine.js";
 import { makeRivals, makeSchedule, teamRating, quickSim, simSeries, seedOrder, runOffseason, ageRoster } from "./game/season.js";
-import { eff, isStar, talentGrade, gearCost, freshStock, GEAR, TIER_NAMES } from "./game/gear.js";
+import { eff, isStar, talentGrade, genShipment, playerValue, GEAR } from "./game/gear.js";
+import DraftBoard from "./ui/DraftBoard.jsx";
 import { tabBtn, globalCss, MONO } from "./ui/styles.js";
 import Scoreboard from "./ui/Scoreboard.jsx";
 import CitySelect from "./ui/CitySelect.jsx";
@@ -45,6 +46,21 @@ if (SAVED?.roster) {
     ...(SAVED.rivals || []).map((r) => [...r.batters, r.sp]),
   ].flat();
   seedUid(Math.max(...everyone.map((p) => p.id)) + 1);
+
+  // Migrate older saves: backfill potentials + traits, convert tier gear to items
+  const upgrade = (p, withPot) => {
+    const keys = p.role === "bat" ? BAT_STATS : PIT_STATS;
+    if (withPot && !p.pot) p.pot = rollPot(p, keys);
+    if (!p.trait) p.trait = pickTrait(p.role === "bat" ? "bat" : "pit");
+    if (p.gear) for (const def of GEAR) {
+      const t = p.gear[def.slot];
+      if (typeof t === "number") {
+        p.gear[def.slot] = { id: `legacy-${p.id}-${def.slot}`, slot: def.slot, rarity: t, name: `Old Faithful ${def.label}`, boosts: { [def.stat]: t }, cost: 0 };
+      }
+    }
+  };
+  [...SAVED.roster.batters, SAVED.roster.sp, SAVED.roster.rp].forEach((p) => upgrade(p, true));
+  (SAVED.rivals || []).forEach((r) => [...r.batters, r.sp].forEach((p) => upgrade(p, false)));
 }
 
 export default function App() {
@@ -56,7 +72,8 @@ export default function App() {
   const [merch, setMerch] = useState(SAVED?.merch ?? false);
   const [tv, setTv] = useState(SAVED?.tv ?? false);
   const [seasonStats, setSeasonStats] = useState(SAVED?.seasonStats ?? {});
-  const [shopStock, setShopStock] = useState(SAVED?.shopStock ?? freshStock());
+  const [shopItems, setShopItems] = useState(SAVED?.shopItems ?? genShipment()); // current shipment
+  const [draftClass, setDraftClass] = useState(SAVED?.draftClass ?? null); // winter rookies awaiting signatures
   const [form, setForm] = useState(SAVED?.form ?? []);
   const [year, setYear] = useState(SAVED?.year ?? 1);
   const [phase, setPhase] = useState(SAVED?.phase ?? "regular");
@@ -86,7 +103,7 @@ export default function App() {
 
   // Fresh-state mirror so interval callbacks never read stale closures
   const S = useRef({});
-  S.current = { city, money, fans, roster, merch, tv, seasonStats, shopStock, form, year, phase, rivals, schedule, rivalDays, gameIndex, standings, playoffs, history, trophies, speed };
+  S.current = { city, money, fans, roster, merch, tv, seasonStats, shopItems, draftClass, form, year, phase, rivals, schedule, rivalDays, gameIndex, standings, playoffs, history, trophies, speed };
 
   const cityBonus = (k) => (city?.bonus === k);
 
@@ -101,13 +118,13 @@ export default function App() {
     localStorage.setItem(SAVE_KEY, JSON.stringify({
       version: 3, lastSeen: Date.now(),
       city: s.city, money: s.money, fans: s.fans, roster: s.roster, merch: s.merch, tv: s.tv,
-      seasonStats: s.seasonStats, shopStock: s.shopStock, form: s.form,
+      seasonStats: s.seasonStats, shopItems: s.shopItems, draftClass: s.draftClass, form: s.form,
       year: s.year, phase: s.phase, rivals: s.rivals, schedule: s.schedule, rivalDays: s.rivalDays,
       gameIndex: s.gameIndex, standings: s.standings, playoffs: s.playoffs,
       history: s.history, trophies: s.trophies, speed: s.speed,
     }));
   }, []);
-  useEffect(() => { saveNow(); }, [city, money, fans, roster, merch, tv, seasonStats, shopStock, form, year, phase, rivals, schedule, rivalDays, gameIndex, standings, playoffs, history, trophies, speed, saveNow]);
+  useEffect(() => { saveNow(); }, [city, money, fans, roster, merch, tv, seasonStats, shopItems, draftClass, form, year, phase, rivals, schedule, rivalDays, gameIndex, standings, playoffs, history, trophies, speed, saveNow]);
   useEffect(() => {
     const iv = setInterval(() => { if (!document.hidden) saveNow(); }, 20000);
     return () => clearInterval(iv);
@@ -242,8 +259,15 @@ export default function App() {
     const s = S.current;
     if (!s.roster || !s.rivals || !s.schedule) return;
 
+    if (s.phase === "draft") return; // the board is open — the league waits
+
     if (s.phase === "regular") {
       if (s.gameIndex >= LEAGUE.seasonGames) return enterPlayoffs();
+      // fresh shipment at the shop whenever a new series begins
+      if (s.gameIndex > 0) {
+        const prev = s.schedule[s.gameIndex - 1], next = s.schedule[s.gameIndex];
+        if (prev.opp !== next.opp || prev.home !== next.home) restock(false);
+      }
       return startNextGame();
     }
 
@@ -263,6 +287,7 @@ export default function App() {
         round: "final", opp: finalOppIdx, wins: { us: 0, them: 0 }, gameNo: 0,
         weAreHigherSeed: order.indexOf(0) < order.indexOf(finalOppIdx),
       });
+      restock(false); // new round, new shelves
       return;
     }
     if (p.wins.us >= need && p.round === "final") {
@@ -297,6 +322,7 @@ export default function App() {
         otherWinner, weAreHigherSeed: mySeed < order.indexOf(oppIdx),
       });
       setPhase("playoffs");
+      restock(false);
     } else {
       const top = order.slice(0, 4);
       const w1 = simSeries(ratings[top[0]], ratings[top[3]], 5) ? top[0] : top[3];
@@ -307,14 +333,23 @@ export default function App() {
     }
   };
 
+  // Fresh shelves at the shop. Mega = the winter catalog (rare & legendary only).
+  const restock = (mega) => {
+    const items = genShipment(6, mega ? { 1: 0, 2: 60, 3: 40 } : null);
+    setShopItems(items);
+    const legendary = items.filter((i) => i.rarity === 3).map((i) => i.name);
+    pushLog(`— NEW SHIPMENT at the Pro Shop${mega ? ": THE WINTER CATALOG" : ""} —${legendary.length ? ` including ${legendary.join(" and ")}!` : ""}`, "sys");
+  };
+
   const offseason = (championIdx, playerCup) => {
     const s = S.current;
     const ratings = ratingsNow();
     const order = seedOrder(s.standings, ratings);
+    const mySeed = order.indexOf(0);
     const off = runOffseason({
       year: s.year, rivals: s.rivals, standings: s.standings, ratings,
       championIdx, championName: championIdx === 0 ? s.city.name : s.rivals[championIdx - 1].name,
-      playerSeed: order.indexOf(0), playerCup,
+      playerSeed: mySeed, playerCup,
       record: { w: s.standings[0].w, l: s.standings[0].l },
       fans: s.fans, history: s.history, trophies: s.trophies,
     });
@@ -331,12 +366,15 @@ export default function App() {
     setTrophies(off.trophies);
     setSeasonStats({});
     setForm([]);
-    setShopStock(freshStock());
     setYear(off.year);
-    setPhase("regular");
     gameRef.current = null;
     off.logs.forEach((l) => pushLog(l.text, l.kind));
     pushLog(`Winter takes its toll — every player loses a step. Train, shop, and reload.`, "sys");
+    restock(true);
+    // The draft board opens; the league waits for your signatures
+    setDraftClass(genDraftClass(mySeed));
+    setPhase("draft");
+    pushLog(`— DRAFT DAY — this winter's rookie class is on the board at the Ballpark. The season waits for your signatures.`, "win");
   };
 
   // ── One live at-bat (1x / 4x speeds) ──
@@ -385,6 +423,7 @@ export default function App() {
       const p = all.find((x) => x.id === pid);
       const cost = trainCost(p, key);
       if (money < cost) return r;
+      if (p[key] >= (p.pot?.[key] ?? Infinity)) return r; // peaked — nothing left to teach
       setMoney((m) => m - cost);
       const upd = (o) => (o.id === pid ? { ...o, [key]: o[key] + 1 } : o);
       return { batters: r.batters.map(upd), sp: upd(r.sp), rp: upd(r.rp) };
@@ -407,18 +446,77 @@ export default function App() {
     pushLog("Skipper sets the lineup by the numbers — best bats up top. Applies from the next game.", "sys");
   };
 
-  const buyGear = (pid, slot, gearTier) => {
-    const item = GEAR.find((i) => i.slot === slot);
+  const boostText = (item) =>
+    Object.entries(item.boosts).map(([s, n]) => `${n > 0 ? "+" : ""}${n} ${s}`).join(", ");
+
+  const buyGear = (pid, itemId) => {
+    const item = shopItems.find((i) => i.id === itemId);
+    const def = item && GEAR.find((d) => d.slot === item.slot);
     const all = [...roster.batters, roster.sp, roster.rp];
     const p = all.find((x) => x.id === pid);
-    const cost = gearCost(gearTier);
-    const owned = p?.gear?.[slot] ?? 0;
-    if (!item || !p || money < cost || gearTier <= owned || (shopStock[slot]?.[gearTier] ?? 0) < 1) return;
-    setMoney((m) => m - cost);
-    setShopStock((s) => ({ ...s, [slot]: { ...s[slot], [gearTier]: s[slot][gearTier] - 1 } }));
-    const upd = (o) => (o.id === pid ? { ...o, gear: { ...(o.gear || {}), [slot]: gearTier } } : o);
+    if (!item || !p || money < item.cost) return;
+    if ((def.role === "bat") !== (p.role === "bat")) return; // right kind of player
+    setMoney((m) => m - item.cost);
+    setShopItems((s) => s.filter((i) => i.id !== itemId));
+    const upd = (o) => (o.id === pid ? { ...o, gear: { ...(o.gear || {}), [item.slot]: item } } : o);
     setRoster((r) => ({ ...r, batters: r.batters.map(upd), sp: upd(r.sp), rp: upd(r.rp) }));
-    pushLog(`${p.name} breaks in ${TIER_NAMES[gearTier]} ${item.label}. +${gearTier} ${item.stat} from the next game.`, "win");
+    pushLog(`${p.name} equips ${item.name} (${boostText(item)}) — live from the next game.`, "win");
+  };
+
+  // ── Trades: position-for-position swaps with a rival club ──
+  const tradeCounterpart = (p, rivalIdx) => {
+    const team = rivals?.[rivalIdx];
+    if (!team) return null;
+    if (p.role === "bat") return team.batters.find((b) => b.pos === p.pos) || null;
+    return p.pos === "SP" ? team.sp : null; // rivals carry no reliever
+  };
+  const tradeQuote = (p, rivalIdx) => {
+    const q = tradeCounterpart(p, rivalIdx);
+    if (!q) return null;
+    const diff = playerValue(q, TRADE.valuePerOvr) - playerValue(p, TRADE.valuePerOvr);
+    const cash = Math.round((diff > 0 ? diff * TRADE.buyPremium : diff * TRADE.sellDiscount) + TRADE.fee);
+    return { them: q, cash }; // cash > 0: you pay; cash < 0: they pay you
+  };
+  const makeTrade = (myPid, rivalIdx) => {
+    const all = [...roster.batters, roster.sp, roster.rp];
+    const p = all.find((x) => x.id === myPid);
+    const quote = p && tradeQuote(p, rivalIdx);
+    if (!p || !quote || money < quote.cash) return;
+    const q = quote.them;
+    // veterans arrive with little headroom left — you trade for now, draft for later
+    const incoming = { ...q, pot: vetPot(q, p.role === "bat" ? BAT_STATS : PIT_STATS) };
+    setMoney((m) => m - quote.cash);
+    setRoster((r) => (p.role === "bat"
+      ? { ...r, batters: r.batters.map((b) => (b.id === myPid ? incoming : b)) }
+      : { ...r, sp: incoming }));
+    setRivals((rv) => rv.map((team, i) => (i !== rivalIdx ? team
+      : p.role === "bat"
+        ? { ...team, batters: team.batters.map((b) => (b.id === q.id ? p : b)) }
+        : { ...team, sp: p })));
+    const name = rivals[rivalIdx].name;
+    pushLog(`TRADE: ${p.name} goes to the ${name} for ${q.name}${quote.cash > 0 ? ` plus $${fmt(quote.cash)} in considerations` : quote.cash < 0 ? ` — the ${name} throw in $${fmt(-quote.cash)}` : ""}. Gear travels with the players.`, "win");
+  };
+
+  // ── Draft day ──
+  const signRookie = (rid) => {
+    const rook = draftClass?.find((p) => p.id === rid);
+    if (!rook || money < rook.signCost) return;
+    const isPit = rook.pos === "SP" || rook.pos === "RP";
+    const released = isPit ? (rook.pos === "SP" ? roster.sp : roster.rp) : roster.batters.find((b) => b.pos === rook.pos);
+    setMoney((m) => m - rook.signCost);
+    setDraftClass((dc) => dc.filter((p) => p.id !== rid));
+    setRoster((r) => {
+      const signed = { ...rook, gear: released?.gear }; // the kid inherits the locker
+      if (rook.pos === "SP") return { ...r, sp: signed };
+      if (rook.pos === "RP") return { ...r, rp: signed };
+      return { ...r, batters: r.batters.map((b) => (b.pos === rook.pos ? signed : b)) };
+    });
+    pushLog(`SIGNED: ${rook.name} (${rook.pos}) for $${fmt(rook.signCost)}. ${released ? `${released.name} is released — his gear stays in the locker.` : ""}`, "win");
+  };
+  const closeDraft = () => {
+    setDraftClass(null);
+    setPhase("regular");
+    pushLog(`The draft board closes. Opening Day of Year ${year} — play ball.`, "sys");
   };
 
   const buyMerch = () => {
@@ -488,6 +586,11 @@ export default function App() {
           ))}
         </div>
 
+        {tab === "game" && phase === "draft" && draftClass && (
+          <DraftBoard draftClass={draftClass} roster={roster} money={money} year={year}
+            onSign={signRookie} onClose={closeDraft} />
+        )}
+
         {tab === "game" && (
           <BallparkTab
             g={g} city={city} year={year} phase={phase} playoffs={playoffs}
@@ -499,7 +602,7 @@ export default function App() {
         )}
 
         {tab === "shop" && roster && (
-          <ShopTab roster={roster} money={money} shopStock={shopStock} onBuy={buyGear} />
+          <ShopTab roster={roster} money={money} shopItems={shopItems} onBuy={buyGear} />
         )}
 
         {tab === "roster" && roster && (
@@ -507,6 +610,7 @@ export default function App() {
             roster={roster} league={LEAGUE} selected={selected} selectedId={selectedId} onSelect={setSelectedId}
             stat={stat} isStar={isStar} money={money} trainCost={trainCost} onTrain={train}
             onMoveBatter={moveBatter} onAutoLineup={autoLineup}
+            rivals={rivals} tradeQuote={tradeQuote} onTrade={makeTrade}
           />
         )}
 

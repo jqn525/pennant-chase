@@ -43,7 +43,9 @@ export default function BallparkTab({ g, city, year, phase, playoffs, gameIndex,
 
   // Status line: where are we in the season?
   let statusLeft;
-  if (phase === "playoffs" && playoffs) {
+  if (phase === "draft") {
+    statusLeft = "DRAFT DAY";
+  } else if (phase === "playoffs" && playoffs) {
     statusLeft = `${playoffs.round === "semi" ? "SEMIFINAL" : "PENNANT CUP"} · SERIES ${playoffs.wins.us}-${playoffs.wins.them}`;
   } else {
     statusLeft = `GAME ${Math.min(gameIndex + (g && !g.over ? 1 : 0), LEAGUE.seasonGames) || 1}/${LEAGUE.seasonGames}`;

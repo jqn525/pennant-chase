@@ -1,84 +1,93 @@
-// ── Pro Shop tab: buy equipment for individual players, RPG style ──
-// Limited stock per season (3 Standard / 2 Pro / 1 Elite of each item);
-// the shelves restock every offseason.
+// ── Pro Shop tab: a rotating shipment of procedurally generated gear ──
+// New assortment every series; unbought stock vanishes. Rarities: COMMON,
+// RARE, LEGENDARY. Items boost their slot's stat and may carry a side-effect.
 
 import { useState } from "react";
-import { C } from "../game/constants.js";
+import { C, RARITY } from "../game/constants.js";
 import { fmt } from "../game/utils.js";
 import { panel, btn } from "./styles.js";
-import { GEAR, TIER_NAMES, gearCost } from "../game/gear.js";
+import { GEAR } from "../game/gear.js";
 
-export default function ShopTab({ roster, money, shopStock, onBuy }) {
-  const [pick, setPick] = useState(null); // {slot, tier} — armed item awaiting a player
+const rarityStyle = {
+  1: { color: C.creamDim, glow: "none" },
+  2: { color: C.amber, glow: "none" },
+  3: { color: C.red, glow: `0 0 8px ${C.red}66` },
+};
 
-  const itemCard = (item) => {
-    const stock = shopStock?.[item.slot] || {};
-    const players = item.role === "bat" ? roster.batters : [roster.sp, roster.rp];
-    return (
-      <div key={item.slot} style={{ ...panel, padding: 12, marginBottom: 10 }}>
-        <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-          <span style={{ fontWeight: 600, fontSize: 13 }}>{item.label}</span>
-          <span style={{ fontSize: 11, color: C.grass }}>boosts {item.stat}</span>
-          <span style={{ fontSize: 10, color: C.creamDim, marginLeft: "auto" }}>{item.flavor}</span>
-        </div>
-        <div style={{ display: "flex", gap: 6, marginTop: 8, flexWrap: "wrap" }}>
-          {[1, 2, 3].map((t) => {
-            const left = stock[t] ?? 0;
-            const cost = gearCost(t);
-            const armed = pick && pick.slot === item.slot && pick.tier === t;
-            const ok = left > 0;
-            return (
-              <button key={t} onClick={() => ok && setPick(armed ? null : { slot: item.slot, tier: t })}
-                style={{ ...btn(ok), flex: "1 1 90px", textAlign: "center", border: `1px solid ${armed ? C.amber : C.greenLine}`, background: armed ? "#3A2E10" : "transparent", color: ok ? C.cream : C.creamDim }}>
-                <span style={{ display: "block", fontWeight: 600, fontSize: 11 }}>{TIER_NAMES[t]} +{t}</span>
-                <span style={{ display: "block", fontSize: 11, color: ok ? C.amber : C.creamDim }}>${fmt(cost)}</span>
-                <span style={{ display: "block", fontSize: 9, color: left ? C.creamDim : C.red, letterSpacing: 1 }}>
-                  {left > 0 ? `${left} LEFT` : "SOLD OUT"}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-        {pick && pick.slot === item.slot && (
-          <div style={{ marginTop: 8, borderTop: `1px solid ${C.greenLine}`, paddingTop: 8 }}>
-            <div style={{ fontSize: 10, color: C.creamDim, letterSpacing: 2, marginBottom: 6 }}>
-              OUTFIT A PLAYER · {TIER_NAMES[pick.tier]} {item.label} · ${fmt(gearCost(pick.tier))}
-            </div>
-            {players.map((p) => {
-              const owned = p.gear?.[item.slot] ?? 0;
-              const cost = gearCost(pick.tier);
-              const can = owned < pick.tier && money >= cost;
-              return (
-                <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "3px 0", fontSize: 12 }}>
-                  <span style={{ width: 26, color: C.creamDim }}>{p.pos}</span>
-                  <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontWeight: 600 }}>{p.name}</span>
-                  <span style={{ fontSize: 10, color: owned ? C.grass : C.creamDim }}>
-                    {owned ? `${TIER_NAMES[owned]} owned` : `${item.stat} ${p[item.stat]}`}
-                  </span>
-                  {owned >= pick.tier
-                    ? <span style={{ fontSize: 10, color: C.creamDim, width: 74, textAlign: "center" }}>OWNED</span>
-                    : <button onClick={() => can && onBuy(p.id, item.slot, pick.tier)}
-                        style={{ ...btn(can), width: 74, textAlign: "center", fontSize: 10, padding: "5px 0" }}>
-                        {owned ? "UPGRADE" : "BUY"}
-                      </button>}
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-    );
-  };
+const Boosts = ({ boosts }) => (
+  <span>
+    {Object.entries(boosts).map(([s, n], i) => (
+      <span key={s} style={{ color: n > 0 ? C.grass : C.red, fontWeight: 600 }}>
+        {i > 0 && <span style={{ color: C.creamDim }}> · </span>}
+        {n > 0 ? "+" : ""}{n} {s.toUpperCase()}
+      </span>
+    ))}
+  </span>
+);
+
+export default function ShopTab({ roster, money, shopItems, onBuy }) {
+  const [pickId, setPickId] = useState(null); // armed item awaiting a player
 
   return (
     <div style={{ marginTop: 2 }}>
       <div style={{ fontSize: 10, color: C.creamDim, letterSpacing: 2, margin: "6px 0 10px" }}>
-        THE PRO SHOP · one of each slot per player · higher tier replaces lower · shelves restock every offseason
+        THE PRO SHOP · THIS SHIPMENT ONLY — new stock every series · unbought gear ships out
       </div>
-      <div style={{ fontSize: 10, color: C.dirt, letterSpacing: 2, marginBottom: 6 }}>BATTER GEAR</div>
-      {GEAR.filter((i) => i.role === "bat").map(itemCard)}
-      <div style={{ fontSize: 10, color: C.dirt, letterSpacing: 2, margin: "14px 0 6px" }}>PITCHER GEAR</div>
-      {GEAR.filter((i) => i.role === "pit").map(itemCard)}
+
+      {(!shopItems || shopItems.length === 0) && (
+        <div style={{ ...panel, padding: 14, fontSize: 12, color: C.creamDim }}>
+          The shelves are bare — a new shipment arrives with the next series.
+        </div>
+      )}
+
+      {(shopItems || []).map((item) => {
+        const def = GEAR.find((d) => d.slot === item.slot);
+        const rs = rarityStyle[item.rarity];
+        const armed = pickId === item.id;
+        const players = def.role === "bat" ? roster.batters : [roster.sp, roster.rp];
+        const afford = money >= item.cost;
+        return (
+          <div key={item.id} style={{ ...panel, padding: 12, marginBottom: 10, border: `1px solid ${armed ? C.amber : C.greenLine}` }}>
+            <button onClick={() => setPickId(armed ? null : item.id)}
+              style={{ display: "block", width: "100%", background: "transparent", border: "none", padding: 0, cursor: "pointer", textAlign: "left", fontFamily: "inherit", color: C.cream }}>
+              <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
+                <span style={{ fontWeight: 700, fontSize: 14, color: rs.color, textShadow: rs.glow }}>{item.name}</span>
+                <span style={{ fontSize: 9, letterSpacing: 1.5, color: rs.color, border: `1px solid ${rs.color}`, borderRadius: 3, padding: "1px 5px" }}>{RARITY[item.rarity].name}</span>
+                <span style={{ fontSize: 10, color: C.creamDim }}>{def.label}</span>
+                <span style={{ marginLeft: "auto", fontSize: 13, color: afford ? C.amber : C.red, fontVariantNumeric: "tabular-nums" }}>${fmt(item.cost)}</span>
+              </div>
+              <div style={{ fontSize: 11, marginTop: 4 }}>
+                <Boosts boosts={item.boosts} />
+                <span style={{ color: C.creamDim }}> — {def.flavor}</span>
+              </div>
+            </button>
+
+            {armed && (
+              <div style={{ marginTop: 8, borderTop: `1px solid ${C.greenLine}`, paddingTop: 8 }}>
+                <div style={{ fontSize: 10, color: C.creamDim, letterSpacing: 2, marginBottom: 6 }}>
+                  WHO GETS IT? {!afford && <span style={{ color: C.red }}>— NOT ENOUGH MONEY</span>}
+                </div>
+                {players.map((p) => {
+                  const current = p.gear?.[item.slot];
+                  return (
+                    <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "3px 0", fontSize: 12 }}>
+                      <span style={{ width: 26, color: C.creamDim }}>{p.pos}</span>
+                      <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontWeight: 600 }}>{p.name}</span>
+                      <span style={{ fontSize: 10, color: C.creamDim, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 130 }}>
+                        {current ? `replaces ${current.name || "old gear"}` : "empty slot"}
+                      </span>
+                      <button onClick={() => afford && onBuy(p.id, item.id)}
+                        style={{ ...btn(afford), width: 60, textAlign: "center", fontSize: 10, padding: "5px 0" }}>
+                        BUY
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }

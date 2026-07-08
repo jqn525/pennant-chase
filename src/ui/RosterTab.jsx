@@ -1,11 +1,12 @@
-// ── Roster tab: lineup list, training panel, and season stat tables ──
+// ── Roster tab: lineup, training stat cards, trade desk, season stat tables ──
 
-import { C, BAT_STATS, PIT_STATS, STAT_INFO } from "../game/constants.js";
+import { useState } from "react";
+import { C, BAT_STATS, PIT_STATS, STAT_INFO, PLAYER_TRAITS } from "../game/constants.js";
 import { fmt } from "../game/utils.js";
 import { panel, btn } from "./styles.js";
 import { StarIcon } from "./Icons.jsx";
 import StatTable from "./StatTable.jsx";
-import { GEAR, TIER_NAMES, gearBonus, ovr } from "../game/gear.js";
+import { GEAR, gearBonus, ovr } from "../game/gear.js";
 
 const avg3 = (num, den) => (den ? (num / den).toFixed(3).replace(/^0/, "") : "—");
 const ba = (s) => avg3(s.h, s.ab);
@@ -15,7 +16,8 @@ const ops = (s) => (s.ab ? ((s.h + s.bb) / (s.ab + s.bb) + (s.h + s.d + 2 * s.t 
 const ip = (s) => (s.outsP ? `${Math.floor(s.outsP / 3)}.${s.outsP % 3}` : "—");
 const era = (s) => (s.outsP ? ((s.raP * 27) / s.outsP).toFixed(2) : "—");
 
-export default function RosterTab({ roster, league, selected, selectedId, onSelect, stat, isStar, money, trainCost, onTrain, onMoveBatter, onAutoLineup }) {
+export default function RosterTab({ roster, league, selected, selectedId, onSelect, stat, isStar, money, trainCost, onTrain, onMoveBatter, onAutoLineup, rivals, tradeQuote, onTrade }) {
+  const [armedTrade, setArmedTrade] = useState(null); // rival index awaiting confirm
   const arrowBtn = {
     flex: 1, width: 34, background: "transparent", border: `1px solid ${C.greenLine}`,
     borderRadius: 4, color: C.creamDim, fontSize: 10, cursor: "pointer", padding: 0,
@@ -79,10 +81,19 @@ export default function RosterTab({ roster, league, selected, selectedId, onSele
                 TRAINING · {selected.name} ({selected.pos}) · OVR {ovr(selected).toFixed(1)}
               </div>
               {(() => {
+                const t = PLAYER_TRAITS.find((x) => x.id === selected.trait);
+                return t && (
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+                    <span style={{ fontSize: 9, letterSpacing: 1, color: C.amber, border: `1px solid ${C.amber}66`, borderRadius: 3, padding: "1px 6px" }}>{t.label.toUpperCase()}</span>
+                    <span style={{ fontSize: 10, color: C.creamDim }}>{t.desc}</span>
+                  </div>
+                );
+              })()}
+              {(() => {
                 const owned = GEAR.filter((g) => selected.gear?.[g.slot]);
                 return owned.length > 0 && (
                   <div style={{ fontSize: 10, color: C.grass, marginBottom: 6 }}>
-                    Gear: {owned.map((g) => `${TIER_NAMES[selected.gear[g.slot]]} ${g.label}`).join(" · ")}
+                    Gear: {owned.map((g) => selected.gear[g.slot].name || g.label).join(" · ")}
                   </div>
                 );
               })()}
@@ -92,27 +103,32 @@ export default function RosterTab({ roster, league, selected, selectedId, onSele
                 </div>
               )}
               <div style={{ fontSize: 9, color: C.creamDim, marginBottom: 8 }}>
-                bar: <span style={{ color: C.amber }}>skill</span> + <span style={{ color: C.grass }}>gear</span> · the | mark is league average ({league.statBase})
+                bar: <span style={{ color: C.amber }}>skill</span> + <span style={{ color: C.grass }}>gear</span> · <span style={{ color: C.cream }}>|</span> league avg ({league.statBase}) · <span style={{ color: C.dirt }}>|</span> his ceiling
               </div>
               {(selected.role === "bat" ? BAT_STATS : PIT_STATS).map((k) => {
                 const cost = trainCost(selected, k);
-                const ok = money >= cost;
                 const base = selected[k];
+                const pot = selected.pot?.[k];
+                const peaked = pot != null && base >= pot;
+                const ok = money >= cost && !peaked;
                 const bonus = gearBonus(selected, k);
-                const scale = league.statBase + 6;
+                const scale = league.statBase + 8;
                 const pct = (v) => `${Math.min(100, (v / scale) * 100)}%`;
                 return (
                   <button key={k} onClick={() => onTrain(selected.id, k)} style={{ ...btn(ok), width: "100%", marginBottom: 6 }}>
                     <span style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
                       <span style={{ fontWeight: 600, textTransform: "uppercase", fontSize: 11, letterSpacing: 1 }}>{k}</span>
                       <span key={base} style={{ fontWeight: 600, fontSize: 15, display: "inline-block", animation: "statPop .5s", color: C.cream }}>{base}</span>
-                      {bonus > 0 && <span style={{ color: C.grass, fontSize: 12, fontWeight: 600 }}>+{bonus}</span>}
-                      <span style={{ marginLeft: "auto", fontSize: 11 }}>train → ${fmt(cost)}</span>
+                      {bonus !== 0 && <span style={{ color: bonus > 0 ? C.grass : C.red, fontSize: 12, fontWeight: 600 }}>{bonus > 0 ? "+" : ""}{bonus}</span>}
+                      <span style={{ marginLeft: "auto", fontSize: 11, color: peaked ? C.dirt : undefined, letterSpacing: peaked ? 1 : 0 }}>
+                        {peaked ? "PEAKED" : `train → $${fmt(cost)}`}
+                      </span>
                     </span>
                     <span style={{ display: "block", position: "relative", height: 5, background: "#00000044", borderRadius: 2, margin: "6px 0 5px", overflow: "visible" }}>
                       <span style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: pct(base), background: C.amber, borderRadius: 2 }} />
                       {bonus > 0 && <span style={{ position: "absolute", left: pct(base), top: 0, bottom: 0, width: pct(bonus), background: C.grass, borderRadius: "0 2px 2px 0" }} />}
                       <span style={{ position: "absolute", left: pct(league.statBase), top: -2, bottom: -2, width: 2, background: C.cream, opacity: 0.9 }} />
+                      {pot != null && <span style={{ position: "absolute", left: pct(pot), top: -2, bottom: -2, width: 2, background: C.dirt }} />}
                     </span>
                     <span style={{ display: "block", fontSize: 10, color: C.creamDim }}>{STAT_INFO[k]}</span>
                   </button>
@@ -122,6 +138,48 @@ export default function RosterTab({ roster, league, selected, selectedId, onSele
           ) : (
             <div style={{ ...panel, padding: 12, fontSize: 12, color: C.creamDim }}>
               Select a player to see attributes and train them with money.
+            </div>
+          )}
+
+          {/* Trade desk: swap the selected player position-for-position with a rival */}
+          {selected && rivals && (
+            <div style={{ ...panel, padding: 12, marginTop: 14 }}>
+              <div style={{ fontSize: 10, color: C.creamDim, letterSpacing: 2, marginBottom: 6 }}>
+                TRADE DESK · {selected.name} ({selected.pos})
+              </div>
+              {selected.pos === "RP" ? (
+                <div style={{ fontSize: 11, color: C.creamDim }}>Rival clubs don't carry relievers — no trade market for {selected.name}.</div>
+              ) : (
+                <>
+                  <div style={{ fontSize: 10, color: C.creamDim, marginBottom: 8 }}>
+                    Straight swap at his position. Rivals charge a premium for upgrades and lowball your stars. Gear travels with the players.
+                  </div>
+                  {rivals.map((team, i) => {
+                    const quote = tradeQuote(selected, i);
+                    if (!quote) return null;
+                    const t = PLAYER_TRAITS.find((x) => x.id === quote.them.trait);
+                    const canPay = money >= quote.cash;
+                    const armed = armedTrade === i;
+                    return (
+                      <div key={team.name} style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 0", fontSize: 11, borderBottom: `1px solid ${C.greenLine}33` }}>
+                        <span style={{ flex: 1, minWidth: 0 }}>
+                          <span style={{ fontWeight: 600 }}>{quote.them.name}</span>
+                          <span style={{ color: C.creamDim }}> · {team.name} · OVR {ovr(quote.them).toFixed(1)}{t ? ` · ${t.label}` : ""}</span>
+                        </span>
+                        <span style={{ fontSize: 10, color: quote.cash > 0 ? C.red : C.grass, whiteSpace: "nowrap" }}>
+                          {quote.cash > 0 ? `you pay $${fmt(quote.cash)}` : `you get $${fmt(-quote.cash)}`}
+                        </span>
+                        <button
+                          onClick={() => (armed ? (onTrade(selected.id, i), setArmedTrade(null)) : setArmedTrade(i))}
+                          onBlur={() => setArmedTrade(null)}
+                          style={{ ...btn(canPay || quote.cash <= 0), width: 66, textAlign: "center", fontSize: 9, padding: "5px 0", border: `1px solid ${armed ? C.red : C.greenLine}`, color: armed ? C.red : undefined }}>
+                          {armed ? "SURE?" : "TRADE"}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </>
+              )}
             </div>
           )}
         </div>

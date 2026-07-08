@@ -79,6 +79,32 @@ export const ECON = {
 // points (rubber × rating gap), so a dynasty gets hunted down within a few years.
 export const CREEP = { base: 8, cellarBonus: 4, rubber: 8, rubberCap: 30 };
 
+// One per player — real engine effects, shown as a badge on the stat card
+export const PLAYER_TRAITS = [
+  { id: "clutch", label: "Clutch", desc: "Locks in with runners on — contact and eye rise", role: "bat" },
+  { id: "freeSwinger", label: "Free Swinger", desc: "Swings for the seats: more homers, more strikeouts", role: "bat" },
+  { id: "contactArtist", label: "Contact Artist", desc: "Puts everything in play — fewer whiffs, less pop", role: "bat" },
+  { id: "glovework", label: "Glovework", desc: "Highlight-reel defense in the field", role: "bat" },
+  { id: "burner", label: "Burner", desc: "Pure speed — stretches singles into doubles", role: "bat" },
+  { id: "fireballer", label: "Fireballer", desc: "Nasty stuff, wobbly control", role: "pit" },
+  { id: "painter", label: "Painter", desc: "Hits corners all day, lighter stuff", role: "pit" },
+  { id: "iceman", label: "Iceman", desc: "Ice in the veins with runners aboard", role: "pit" },
+  { id: "workhorse", label: "Workhorse", desc: "Goes deep into games before tiring", role: "pit" },
+];
+
+// Gear rarities: shipment weights and price anchors
+export const RARITY = {
+  1: { name: "COMMON", weight: 65, cost: 300 },
+  2: { name: "RARE", weight: 28, cost: 900 },
+  3: { name: "LEGENDARY", weight: 7, cost: 2100 },
+};
+
+// Trades: deterministic pricing — rivals charge a premium and buy at a discount
+export const TRADE = { fee: 200, buyPremium: 1.6, sellDiscount: 0.5, valuePerOvr: 900 };
+
+// Rookie draft: class size and signing-bonus scaling
+export const DRAFT = { classSize: 5, signBase: 400, signPerPot: 150 };
+
 export const POSITIONS = ["C", "1B", "2B", "3B", "SS", "LF", "CF", "RF", "DH"];
 export const BAT_STATS = ["contact", "power", "eye", "speed", "defense"];
 export const PIT_STATS = ["stuff", "control", "stamina", "defense"];
