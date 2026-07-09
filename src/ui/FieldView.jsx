@@ -45,7 +45,7 @@ export default function FieldView({ g }) {
   const lastP = last ? pt(last.spray, last.dist) : null;
 
   return (
-    <Panel title="FIELD VIEW" titleRight="BALLS IN PLAY">
+    <Panel title="FIELD VIEW">
       <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: "auto", display: "block" }} aria-label="field view">
         {/* outfield grass wash */}
         <polygon points={`${HOME.x},${HOME.y} ${fencePts.join(" ")}`} fill="#1A3627" />

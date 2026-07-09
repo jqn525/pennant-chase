@@ -57,11 +57,9 @@ export default function RosterTab({ roster, stat, isStar, onMoveBatter, onAutoLi
 
   return (
     <div>
-      <Panel title="BATTING ORDER" style={{ marginTop: 6 }}>
+      <Panel title="BATTING ORDER">
         <div style={{ display: "flex", alignItems: "center", marginBottom: 8, gap: 8 }}>
-          <span style={{ fontSize: 10, color: C.creamDim, fontStyle: "italic" }}>
-            Tap a player for his card. Order changes apply next game.
-          </span>
+          <span style={{ flex: 1 }} />
           <button onClick={onAutoLineup}
             style={{ ...btn(true), marginLeft: "auto", fontSize: 10, letterSpacing: 1, padding: "5px 8px" }}>
             AUTO-SET ORDER
@@ -72,7 +70,7 @@ export default function RosterTab({ roster, stat, isStar, onMoveBatter, onAutoLi
       </Panel>
 
       <StatTable
-        title="BATTING · this season · tap a row for the player card"
+        title="BATTING" titleRight="SEASON"
         cols={["AB", "R", "H", "2B", "3B", "HR", "RBI", "BB", "K", "AVG", "OBP", "SLG", "OPS"]}
         onRow={onOpenCard}
         rows={roster.batters.map((p) => {
@@ -81,7 +79,7 @@ export default function RosterTab({ roster, stat, isStar, onMoveBatter, onAutoLi
         })}
       />
       <StatTable
-        title="PITCHING · this season"
+        title="PITCHING" titleRight="SEASON"
         cols={["IP", "H", "R", "BB", "K", "ERA"]}
         onRow={onOpenCard}
         rows={[roster.sp, roster.rp].map((p) => {

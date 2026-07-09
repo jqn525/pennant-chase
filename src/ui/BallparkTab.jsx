@@ -69,7 +69,7 @@ export default function BallparkTab({ g, city, year, phase, playoffs, gameIndex,
     <div style={{ display: "flex", flexWrap: "wrap", gap: 14, marginTop: 2 }}>
       <div style={{ flex: "2 1 400px", minWidth: 300 }}>
         {/* Line score — fixed-size scoreboard, never reflows */}
-        <Panel title="LINE SCORE" style={{ height: 122, boxSizing: "border-box", display: "flex", flexDirection: "column", justifyContent: "space-between", overflow: "hidden", marginTop: 2 }}>
+        <Panel title="LINE SCORE" bodyStyle={{ height: 90, display: "flex", flexDirection: "column", justifyContent: "space-between", overflow: "hidden" }}>
           <div style={{ fontSize: 12, height: 16, display: "flex", gap: 14, whiteSpace: "nowrap" }}>
             <span style={{ color: C.creamDim }}>{statusLeft}</span>
             <span>{g && !g.over ? `${g.half === "top" ? "TOP" : "BOT"} ${g.inning} · ${g.outs} OUT${g.outs === 1 ? "" : "S"}` : paused ? "PAUSED" : " "}</span>
@@ -113,10 +113,9 @@ export default function BallparkTab({ g, city, year, phase, playoffs, gameIndex,
         <FieldView g={g} />
 
         {/* Play-by-play — collapsed to a slim strip by default */}
-        <Panel title="RADIO CALL" style={{ height: radioOpen ? 360 : 122, overflowY: radioOpen ? "auto" : "hidden", boxSizing: "border-box" }}>
+        <Panel title="RADIO CALL" bodyStyle={{ height: radioOpen ? 330 : 84, overflowY: radioOpen ? "auto" : "hidden" }}>
           <button onClick={() => setRadioOpen((o) => !o)}
             style={{ display: "flex", width: "100%", alignItems: "center", background: "transparent", border: "none", padding: 0, marginBottom: 6, cursor: "pointer", fontFamily: "inherit" }}>
-            <span style={{ fontSize: 9, color: C.creamDim, letterSpacing: 2 }}>PLAY-BY-PLAY</span>
             <span style={{ marginLeft: "auto", fontSize: 10, color: C.dirt, letterSpacing: 1 }}>{radioOpen ? "▴ COLLAPSE" : "▾ EXPAND"}</span>
           </button>
           {(radioOpen ? log : log.slice(0, 3)).map((l) => (
@@ -142,7 +141,7 @@ export default function BallparkTab({ g, city, year, phase, playoffs, gameIndex,
         {/* Live game stats — team comparison + both box scores */}
         {g && box && roster && (
           <>
-            <Panel title="GAME STATS" titleRight={g.over ? "FINAL" : undefined} style={{ marginTop: 12 }}>
+            <Panel title="GAME STATS" titleRight={g.over ? "FINAL" : undefined}>
               <div style={{ display: "flex", fontSize: 11, marginBottom: 10, letterSpacing: 1 }}>
                 <span style={{ color: C.creamDim }}>{abbrev(g.opp.name)} {g.opp.name}</span>
                 <span style={{ marginLeft: "auto", color: C.amber }}>{city.name} {abbrev(city.name)}</span>
@@ -154,9 +153,9 @@ export default function BallparkTab({ g, city, year, phase, playoffs, gameIndex,
               <CompareRow label="WALKS" a={total("them", "bb")} b={total("us", "bb")} />
               <CompareRow label="LEFT ON BASE" a={g.box.lobThem} b={g.box.lobUs} />
             </Panel>
-            <StatTable style={{ marginTop: 10 }} title={`${city.name.toUpperCase()} HITTING · this game`}
+            <StatTable style={{ marginTop: 10 }} title={`${city.name.toUpperCase()} HITTING`}
               cols={["AB", "R", "H", "HR", "RBI", "BB", "K"]} rows={gameRows(roster.batters, "us")} onRow={onOpenCard} />
-            <StatTable style={{ marginTop: 10 }} title={`${g.opp.name.toUpperCase()} HITTING · this game · tap to scout`}
+            <StatTable style={{ marginTop: 10 }} title={`${g.opp.name.toUpperCase()} HITTING`}
               cols={["AB", "R", "H", "HR", "RBI", "BB", "K"]} rows={gameRows(g.opp.batters, "them")} onRow={onOpenCard} />
           </>
         )}
@@ -164,7 +163,7 @@ export default function BallparkTab({ g, city, year, phase, playoffs, gameIndex,
 
       {/* Standings + scout */}
       <div style={{ flex: "1 1 260px", minWidth: 240 }}>
-        <Panel title="STANDINGS" titleRight={`TOP ${LEAGUE.playoffTeams} MAKE PLAYOFFS`} style={{ marginTop: 2 }}>
+        <Panel title="STANDINGS">
           <table style={{ borderCollapse: "collapse", fontSize: 11, width: "100%" }}>
             <thead>
               <tr style={{ borderBottom: `1px solid ${C.greenLine}` }}>

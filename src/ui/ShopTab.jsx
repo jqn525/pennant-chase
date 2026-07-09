@@ -32,10 +32,7 @@ export default function ShopTab({ roster, money, shopItems, onBuy, restockNote, 
 
   return (
     <div style={{ marginTop: 2 }}>
-      <Panel title="THE PRO SHOP" titleRight="THIS SHIPMENT ONLY" style={{ marginTop: 6, marginBottom: 12 }}>
-        <div style={{ fontSize: 10, color: C.creamDim, marginBottom: 6 }}>
-          Unbought gear ships out with the next delivery.
-        </div>
+      <Panel title="THE PRO SHOP" titleRight="THIS SHIPMENT ONLY" style={{ marginBottom: 12 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: C.amber, letterSpacing: 1 }}>
           <ClockIcon size={12} /> {restockNote}
         </div>

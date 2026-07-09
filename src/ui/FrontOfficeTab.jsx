@@ -29,7 +29,7 @@ export default function FrontOfficeTab({ roster, city, fans, money, merch, tv, i
   return (
     <div style={{ display: "flex", flexWrap: "wrap", gap: 14, marginTop: 2 }}>
       <div style={{ flex: "1 1 300px", minWidth: 280 }}>
-        <Panel title="REVENUE" style={{ marginTop: 6 }}>
+        <Panel title="REVENUE">
           <button onClick={onBuyMerch} style={{ ...btn(!merch && money >= ECON.merchCost && fans >= ECON.merchFans), width: "100%", marginBottom: 6 }}>
             <span style={{ fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}><CoinIcon /> Merch stand {merch ? "· OPEN" : ""}</span>
             {!merch && <div style={{ fontSize: 10, color: C.creamDim }}>${ECON.merchCost} + {ECON.merchFans} fans. Sells every second — even while you're away (capped at {ECON.offlineCapHours}h). Stars sell more.</div>}
@@ -47,7 +47,7 @@ export default function FrontOfficeTab({ roster, city, fans, money, merch, tv, i
       </div>
 
       <div style={{ flex: "1 1 300px", minWidth: 280 }}>
-        <Panel title="TROPHY CASE" titleRight={`${trophies} CUP${trophies === 1 ? "" : "S"}`} style={{ marginTop: 6 }}>
+        <Panel title="TROPHY CASE" titleRight={`${trophies} CUP${trophies === 1 ? "" : "S"}`}>
           <div style={{ display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap", marginBottom: trophies ? 8 : 0 }}>
             {Array.from({ length: Math.min(trophies, 12) }, (_, i) => <TrophyIcon key={i} size={15} />)}
           </div>
