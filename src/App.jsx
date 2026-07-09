@@ -9,7 +9,7 @@ import { fmt } from "./game/utils.js";
 import { genRoster, seedUid, genDraftClass, vetPot, rollPot, pickTrait } from "./game/generators.js";
 import { newGame, stepAtBat, playGameInstant, settleGame } from "./game/engine.js";
 import { makeRivals, makeSchedule, teamRating, quickSim, simSeries, seedOrder, runOffseason, ageRoster, seriesInfo } from "./game/season.js";
-import { eff, isStar, talentGrade, genShipment, playerValue, GEAR } from "./game/gear.js";
+import { eff, isStar, talentGrade, genShipment, genItem, playerValue, GEAR, dealerTier, shipmentWeights, TIER_INFO } from "./game/gear.js";
 import { sfx, play } from "./game/sfx.js";
 import TabBar from "./ui/TabBar.jsx";
 import TipModal from "./ui/TipModal.jsx";
@@ -375,9 +375,23 @@ export default function App() {
     }
   };
 
+  // Which gear dealers take your calls? Prestige decides the rarity odds.
+  const currentDealerTier = () => {
+    const s = S.current;
+    const playoffsEver = s.trophies > 0 || s.phase === "playoffs"
+      || (s.history || []).some((h) => h.finish <= LEAGUE.playoffTeams);
+    return dealerTier(s.trophies, playoffsEver);
+  };
+
   // Fresh shelves at the shop. Mega = the winter catalog (rare & legendary only).
   const restock = (mega) => {
-    const items = genShipment(6, mega ? { 1: 0, 2: 60, 3: 40 } : null);
+    const tier = currentDealerTier();
+    const items = genShipment(6, shipmentWeights(tier, mega));
+    // the very first winter catalog always dangles exactly one legendary --
+    // a taste of what winning buys
+    if (mega && S.current.year === 1 && !items.some((i) => i.rarity === 3)) {
+      items[items.length - 1] = genItem(3);
+    }
     setShopItems(items);
     const legendary = items.filter((i) => i.rarity === 3).map((i) => i.name);
     pushLog(`— NEW SHIPMENT at the Pro Shop${mega ? ": THE WINTER CATALOG" : ""} —${legendary.length ? ` including ${legendary.join(" and ")}!` : ""}`, "sys");
@@ -687,7 +701,7 @@ export default function App() {
         )}
 
         {tab === "shop" && roster && (
-          <ShopTab roster={roster} money={money} shopItems={shopItems} onBuy={buyGear} restockNote={restockNote} />
+          <ShopTab roster={roster} money={money} shopItems={shopItems} onBuy={buyGear} restockNote={restockNote} tierInfo={TIER_INFO[currentDealerTier()]} />
         )}
 
         {tab === "roster" && roster && (

@@ -60,8 +60,30 @@ const rollRarity = (weights) => {
   return r < w1 ? 1 : r < w1 + w2 ? 2 : 3;
 };
 
-// A shipment: n items across varied slots. Pass offseason weights {1:0, 2:60, 3:40}
-// for the winter catalog.
+// The gear dealers only court real clubs. Rarity odds scale with prestige:
+// a year-one nobody never sees a legendary; contenders get a taste;
+// champions get the full catalog.
+export const dealerTier = (trophies, playoffsEver) =>
+  trophies > 0 ? "champion" : playoffsEver ? "contender" : "local";
+
+export const TIER_INFO = {
+  local: { label: "LOCAL DEALERS", hint: "make the playoffs to attract rarer stock" },
+  contender: { label: "CONTENDER DEALERS", hint: "win the Cup for the full catalog" },
+  champion: { label: "CHAMPION'S CATALOG", hint: "the best gear in the league finds you" },
+};
+
+export const shipmentWeights = (tier, mega = false) => {
+  if (mega) {
+    return tier === "champion" ? { 1: 0, 2: 60, 3: 40 }
+      : tier === "contender" ? { 1: 0, 2: 75, 3: 25 }
+      : { 1: 0, 2: 100, 3: 0 };
+  }
+  return tier === "champion" ? { 1: 65, 2: 28, 3: 7 }
+    : tier === "contender" ? { 1: 70, 2: 27, 3: 3 }
+    : { 1: 80, 2: 20, 3: 0 };
+};
+
+// A shipment: n items across varied slots. Pass weights from shipmentWeights().
 export const genShipment = (n = 6, weights = null) => {
   const slots = [...GEAR].sort(() => Math.random() - 0.5);
   return Array.from({ length: n }, (_, i) => genItem(rollRarity(weights), slots[i % slots.length]));

@@ -27,7 +27,7 @@ const Boosts = ({ boosts }) => (
   </span>
 );
 
-export default function ShopTab({ roster, money, shopItems, onBuy, restockNote }) {
+export default function ShopTab({ roster, money, shopItems, onBuy, restockNote, tierInfo }) {
   const [pickId, setPickId] = useState(null); // armed item awaiting a player
 
   return (
@@ -39,6 +39,11 @@ export default function ShopTab({ roster, money, shopItems, onBuy, restockNote }
         <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: C.amber, letterSpacing: 1 }}>
           <ClockIcon size={12} /> {restockNote}
         </div>
+        {tierInfo && (
+          <div style={{ fontSize: 10, color: C.creamDim, marginTop: 6 }}>
+            <span style={{ color: C.dirt, letterSpacing: 1 }}>{tierInfo.label}</span> — {tierInfo.hint}
+          </div>
+        )}
       </Panel>
 
       {(!shopItems || shopItems.length === 0) && (

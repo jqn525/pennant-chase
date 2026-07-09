@@ -25,7 +25,7 @@ export const TIPS = {
     title: "THE PRO SHOP",
     body: [
       "A fresh shipment of one-of-a-kind gear arrives every series — and the old stock ships out forever. If a LEGENDARY appears and you can't decide, hit pause up top.",
-      "Boosts are percentages of a player's rating (COMMON +5%, RARE +10%, LEGENDARY +15%), so gear helps your stars most — but nothing ever passes 99. Watch the clock for the next shipment.",
+      "Boosts are percentages of a player's rating (COMMON +5%, RARE +10%, LEGENDARY +15%), so gear helps your stars most — but nothing ever passes 99. And the best dealers only court winners: make the playoffs to see rarer stock, win the Cup for the full catalog.",
     ],
   },
   draft: {
