@@ -156,6 +156,7 @@ export default function App() {
   S.current = { city, money, fans, roster, merch, tv, seasonStats, shopItems, draftClass, form, year, phase, rivals, schedule, rivalDays, gameIndex, standings, playoffs, history, trophies, speed, sound, seenTips };
 
   const cityBonus = (k) => (city?.bonus === k);
+  const tn = (c) => (c?.nickname ?? c?.name ?? ""); // team display name
 
   const pushLog = useCallback((text, kind = "play", side = null, team = null) => {
     setLog((l) => [{ id: idRef.current++, text, kind, side, team }, ...l].slice(0, 40));
@@ -201,11 +202,11 @@ export default function App() {
   // ── Founding ──
   const foundClub = (c) => {
     const r = genRoster(LEAGUE.statBase);
-    const rv = makeRivals();
+    const rv = makeRivals(LEAGUE.statBase, { tCity: c.name, name: c.nickname });
     const sch = makeSchedule();
     setCity(c); setRoster(r); setRivals(rv);
     setSchedule(sch.schedule); setRivalDays(sch.rivalDays);
-    pushLog(`The ${c.name} franchise joins ${LEAGUE.name}. ${c.label}.`, "win");
+    pushLog(`The ${c.name} ${c.nickname} join ${LEAGUE.name}. ${c.label}.`, "win");
     pushLog(`Eight clubs. ${LEAGUE.seasonGames} games. Top four make the playoffs. The Pennant Cup waits.`, "sys");
     showTip("welcome");
   };
@@ -262,9 +263,9 @@ export default function App() {
     gameRef.current = newGame(opp, home, oppIdx);
     ctxRef.current = {
       batters: s.roster.batters, sp: s.roster.sp, rp: s.roster.rp, opp,
-      fence: FENCE, statBase: LEAGUE.statBase, innings: LEAGUE.innings, cityName: s.city.name,
+      fence: FENCE, statBase: LEAGUE.statBase, innings: LEAGUE.innings, cityName: tn(s.city),
     };
-    pushLog(`— ${label} — ${home ? `${opp.name} at ${s.city.name}` : `${s.city.name} at ${opp.name}`}.`, "sys");
+    pushLog(`— ${label} — ${home ? `${opp.name} at ${tn(s.city)}` : `${tn(s.city)} at ${opp.name}`}.`, "sys");
   };
 
   // ── Settle a finished game into money/fans/standings/series ──
@@ -277,7 +278,7 @@ export default function App() {
     for (let i = s.form.length - 1; i >= 0 && s.form[i] === "W"; i--) streak++;
     const res = settleGame(g, {
       fans: s.fans, gateBonus: cityBonus("gate"), floorBonus: cityBonus("floor"),
-      fansBonus: cityBonus("fans"), cityName: s.city.name, playoff: playoffLabel,
+      fansBonus: cityBonus("fans"), cityName: tn(s.city), playoff: playoffLabel,
       formWins: s.form.filter((f) => f === "W").length, streak,
     });
     setMoney((m) => m + res.moneyDelta);
@@ -343,7 +344,7 @@ export default function App() {
       return;
     }
     if (p.wins.us >= need && p.round === "final") {
-      pushLog(`— PENNANT CUP CHAMPIONS — ${s.city.name} take the final ${p.wins.us}-${p.wins.them}. $${fmt(ECON.cupPay)} and the parade lasts three days.`, "win");
+      pushLog(`— PENNANT CUP CHAMPIONS — ${tn(s.city)} take the final ${p.wins.us}-${p.wins.them}. $${fmt(ECON.cupPay)} and the parade lasts three days.`, "win");
       play.fanfare();
       return offseason(0, true);
     }
@@ -362,8 +363,8 @@ export default function App() {
     const ratings = ratingsNow();
     const order = seedOrder(s.standings, ratings);
     const mySeed = order.indexOf(0);
-    const name = (i) => (i === 0 ? s.city.name : s.rivals[i - 1].name);
-    pushLog(`— REGULAR SEASON COMPLETE — ${s.city.name} finish ${s.standings[0].w}-${s.standings[0].l}, ${["1st", "2nd", "3rd"][mySeed] || `${mySeed + 1}th`}.`, mySeed < LEAGUE.playoffTeams ? "win" : "out");
+    const name = (i) => (i === 0 ? tn(s.city) : s.rivals[i - 1].name);
+    pushLog(`— REGULAR SEASON COMPLETE — ${tn(s.city)} finish ${s.standings[0].w}-${s.standings[0].l}, ${["1st", "2nd", "3rd"][mySeed] || `${mySeed + 1}th`}.`, mySeed < LEAGUE.playoffTeams ? "win" : "out");
 
     if (mySeed < LEAGUE.playoffTeams) {
       const oppIdx = order[[3, 2, 1, 0][mySeed]];
@@ -416,7 +417,7 @@ export default function App() {
     const mySeed = order.indexOf(0);
     const off = runOffseason({
       year: s.year, rivals: s.rivals, standings: s.standings, ratings,
-      championIdx, championName: championIdx === 0 ? s.city.name : s.rivals[championIdx - 1].name,
+      championIdx, championName: championIdx === 0 ? tn(s.city) : s.rivals[championIdx - 1].name,
       playerSeed: mySeed, playerCup,
       record: { w: s.standings[0].w, l: s.standings[0].l },
       fans: s.fans, history: s.history, trophies: s.trophies,

@@ -36,7 +36,7 @@ export default function Scoreboard({ city, year, record, money, fans, talent, tr
       {/* Marquee */}
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
         <h1 style={{ fontFamily: SLAB, fontSize: "clamp(14px, 4.3vw, 20px)", margin: 0, flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-          {city.name.toUpperCase()}<span style={{ color: C.amber }}> BASEBALL</span>
+          {city.name.toUpperCase()}<span style={{ color: C.amber }}> {(city.nickname ?? "BASEBALL").toUpperCase()}</span>
         </h1>
         <button onClick={onHelp} style={{ display: "flex", alignItems: "center", gap: 6, background: "transparent", border: `1px solid ${C.greenLine}`, borderRadius: 4, color: C.cream, fontFamily: MONO, fontSize: 11, padding: "6px 10px", cursor: "pointer", flexShrink: 0 }}>
           <RulebookIcon /> RULEBOOK

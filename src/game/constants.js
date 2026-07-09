@@ -38,13 +38,31 @@ export const LAST = [
   "Webb", "Whitaker", "Wilks", "Yamada", "Zamora",
 ];
 
-export const CITIES = [
-  { name: "Sacramento", bonus: "fans", label: "Hungry market: +25% fan growth" },
-  { name: "Nashville", bonus: "merch", label: "Merch city: merchandise pays +30%" },
-  { name: "Portland", bonus: "train", label: "Player development hub: training costs -15%" },
-  { name: "San Antonio", bonus: "gate", label: "Big gates: +25% game payouts" },
-  { name: "Buffalo", bonus: "floor", label: "Loyal diehards: money floor doubled on losses" },
-  { name: "Montreal", bonus: "fans", label: "Baseball-starved: +25% fan growth" },
+// Club edges — pick one at founding (the old per-city bonuses, city-neutral)
+export const EDGES = [
+  { bonus: "fans", title: "HUNGRY MARKET", label: "+25% fan growth" },
+  { bonus: "merch", title: "MERCH TOWN", label: "merchandise pays +30%" },
+  { bonus: "train", title: "DEV ACADEMY", label: "training costs -15%" },
+  { bonus: "gate", title: "BIG GATES", label: "+25% game payouts" },
+  { bonus: "floor", title: "DIEHARDS", label: "loss payouts doubled" },
+];
+
+// Team identity pools: minor-league flavored towns and nicknames
+export const CITY_POOL = [
+  "Toledo", "Fresno", "Duluth", "Butte", "Amarillo", "Pawtucket", "Chattanooga", "Spokane",
+  "Port Vale", "Cedar Falls", "Bison Ridge", "Sable Creek", "Harbor City", "Yucca Flats",
+  "Iron Bend", "Dry Gulch", "Millhaven", "Oak Hollow", "Red Mesa", "Saltwater",
+  "Gravel Point", "Copper Junction", "Twin Forks", "Palmetto", "Frostburg", "El Dorado",
+  "Kingsport", "Blue Ash", "Tarrytown", "Mudflat", "Sunbury", "Cannon Falls",
+  "Whistler's Gap", "Bakersfield", "Owl Creek", "Rock Bottom", "Grover's Mill", "Lantern Hill",
+];
+export const NICKNAME_POOL = [
+  "River Cats", "Mudhens", "Growlers", "Steel", "Bisons", "Copperheads", "Night Owls",
+  "Sandpipers", "Mudcats", "Ironbirds", "Thunderclaps", "Dusters", "Wolf Spiders", "Sod Busters",
+  "Haymakers", "Zephyrs", "Jackalopes", "Stevedores", "Linemen", "Moonshots",
+  "Prairie Dogs", "Green Sox", "Wranglers", "Coal Skinks", "Barnstormers", "Dirigibles",
+  "Leadoffs", "Spitfires", "Turkeys", "Cannoneers", "Swamp Foxes", "Boilermen",
+  "Knuckleballs", "Sluggos", "Rainmakers", "Longhorns", "Icehouse Cats", "Ragtops",
 ];
 
 export const TRAITS = [
@@ -69,9 +87,6 @@ export const LEAGUE = {
   payWin: 60,    // legacy anchor: gear prices key off this
   fansPerWin: 8, // + 2 per HR, streaks multiply it
 };
-
-// The seven clubs you will battle forever
-export const RIVAL_NAMES = ["River Cats", "Mudhens", "Growlers", "Steel", "Bisons", "Copperheads", "Night Owls"];
 
 export const ECON = {
   startMoney: 200,

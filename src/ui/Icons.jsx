@@ -92,6 +92,17 @@ export const OfficeNavIcon = ({ size = 20, color = C.cream }) => (
   </svg>
 );
 
+export const DiceIcon = ({ size = 14, color = C.amber }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <rect x="4" y="4" width="16" height="16" rx="3" stroke={color} strokeWidth="1.8" />
+    <circle cx="9" cy="9" r="1.4" fill={color} />
+    <circle cx="15" cy="9" r="1.4" fill={color} />
+    <circle cx="9" cy="15" r="1.4" fill={color} />
+    <circle cx="15" cy="15" r="1.4" fill={color} />
+    <circle cx="12" cy="12" r="1.4" fill={color} />
+  </svg>
+);
+
 export const SoundOnIcon = ({ size = 12, color = C.cream }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
     <path d="M4 9v6h4l5 4V5L8 9z" fill={color} />

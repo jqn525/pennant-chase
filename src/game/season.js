@@ -1,20 +1,27 @@
 // ── Season machinery: rivals, schedule, standings, quick-sim, playoffs, offseason ──
 // Team index convention everywhere: 0 = the player's club, 1..7 = rivals.
 
-import { LEAGUE, RIVAL_NAMES, TRAITS, CREEP, ECON } from "./constants.js";
-import { genRivalTeam, creepRival } from "./generators.js";
+import { LEAGUE, TRAITS, CREEP, ECON } from "./constants.js";
+import { genRivalTeam, creepRival, genTeamIdentity } from "./generators.js";
 import { ovr } from "./gear.js";
 
 // Logistic win probability constants (calibrated against the real engine —
 // on the 0-100 scale one OVR point is worth K=0.325 of log-odds)
 export const QS = { K: 0.325, H: 0.03 };
 
-export const makeRivals = (base = LEAGUE.statBase) => {
+export const makeRivals = (base = LEAGUE.statBase, playerIdentity = null) => {
   const traitIds = [...TRAITS.map((t) => t.id)];
   // 7 rivals, 6 traits: shuffle and let one trait appear twice
   const pool = [...traitIds].sort(() => Math.random() - 0.5);
   pool.push(traitIds[(Math.random() * traitIds.length) | 0]);
-  return RIVAL_NAMES.map((name, i) => genRivalTeam(name, pool[i], base));
+  const usedCities = new Set(playerIdentity ? [playerIdentity.tCity] : []);
+  const usedNames = new Set(playerIdentity ? [playerIdentity.name] : []);
+  return Array.from({ length: 7 }, (_, i) => {
+    const id = genTeamIdentity(usedCities, usedNames);
+    const team = genRivalTeam(id.name, pool[i], base);
+    team.tCity = id.tCity;
+    return team;
+  });
 };
 
 // Per rival: 6 series, 22 games, 11 home / 11 away

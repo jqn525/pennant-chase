@@ -1,6 +1,6 @@
 // ── Player, roster, rival-team, and draft-class generation ──
 
-import { FIRST, LAST, POSITIONS, TRAITS, BAT_STATS, PIT_STATS, PLAYER_TRAITS, LEAGUE, DRAFT, CREEP } from "./constants.js";
+import { FIRST, LAST, POSITIONS, TRAITS, BAT_STATS, PIT_STATS, PLAYER_TRAITS, LEAGUE, DRAFT, CREEP, CITY_POOL, NICKNAME_POOL } from "./constants.js";
 import { jitter } from "./utils.js";
 
 let uid = 1;
@@ -22,6 +22,17 @@ const rname = () => {
   return FIRST[(Math.random() * FIRST.length) | 0] + " " + LAST[(Math.random() * LAST.length) | 0];
 };
 export const freshName = () => rname();
+
+// Team identities: unique town + nickname combos for a league
+export const genTeamIdentity = (usedCities, usedNames) => {
+  let tCity = CITY_POOL[(Math.random() * CITY_POOL.length) | 0];
+  for (let i = 0; i < 30 && usedCities.has(tCity); i++) tCity = CITY_POOL[(Math.random() * CITY_POOL.length) | 0];
+  let name = NICKNAME_POOL[(Math.random() * NICKNAME_POOL.length) | 0];
+  for (let i = 0; i < 30 && usedNames.has(name); i++) name = NICKNAME_POOL[(Math.random() * NICKNAME_POOL.length) | 0];
+  usedCities.add(tCity);
+  usedNames.add(name);
+  return { tCity, name };
+};
 
 export const pickTrait = (role) => {
   const pool = PLAYER_TRAITS.filter((t) => t.role === role);

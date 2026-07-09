@@ -54,12 +54,13 @@ export default function BallparkTab({ g, city, year, phase, playoffs, gameIndex,
 
   // Line score rows: away team always on top. [name, R, H, E, atBat, isUs]
   const hitsOf = (sideKey) => (box ? Object.values(box[sideKey]).reduce((n, l) => n + l.h, 0) : "–");
-  const usRow = g ? [city.name, g.us, hitsOf("us"), box.errUs ?? 0, g.half === (g.home ? "bottom" : "top") && !g.over, true] : [city.name, "–", "–", "–", false, true];
+  const teamName = city.nickname ?? city.name;
+  const usRow = g ? [teamName, g.us, hitsOf("us"), box.errUs ?? 0, g.half === (g.home ? "bottom" : "top") && !g.over, true] : [teamName, "–", "–", "–", false, true];
   const oppRow = g ? [g.opp.name, g.them, hitsOf("them"), box.errThem ?? 0, g.half === (g.home ? "top" : "bottom") && !g.over, false] : ["VISITORS", "–", "–", "–", false, false];
   const teamRows = g && !g.home ? [usRow, oppRow] : [oppRow, usRow];
 
   // Standings, sorted
-  const names = [city.name, ...(rivals || []).map((r) => r.name)];
+  const names = [teamName, ...(rivals || []).map((r) => r.name)];
   const table = standings
     .map((t, i) => ({ i, name: names[i] || "—", w: t.w, l: t.l, pct: t.w + t.l ? t.w / (t.w + t.l) : 0 }))
     .sort((a, b) => b.w - a.w || a.l - b.l);
@@ -144,7 +145,7 @@ export default function BallparkTab({ g, city, year, phase, playoffs, gameIndex,
             <Panel title="GAME STATS" titleRight={g.over ? "FINAL" : undefined}>
               <div style={{ display: "flex", fontSize: 11, marginBottom: 10, letterSpacing: 1 }}>
                 <span style={{ color: C.creamDim }}>{abbrev(g.opp.name)} {g.opp.name}</span>
-                <span style={{ marginLeft: "auto", color: C.amber }}>{city.name} {abbrev(city.name)}</span>
+                <span style={{ marginLeft: "auto", color: C.amber }}>{teamName} {abbrev(teamName)}</span>
               </div>
               <CompareRow label="HITS" a={total("them", "h")} b={total("us", "h")} />
               <CompareRow label="HOME RUNS" a={total("them", "hr")} b={total("us", "hr")} />
@@ -153,7 +154,7 @@ export default function BallparkTab({ g, city, year, phase, playoffs, gameIndex,
               <CompareRow label="WALKS" a={total("them", "bb")} b={total("us", "bb")} />
               <CompareRow label="LEFT ON BASE" a={g.box.lobThem} b={g.box.lobUs} />
             </Panel>
-            <StatTable style={{ marginTop: 10 }} title={`${city.name.toUpperCase()} HITTING`}
+            <StatTable style={{ marginTop: 10 }} title={`${teamName.toUpperCase()} HITTING`}
               cols={["AB", "R", "H", "HR", "RBI", "BB", "K"]} rows={gameRows(roster.batters, "us")} onRow={onOpenCard} />
             <StatTable style={{ marginTop: 10 }} title={`${g.opp.name.toUpperCase()} HITTING`}
               cols={["AB", "R", "H", "HR", "RBI", "BB", "K"]} rows={gameRows(g.opp.batters, "them")} onRow={onOpenCard} />
@@ -192,7 +193,7 @@ export default function BallparkTab({ g, city, year, phase, playoffs, gameIndex,
         {g && !g.over && (
           <Panel title="SCOUT">
             <div style={{ fontSize: 12, lineHeight: 1.7 }}>
-              {g.opp.name}<br />
+              {g.opp.tCity ? `${g.opp.tCity} ` : ""}{g.opp.name}<br />
               Their ace: {g.opp.sp.name} (Stuff {g.opp.sp.stuff}, Control {g.opp.sp.control})<br />
               <span style={{ color: C.creamDim }}>Rivals retool every winter. Keep up.</span>
             </div>
