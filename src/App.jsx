@@ -12,6 +12,7 @@ import { makeRivals, makeSchedule, teamRating, quickSim, simSeries, seedOrder, r
 import { eff, isStar, talentGrade, genShipment, playerValue, GEAR } from "./game/gear.js";
 import { sfx, play } from "./game/sfx.js";
 import TabBar from "./ui/TabBar.jsx";
+import TipModal from "./ui/TipModal.jsx";
 import DraftBoard from "./ui/DraftBoard.jsx";
 import PlayerCard from "./ui/PlayerCard.jsx";
 import { globalCss, MONO } from "./ui/styles.js";
@@ -114,6 +115,16 @@ export default function App() {
   const [paused, setPaused] = useState(false);
   const [sound, setSound] = useState(SAVED?.sound ?? true);
   sfx.enabled = sound;
+  const [seenTips, setSeenTips] = useState(SAVED?.seenTips ?? (SAVED ? ["welcome"] : []));
+  const [activeTip, setActiveTip] = useState(null);
+  const showTip = (id) => setSeenTips((seen) => {
+    if (!seen.includes(id)) setActiveTip(id);
+    return seen;
+  });
+  const closeTip = () => {
+    setSeenTips((seen) => (activeTip && !seen.includes(activeTip) ? [...seen, activeTip] : seen));
+    setActiveTip(null);
+  };
 
   // ── UI state ──
   const [cardId, setCardId] = useState(null); // player card pop-up
@@ -130,7 +141,7 @@ export default function App() {
 
   // Fresh-state mirror so interval callbacks never read stale closures
   const S = useRef({});
-  S.current = { city, money, fans, roster, merch, tv, seasonStats, shopItems, draftClass, form, year, phase, rivals, schedule, rivalDays, gameIndex, standings, playoffs, history, trophies, speed, sound };
+  S.current = { city, money, fans, roster, merch, tv, seasonStats, shopItems, draftClass, form, year, phase, rivals, schedule, rivalDays, gameIndex, standings, playoffs, history, trophies, speed, sound, seenTips };
 
   const cityBonus = (k) => (city?.bonus === k);
 
@@ -148,10 +159,10 @@ export default function App() {
       seasonStats: s.seasonStats, shopItems: s.shopItems, draftClass: s.draftClass, form: s.form,
       year: s.year, phase: s.phase, rivals: s.rivals, schedule: s.schedule, rivalDays: s.rivalDays,
       gameIndex: s.gameIndex, standings: s.standings, playoffs: s.playoffs,
-      history: s.history, trophies: s.trophies, speed: s.speed, sound: s.sound,
+      history: s.history, trophies: s.trophies, speed: s.speed, sound: s.sound, seenTips: s.seenTips,
     }));
   }, []);
-  useEffect(() => { saveNow(); }, [city, money, fans, roster, merch, tv, seasonStats, shopItems, draftClass, form, year, phase, rivals, schedule, rivalDays, gameIndex, standings, playoffs, history, trophies, speed, sound, saveNow]);
+  useEffect(() => { saveNow(); }, [city, money, fans, roster, merch, tv, seasonStats, shopItems, draftClass, form, year, phase, rivals, schedule, rivalDays, gameIndex, standings, playoffs, history, trophies, speed, sound, seenTips, saveNow]);
   useEffect(() => {
     const iv = setInterval(() => { if (!document.hidden) saveNow(); }, 20000);
     return () => clearInterval(iv);
@@ -184,6 +195,7 @@ export default function App() {
     setSchedule(sch.schedule); setRivalDays(sch.rivalDays);
     pushLog(`The ${c.name} franchise joins ${LEAGUE.name}. ${c.label}.`, "win");
     pushLog(`Eight clubs. ${LEAGUE.seasonGames} games. Top four make the playoffs. The Pennant Cup waits.`, "sys");
+    showTip("welcome");
   };
 
   // ── Economy tick (merch / TV passive income while watching) ──
@@ -352,6 +364,7 @@ export default function App() {
       });
       setPhase("playoffs");
       restock(false);
+      showTip("playoffs");
     } else {
       const top = order.slice(0, 4);
       const w1 = simSeries(ratings[top[0]], ratings[top[3]], 5) ? top[0] : top[3];
@@ -404,6 +417,7 @@ export default function App() {
     setDraftClass(genDraftClass(mySeed));
     setPhase("draft");
     pushLog(`— DRAFT DAY — this winter's rookie class is on the board at the Ballpark. The season waits for your signatures.`, "win");
+    showTip("draft");
   };
 
   // ── One live at-bat (1x / 4x speeds) ──
@@ -555,6 +569,7 @@ export default function App() {
     setDraftClass(null);
     setPhase("regular");
     pushLog(`The draft board closes. Opening Day of Year ${year} — play ball.`, "sys");
+    showTip("backup");
   };
 
   const buyMerch = () => {
@@ -608,7 +623,7 @@ export default function App() {
     return null;
   };
   const cardView = cardId != null ? findPlayer(cardId) : null;
-  const openCard = (p) => setCardId(p.id);
+  const openCard = (p) => { setCardId(p.id); showTip("card"); };
 
   // Current series position (regular season only) + shop restock note
   const series = phase === "regular" && schedule && gameIndex < LEAGUE.seasonGames
@@ -644,6 +659,8 @@ export default function App() {
         />
 
         <div key={tab} style={{ animation: "screenIn .18s ease-out" }}>
+        {activeTip && <TipModal tipId={activeTip} onClose={closeTip} />}
+
         {cardView && (
           <PlayerCard
             player={cardView.player} isOwn={cardView.isOwn} onClose={() => setCardId(null)}
@@ -690,7 +707,7 @@ export default function App() {
         )}
         </div>
       </div>
-      <TabBar tab={tab} onTab={(id) => { setTab(id); play.click(); }} />
+      <TabBar tab={tab} onTab={(id) => { setTab(id); play.click(); if (id === "shop") showTip("shop"); }} />
     </div>
   );
 }
