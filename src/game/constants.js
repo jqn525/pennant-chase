@@ -12,8 +12,31 @@ export const C = {
   grass: "#7BC96F",
 };
 
-export const FIRST = ["Ace", "Dutch", "Lefty", "Mo", "Ry", "Cal", "Boog", "Vida", "Sal", "Iz", "Tuck", "Roxie", "Gus", "Pep", "Bo", "Nix", "Sky", "Duke", "Wren", "Marta"];
-export const LAST = ["Delgado", "Okafor", "Marsh", "Ishida", "Kowalski", "Bell", "Fontaine", "Rojas", "Whitlock", "Nakamura", "Pryor", "Vance", "Otero", "Grimm", "Holloway", "Sato", "Reyes", "Byrd", "Castellan", "Mbeki"];
+export const FIRST = [
+  "Ace", "Dutch", "Lefty", "Mo", "Ry", "Cal", "Boog", "Vida", "Sal", "Iz",
+  "Tuck", "Roxie", "Gus", "Pep", "Bo", "Nix", "Sky", "Duke", "Wren", "Marta",
+  "Amos", "Arch", "Augie", "Bing", "Birdie", "Brooks", "Buck", "Bump", "Buzz", "Chick",
+  "Cookie", "Cy", "Dazzy", "Denny", "Dizzy", "Dock", "Enos", "Ernie", "Felix", "Flip",
+  "Gabby", "Gil", "Goose", "Hank", "Heinie", "Hoyt", "Hub", "Ike", "Jake", "Kiki",
+  "Lem", "Lou", "Luke", "Mack", "Monte", "Moose", "Mule", "Nap", "Nellie", "Ossie",
+  "Otto", "Pancho", "Preacher", "Rabbit", "Red", "Rip", "Rollie", "Rube", "Rusty", "Scooter",
+  "Skeeter", "Slim", "Smoky", "Sparky", "Stretch", "Stu", "Tex", "Tito", "Turk", "Vern",
+  "Vic", "Wally", "Wilbur", "Zack", "Zeke", "Blue", "Burl", "Cletus", "Harmon", "Lee",
+];
+export const LAST = [
+  "Delgado", "Okafor", "Marsh", "Ishida", "Kowalski", "Bell", "Fontaine", "Rojas", "Whitlock", "Nakamura",
+  "Pryor", "Vance", "Otero", "Grimm", "Holloway", "Sato", "Reyes", "Byrd", "Castellan", "Mbeki",
+  "Abernathy", "Arroyo", "Baines", "Baxter", "Bigelow", "Blackwood", "Bonilla", "Briggs", "Calloway", "Campos",
+  "Cardenas", "Carver", "Chapman", "Crowder", "Cruz", "DeLuca", "Diggs", "Dombrowski", "Duffy", "Eastman",
+  "Espinoza", "Farrell", "Fenwick", "Fielder", "Flores", "Fujimoto", "Gaines", "Galloway", "Garza", "Gibbs",
+  "Goodwin", "Granger", "Guerrero", "Gutierrez", "Hargrove", "Hatcher", "Hidalgo", "Higgins", "Hollis", "Huxley",
+  "Ibarra", "Jenkins", "Kessler", "Kimura", "Kirkland", "Lachance", "Lattimore", "LeBlanc", "Lockhart", "Lozano",
+  "Maddox", "Marchetti", "Matsuda", "McAllister", "Mercado", "Molina", "Montoya", "Mudd", "Nash", "Nieves",
+  "Nomura", "Ojeda", "Okada", "Ortega", "Osei", "Paredes", "Peralta", "Pettibone", "Quintana", "Rafferty",
+  "Renteria", "Rhodes", "Ruiz", "Salazar", "Sandoval", "Schmidt", "Segura", "Serrano", "Slocum", "Stroud",
+  "Sweeney", "Takahashi", "Tavares", "Thorne", "Urbina", "Valdez", "Vasquez", "Ventura", "Villanueva", "Watkins",
+  "Webb", "Whitaker", "Wilks", "Yamada", "Zamora",
+];
 
 export const CITIES = [
   { name: "Sacramento", bonus: "fans", label: "Hungry market: +25% fan growth" },

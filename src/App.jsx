@@ -6,7 +6,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { C, LEAGUE, ECON, TRADE, BAT_STATS, PIT_STATS } from "./game/constants.js";
 import { fmt } from "./game/utils.js";
-import { genRoster, seedUid, genDraftClass, vetPot, rollPot, pickTrait } from "./game/generators.js";
+import { genRoster, seedUid, genDraftClass, vetPot, rollPot, pickTrait, freshName, seedNames } from "./game/generators.js";
 import { newGame, stepAtBat, playGameInstant, settleGame } from "./game/engine.js";
 import { makeRivals, makeSchedule, teamRating, quickSim, simSeries, seedOrder, runOffseason, ageRoster, seriesInfo } from "./game/season.js";
 import { eff, isStar, talentGrade, genShipment, genItem, playerValue, GEAR, dealerTier, shipmentWeights, TIER_INFO } from "./game/gear.js";
@@ -79,6 +79,18 @@ if (SAVED?.roster) {
   [...SAVED.roster.batters, SAVED.roster.sp, SAVED.roster.rp].forEach((p) => upgrade(p, true));
   (SAVED.rivals || []).forEach((r) => [...r.batters, r.sp].forEach((p) => upgrade(p, false)));
   (SAVED.draftClass || []).forEach((p) => upgrade(p, true));
+
+  // One-time league-wide rename with the expanded, duplicate-free name pool
+  const allSaved = [
+    ...SAVED.roster.batters, SAVED.roster.sp, SAVED.roster.rp,
+    ...(SAVED.rivals || []).flatMap((r) => [...r.batters, r.sp]),
+    ...(SAVED.draftClass || []),
+  ];
+  if (SAVED.names !== 2) {
+    allSaved.forEach((p) => { p.name = freshName(); });
+  } else {
+    seedNames(allSaved.map((p) => p.name));
+  }
   if (oldScale && SAVED.shopItems) {
     for (const item of SAVED.shopItems) {
       for (const st in item.boosts) {
@@ -154,7 +166,7 @@ export default function App() {
     const s = S.current;
     if (!s.city) return;
     localStorage.setItem(SAVE_KEY, JSON.stringify({
-      version: 3, scale: 100, lastSeen: Date.now(),
+      version: 3, scale: 100, names: 2, lastSeen: Date.now(),
       city: s.city, money: s.money, fans: s.fans, roster: s.roster, merch: s.merch, tv: s.tv,
       seasonStats: s.seasonStats, shopItems: s.shopItems, draftClass: s.draftClass, form: s.form,
       year: s.year, phase: s.phase, rivals: s.rivals, schedule: s.schedule, rivalDays: s.rivalDays,

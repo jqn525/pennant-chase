@@ -7,7 +7,21 @@ let uid = 1;
 // After loading a save, push the id counter past the saved players' ids
 export const seedUid = (n) => { if (n > uid) uid = n; };
 
-const rname = () => FIRST[(Math.random() * FIRST.length) | 0] + " " + LAST[(Math.random() * LAST.length) | 0];
+// Names in use across the league — no two active players ever share one
+const usedNames = new Set();
+export const seedNames = (names) => names.forEach((n) => usedNames.add(n));
+const rname = () => {
+  for (let tries = 0; tries < 30; tries++) {
+    const n = FIRST[(Math.random() * FIRST.length) | 0] + " " + LAST[(Math.random() * LAST.length) | 0];
+    if (!usedNames.has(n)) {
+      usedNames.add(n);
+      return n;
+    }
+  }
+  // pool exhausted beyond belief — allow a repeat rather than loop forever
+  return FIRST[(Math.random() * FIRST.length) | 0] + " " + LAST[(Math.random() * LAST.length) | 0];
+};
+export const freshName = () => rname();
 
 export const pickTrait = (role) => {
   const pool = PLAYER_TRAITS.filter((t) => t.role === role);
