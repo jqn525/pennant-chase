@@ -23,6 +23,18 @@ import BallparkTab from "./ui/BallparkTab.jsx";
 import RosterTab from "./ui/RosterTab.jsx";
 import ShopTab from "./ui/ShopTab.jsx";
 import FrontOfficeTab from "./ui/FrontOfficeTab.jsx";
+import Settings from "./ui/Settings.jsx";
+
+// Older saves start their all-time ledger with what history can reconstruct
+const seedAllTime = () => {
+  if (!SAVED?.city) return {};
+  let w = SAVED.standings?.[0]?.w || 0, l = SAVED.standings?.[0]?.l || 0;
+  for (const h of SAVED.history || []) {
+    const [hw, hl] = (h.playerRecord || "0-0").split("-").map(Number);
+    w += hw || 0; l += hl || 0;
+  }
+  return { w, l, g: w + l };
+};
 
 const EMPTY_STAT = { ab: 0, h: 0, d: 0, t: 0, hr: 0, bb: 0, k: 0, r: 0, rbi: 0, outsP: 0, kP: 0, bbP: 0, hP: 0, raP: 0 };
 
@@ -123,6 +135,12 @@ export default function App() {
   const [playoffs, setPlayoffs] = useState(SAVED?.playoffs ?? null);
   const [history, setHistory] = useState(SAVED?.history ?? []);
   const [trophies, setTrophies] = useState(SAVED?.trophies ?? 0);
+  const [allTime, setAllTime] = useState(SAVED?.allTime ?? seedAllTime());
+  const addAT = useCallback((patch) => setAllTime((a) => {
+    const next = { ...a };
+    for (const k in patch) next[k] = (next[k] || 0) + patch[k];
+    return next;
+  }), []);
   const [speed, setSpeed] = useState(SAVED?.speed ?? 1);
   const [paused, setPaused] = useState(false);
   const [sound, setSound] = useState(SAVED?.sound ?? true);
@@ -142,7 +160,7 @@ export default function App() {
   const [cardId, setCardId] = useState(null); // player card pop-up
   const [log, setLog] = useState([]);
   const [tab, setTab] = useState("game");
-  const [showHelp, setShowHelp] = useState(false);
+  const [menu, setMenu] = useState(null); // null | "settings" | "rules"
   const [, force] = useState(0);
   const rerender = () => force((x) => x + 1);
 
@@ -153,7 +171,7 @@ export default function App() {
 
   // Fresh-state mirror so interval callbacks never read stale closures
   const S = useRef({});
-  S.current = { city, money, fans, roster, merch, tv, seasonStats, shopItems, draftClass, form, year, phase, rivals, schedule, rivalDays, gameIndex, standings, playoffs, history, trophies, speed, sound, seenTips };
+  S.current = { city, money, fans, roster, merch, tv, seasonStats, shopItems, draftClass, form, year, phase, rivals, schedule, rivalDays, gameIndex, standings, playoffs, history, trophies, allTime, speed, sound, seenTips };
 
   const cityBonus = (k) => (city?.bonus === k);
   const tn = (c) => (c?.nickname ?? c?.name ?? ""); // team display name
@@ -172,10 +190,10 @@ export default function App() {
       seasonStats: s.seasonStats, shopItems: s.shopItems, draftClass: s.draftClass, form: s.form,
       year: s.year, phase: s.phase, rivals: s.rivals, schedule: s.schedule, rivalDays: s.rivalDays,
       gameIndex: s.gameIndex, standings: s.standings, playoffs: s.playoffs,
-      history: s.history, trophies: s.trophies, speed: s.speed, sound: s.sound, seenTips: s.seenTips,
+      history: s.history, trophies: s.trophies, allTime: s.allTime, speed: s.speed, sound: s.sound, seenTips: s.seenTips,
     }));
   }, []);
-  useEffect(() => { saveNow(); }, [city, money, fans, roster, merch, tv, seasonStats, shopItems, draftClass, form, year, phase, rivals, schedule, rivalDays, gameIndex, standings, playoffs, history, trophies, speed, sound, seenTips, saveNow]);
+  useEffect(() => { saveNow(); }, [city, money, fans, roster, merch, tv, seasonStats, shopItems, draftClass, form, year, phase, rivals, schedule, rivalDays, gameIndex, standings, playoffs, history, trophies, allTime, speed, sound, seenTips, saveNow]);
   useEffect(() => {
     const iv = setInterval(() => { if (!document.hidden) saveNow(); }, 20000);
     return () => clearInterval(iv);
@@ -192,6 +210,7 @@ export default function App() {
       const stars = all.filter(isStar).length;
       const gain = merchRate(SAVED.fans, stars, SAVED.tv, SAVED.city.bonus === "merch") * (elapsed / 1000) * ECON.offlineRate;
       setMoney((m) => m + gain);
+      addAT({ earned: gain });
       const h = Math.floor(elapsed / 3600e3), min = Math.floor((elapsed % 3600e3) / 60e3);
       pushLog(`While you were away (${h}h ${min}m), the merch stand sold $${fmt(gain)} in jerseys.${elapsed >= ECON.offlineCapHours * 3600e3 - 1000 ? ` (${ECON.offlineCapHours}h cap)` : ""}`, "win");
     } else {
@@ -217,7 +236,9 @@ export default function App() {
     const iv = setInterval(() => {
       if (document.hidden) return;
       const stars = [...roster.batters, roster.sp, roster.rp].filter(isStar).length;
-      setMoney((m) => m + merchRate(fans, stars, tv, cityBonus("merch")));
+      const gain = merchRate(fans, stars, tv, cityBonus("merch"));
+      setMoney((m) => m + gain);
+      addAT({ earned: gain });
     }, 1000);
     return () => clearInterval(iv);
   }, [merch, tv, fans, roster, city]);
@@ -227,6 +248,9 @@ export default function App() {
     const accs = g.statAcc;
     if (!Object.keys(accs).length) return;
     g.statAcc = {};
+    const sum = {};
+    for (const pid in accs) for (const k in accs[pid]) sum[k] = (sum[k] || 0) + accs[pid][k];
+    addAT(sum);
     setSeasonStats((s) => {
       const next = { ...s };
       for (const pid in accs) {
@@ -282,6 +306,7 @@ export default function App() {
       formWins: s.form.filter((f) => f === "W").length, streak,
     });
     setMoney((m) => m + res.moneyDelta);
+    addAT({ g: 1, [res.won ? "w" : "l"]: 1, tickets: res.attendance, earned: res.moneyDelta });
     if (res.fansDelta) setFans((f) => f + res.fansDelta);
     if (res.won && s.speed !== "max") play.cash();
     pushLog(res.text, res.kind);
@@ -333,6 +358,7 @@ export default function App() {
     const ratings = ratingsNow();
     if (p.wins.us >= need && p.round === "semi") {
       setMoney((m) => m + ECON.semisSeriesPay);
+      addAT({ earned: ECON.semisSeriesPay });
       const finalOppIdx = p.otherWinner;
       pushLog(`— SEMIFINAL WON ${p.wins.us}-${p.wins.them} — $${fmt(ECON.semisSeriesPay)} series bonus. The Pennant Cup final vs the ${s.rivals[finalOppIdx - 1].name} begins.`, "win");
       const order = seedOrder(s.standings, ratings);
@@ -422,7 +448,7 @@ export default function App() {
       record: { w: s.standings[0].w, l: s.standings[0].l },
       fans: s.fans, history: s.history, trophies: s.trophies,
     });
-    if (playerCup) setMoney((m) => m + ECON.cupPay);
+    if (playerCup) { setMoney((m) => m + ECON.cupPay); addAT({ earned: ECON.cupPay }); }
     setFans((f) => Math.max(25, f + off.fansDelta));
     setRivals(off.rivals);
     setRoster((r) => ageRoster(r));
@@ -500,6 +526,7 @@ export default function App() {
       if (money < cost) return r;
       if (p[key] >= (p.pot?.[key] ?? Infinity)) return r; // peaked — nothing left to teach
       setMoney((m) => m - cost);
+      addAT({ spent: cost, train: 1 });
       play.click();
       const upd = (o) => (o.id === pid ? { ...o, [key]: o[key] + 1 } : o);
       return { batters: r.batters.map(upd), sp: upd(r.sp), rp: upd(r.rp) };
@@ -533,6 +560,7 @@ export default function App() {
     if (!item || !p || money < item.cost) return;
     if ((def.role === "bat") !== (p.role === "bat")) return; // right kind of player
     setMoney((m) => m - item.cost);
+    addAT({ spent: item.cost, gear: 1 });
     setShopItems((s) => s.filter((i) => i.id !== itemId));
     const upd = (o) => (o.id === pid ? { ...o, gear: { ...(o.gear || {}), [item.slot]: item } } : o);
     setRoster((r) => ({ ...r, batters: r.batters.map(upd), sp: upd(r.sp), rp: upd(r.rp) }));
@@ -563,6 +591,7 @@ export default function App() {
     // veterans arrive with little headroom left — you trade for now, draft for later
     const incoming = { ...q, pot: vetPot(q, p.role === "bat" ? BAT_STATS : PIT_STATS) };
     setMoney((m) => m - quote.cash);
+    addAT({ trades: 1, ...(quote.cash > 0 ? { spent: quote.cash } : { earned: -quote.cash }) });
     setRoster((r) => (p.role === "bat"
       ? { ...r, batters: r.batters.map((b) => (b.id === myPid ? incoming : b)) }
       : { ...r, sp: incoming }));
@@ -582,6 +611,7 @@ export default function App() {
     const isPit = rook.pos === "SP" || rook.pos === "RP";
     const released = isPit ? (rook.pos === "SP" ? roster.sp : roster.rp) : roster.batters.find((b) => b.pos === rook.pos);
     setMoney((m) => m - rook.signCost);
+    addAT({ spent: rook.signCost, rookies: 1 });
     setDraftClass((dc) => dc.filter((p) => p.id !== rid));
     setRoster((r) => {
       const signed = { ...rook, gear: released?.gear }; // the kid inherits the locker
@@ -601,13 +631,13 @@ export default function App() {
 
   const buyMerch = () => {
     if (money >= ECON.merchCost && fans >= ECON.merchFans) {
-      setMoney((m) => m - ECON.merchCost); setMerch(true);
+      setMoney((m) => m - ECON.merchCost); setMerch(true); addAT({ spent: ECON.merchCost });
       pushLog("Merch stand opens. Jersey sales tick in every second — stars sell more. It even sells while you're away (up to 8 hours).", "win");
     }
   };
   const buyTv = () => {
     if (money >= ECON.tvCost && fans >= ECON.tvFans && merch) {
-      setMoney((m) => m - ECON.tvCost); setTv(true);
+      setMoney((m) => m - ECON.tvCost); setTv(true); addAT({ spent: ECON.tvCost });
       pushLog("Regional TV deal signed. Merch and media income doubled.", "win");
     }
   };
@@ -670,7 +700,14 @@ export default function App() {
     <div style={{ minHeight: "100dvh", background: C.green, color: C.cream, fontFamily: MONO, padding: "calc(12px + env(safe-area-inset-top)) calc(12px + env(safe-area-inset-right)) calc(76px + env(safe-area-inset-bottom)) calc(12px + env(safe-area-inset-left))", boxSizing: "border-box" }}>
       <style>{globalCss}</style>
 
-      {showHelp && <Rulebook onClose={() => setShowHelp(false)} />}
+      {menu === "settings" && (
+        <Settings
+          allTime={allTime} year={year} trophies={trophies} history={history} phase={phase}
+          sound={sound} onToggleSound={() => setSound((v) => !v)}
+          onRules={() => setMenu("rules")} onClose={() => setMenu(null)}
+        />
+      )}
+      {menu === "rules" && <Rulebook onClose={() => setMenu("settings")} />}
 
       <div style={{ maxWidth: 1020, margin: "0 auto" }}>
         {/* Header */}
@@ -682,7 +719,7 @@ export default function App() {
           onSetSpeed={(sp) => { setSpeed(sp); setPaused(false); }}
           onTogglePause={() => setPaused((p) => !p)}
           onToggleSound={() => setSound((v) => !v)}
-          onHelp={() => setShowHelp(true)}
+          onHelp={() => setMenu("settings")}
         />
 
         <div key={tab} style={{ animation: "screenIn .18s ease-out" }}>

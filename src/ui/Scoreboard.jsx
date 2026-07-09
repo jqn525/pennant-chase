@@ -3,7 +3,7 @@
 import { C, LEAGUE } from "../game/constants.js";
 import { fmt } from "../game/utils.js";
 import { panel, bulb, MONO, SLAB } from "./styles.js";
-import { CoinIcon, FansIcon, StarIcon, TrophyIcon, RulebookIcon, PlayIcon, PauseIcon, SoundOnIcon, SoundOffIcon } from "./Icons.jsx";
+import { CoinIcon, FansIcon, StarIcon, TrophyIcon, GearIcon, PlayIcon, PauseIcon, SoundOnIcon, SoundOffIcon } from "./Icons.jsx";
 
 const BOARD_BG = "#0A1810";
 
@@ -38,8 +38,8 @@ export default function Scoreboard({ city, year, record, money, fans, talent, tr
         <h1 style={{ fontFamily: SLAB, fontSize: "clamp(14px, 4.3vw, 20px)", margin: 0, flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {city.name.toUpperCase()}<span style={{ color: C.amber }}> {(city.nickname ?? "BASEBALL").toUpperCase()}</span>
         </h1>
-        <button onClick={onHelp} style={{ display: "flex", alignItems: "center", gap: 6, background: "transparent", border: `1px solid ${C.greenLine}`, borderRadius: 4, color: C.cream, fontFamily: MONO, fontSize: 11, padding: "6px 10px", cursor: "pointer", flexShrink: 0 }}>
-          <RulebookIcon /> RULEBOOK
+        <button onClick={onHelp} aria-label="settings" style={{ display: "flex", alignItems: "center", gap: 6, background: "transparent", border: `1px solid ${C.greenLine}`, borderRadius: 4, color: C.cream, fontFamily: MONO, fontSize: 11, padding: "6px 10px", cursor: "pointer", flexShrink: 0 }}>
+          <GearIcon /> SETTINGS
         </button>
       </div>
 

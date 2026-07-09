@@ -273,5 +273,5 @@ export function settleGame(g, { fans, gateBonus, floorBonus, fansBonus, cityName
   } else {
     text = `FINAL: ${score}. ${attendance} in the seats — gate $${Math.round(gate)}.${won && !streakNote ? ` +${fansDelta} fans.` : ""}${streakNote}`;
   }
-  return { won, moneyDelta, fansDelta, text, kind };
+  return { won, moneyDelta, fansDelta, text, kind, attendance };
 }
