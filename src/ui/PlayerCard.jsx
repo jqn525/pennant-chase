@@ -9,43 +9,11 @@ import { btn, MONO, PIXEL, pixelPanel, pixelLegend } from "./styles.js";
 import { StarIcon, BallIcon } from "./Icons.jsx";
 import { GEAR, GEAR_ART, gearArtUrl, gearBonus, ovr } from "../game/gear.js";
 import Modal from "./Modal.jsx";
+import { portraitUrl } from "./portrait.js";
 
 const avg3 = (num, den) => (den ? (num / den).toFixed(3).replace(/^0/, "") : "—");
 const rarityColor = { 1: "#8A9A8F", 2: C.amber, 3: C.red };
 const FACE = C.green;
-
-// Deterministic 16x16 pixel avatar: cap, face, jersey — tinted by player id
-const SKINS = ["#E8B98A", "#C68B59", "#8D5A33", "#F2CBA0"];
-const CAPS = ["#2B4C7E", "#7E2B2B", "#2B6045", "#4A3A6B", "#5C5C28"];
-function PixelAvatar({ id, size = 84 }) {
-  const skin = SKINS[id % SKINS.length];
-  const cap = CAPS[(id * 7) % CAPS.length];
-  const jersey = "#E9E4D4";
-  // 16x16 grid, drawn coarsely with rects
-  return (
-    <svg width={size} height={size} viewBox="0 0 16 16" style={{ imageRendering: "pixelated", display: "block" }} aria-label="player portrait">
-      <rect x="0" y="0" width="16" height="16" fill="#7FA8C9" />
-      {/* cap */}
-      <rect x="4" y="2" width="8" height="2" fill={cap} />
-      <rect x="3" y="4" width="10" height="1" fill={cap} />
-      <rect x="10" y="4" width="4" height="1" fill={cap} />
-      {/* face */}
-      <rect x="5" y="5" width="6" height="5" fill={skin} />
-      <rect x="6" y="6" width="1" height="1" fill="#2A2118" />
-      <rect x="9" y="6" width="1" height="1" fill="#2A2118" />
-      <rect x="7" y="8" width="2" height="1" fill="#B07850" />
-      {/* neck + jersey */}
-      <rect x="6" y="10" width="4" height="1" fill={skin} />
-      <rect x="3" y="11" width="10" height="5" fill={jersey} />
-      <rect x="7" y="11" width="2" height="5" fill="#C9C2AC" />
-      <rect x="3" y="11" width="2" height="2" fill={skin} />
-      <rect x="11" y="11" width="2" height="2" fill={skin} />
-      {/* bat over shoulder */}
-      <rect x="12" y="1" width="1" height="10" fill="#B98A4E" />
-      <rect x="11" y="0" width="2" height="2" fill="#B98A4E" />
-    </svg>
-  );
-}
 
 // Segmented skill bar: [■■■■■□□□□□□□] with gear segments and a ceiling notch
 const SEGS = 12;
@@ -115,7 +83,8 @@ export default function PlayerCard({ player, isOwn, onClose, money, league, stat
         {/* Portrait */}
         <div style={{ display: "flex", justifyContent: "center", margin: "12px 0 2px" }}>
           <div style={{ border: `3px solid ${C.amber}`, borderRadius: 6, overflow: "hidden", lineHeight: 0 }}>
-            <PixelAvatar id={player.id} />
+            <img src={portraitUrl(player)} alt={`${player.name} portrait`} width={96} height={96}
+              style={{ imageRendering: "pixelated", display: "block" }} />
           </div>
         </div>
 

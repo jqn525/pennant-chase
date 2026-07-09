@@ -6,6 +6,7 @@ import Panel from "./Panel.jsx";
 import { StarIcon } from "./Icons.jsx";
 import StatTable from "./StatTable.jsx";
 import { ovr } from "../game/gear.js";
+import { portraitUrl } from "./portrait.js";
 
 const avg3 = (num, den) => (den ? (num / den).toFixed(3).replace(/^0/, "") : "—");
 const ba = (s) => avg3(s.h, s.ab);
@@ -29,6 +30,8 @@ export default function RosterTab({ roster, stat, isStar, onMoveBatter, onAutoLi
           style={{ ...btn(true), flex: 1, minWidth: 0, textAlign: "left", border: `1px solid ${C.greenLine}`, background: "transparent", color: C.cream }}>
           <span style={{ display: "flex", gap: 8, alignItems: "center" }}>
             <span style={{ width: 14, color: C.amber, fontSize: 10 }}>{order ?? ""}</span>
+            <img src={portraitUrl(p)} alt="" width={26} height={26}
+              style={{ imageRendering: "pixelated", borderRadius: 3, border: `1px solid ${C.greenLine}`, flexShrink: 0 }} />
             <span style={{ width: 26, color: C.creamDim }}>{p.pos}</span>
             <span style={{ fontWeight: 600, flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {p.name}{isStar(p) && <StarIcon />}

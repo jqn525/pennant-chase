@@ -4,6 +4,7 @@ import { C, PLAYER_TRAITS, BAT_STATS, PIT_STATS } from "../game/constants.js";
 import { fmt } from "../game/utils.js";
 import { panel, btn, PIXEL } from "./styles.js";
 import Panel from "./Panel.jsx";
+import { portraitUrl } from "./portrait.js";
 
 export default function DraftBoard({ draftClass, roster, money, year, onSign, onClose, onView }) {
   const releasedFor = (rook) => {
@@ -28,6 +29,8 @@ export default function DraftBoard({ draftClass, roster, money, year, onSign, on
         return (
           <div key={rook.id} style={{ ...panel, padding: 10, marginBottom: 8 }}>
             <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
+              <img src={portraitUrl(rook)} alt="" width={34} height={34}
+                style={{ imageRendering: "pixelated", borderRadius: 4, border: `1px solid ${C.greenLine}`, flexShrink: 0 }} />
               <span style={{ width: 26, color: C.creamDim, fontSize: 12 }}>{rook.pos}</span>
               <button onClick={() => onView?.(rook)}
                 style={{ fontWeight: 700, fontSize: 13, background: "transparent", border: "none", color: C.cream, cursor: "pointer", padding: 0, fontFamily: "inherit", textDecoration: "underline", textDecorationColor: `${C.creamDim}66` }}>
