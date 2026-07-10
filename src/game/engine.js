@@ -240,26 +240,28 @@ export function playGameInstant(g, ctx) {
 // formWins = wins in the last-10 form BEFORE this game; streak = trailing
 // consecutive wins before this game. Attendance is a share of the fan base:
 // 30% for a cold club up to 60% when the form is hot; playoffs sell out.
-export function settleGame(g, { fans, gateBonus, floorBonus, fansBonus, cityName, playoff, formWins = 0, streak = 0 }) {
+export function settleGame(g, { fans, gateBonus, floorBonus, fansBonus, cityName, playoff, formWins = 0, streak = 0, attCap = ECON.attCap, rateBonus = 0, gateMult = 1, fansMult = 1 }) {
   const won = g.us > g.them;
   let fansDelta = 0, kind;
   const score = won ? `${cityName} ${g.us}, ${g.opp.name} ${g.them}` : `${g.opp.name} ${g.them}, ${cityName} ${g.us}`;
 
-  const rate = playoff ? 1 : Math.min(0.6, 0.3 + 0.03 * formWins);
-  const attendance = Math.round(Math.min(fans, ECON.attCap) * rate);
+  const rate = playoff ? 1 : Math.min(0.6 + rateBonus, 0.3 + rateBonus + 0.03 * formWins);
+  const attendance = Math.round(Math.min(fans, attCap) * rate);
   let gate = attendance * ECON.ticketPrice * (gateBonus ? 1.25 : 1);
   gate += won ? ECON.gateWinBase : ECON.gateLossBase * (floorBonus ? 2 : 1);
+  gate *= gateMult;
 
   let streakNote = "";
   if (won) {
-    fansDelta = LEAGUE.fansPerWin + g.hrUs * 2;
+    fansDelta = (LEAGUE.fansPerWin + g.hrUs * 2) * fansMult;
     const run = streak + 1; // including this win
     if (run >= 3) {
       const mult = Math.min(ECON.streakMax, 1 + ECON.streakStep * (run - 2));
       fansDelta = Math.round(fansDelta * mult);
       streakNote = ` ${run} straight — the bandwagon rolls, +${fansDelta} fans!`;
     }
-    if (fansBonus) fansDelta = Math.round(fansDelta * 1.25);
+    if (fansBonus) fansDelta = fansDelta * 1.25;
+    fansDelta = Math.round(fansDelta);
     kind = "win";
   } else {
     kind = "out";

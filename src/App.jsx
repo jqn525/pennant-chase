@@ -4,7 +4,7 @@
 // the pure simulation lives in src/game/ and the screens in src/ui/.
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { C, LEAGUE, ECON, TRADE, BAT_STATS, PIT_STATS } from "./game/constants.js";
+import { C, LEAGUE, ECON, TRADE, BAT_STATS, PIT_STATS, STADIUM, stadiumFx } from "./game/constants.js";
 import { fmt } from "./game/utils.js";
 import { genRoster, seedUid, genDraftClass, vetPot, rollPot, pickTrait, freshName, seedNames } from "./game/generators.js";
 import { newGame, stepAtBat, playGameInstant, settleGame } from "./game/engine.js";
@@ -120,6 +120,7 @@ export default function App() {
   const [fans, setFans] = useState(SAVED?.fans ?? ECON.startFans);
   const [roster, setRoster] = useState(SAVED?.roster ?? null);
   const [merch, setMerch] = useState(SAVED?.merch ?? false);
+  const [stadium, setStadium] = useState(SAVED?.stadium ?? { parking: 0, seats: 0, conc: 0, lights: 0 });
   const [tv, setTv] = useState(SAVED?.tv ?? false);
   const [seasonStats, setSeasonStats] = useState(SAVED?.seasonStats ?? {});
   const [shopItems, setShopItems] = useState(SAVED?.shopItems ?? genShipment()); // current shipment
@@ -171,7 +172,7 @@ export default function App() {
 
   // Fresh-state mirror so interval callbacks never read stale closures
   const S = useRef({});
-  S.current = { city, money, fans, roster, merch, tv, seasonStats, shopItems, draftClass, form, year, phase, rivals, schedule, rivalDays, gameIndex, standings, playoffs, history, trophies, allTime, speed, sound, seenTips };
+  S.current = { city, money, fans, roster, merch, tv, stadium, seasonStats, shopItems, draftClass, form, year, phase, rivals, schedule, rivalDays, gameIndex, standings, playoffs, history, trophies, allTime, speed, sound, seenTips };
 
   const cityBonus = (k) => (city?.bonus === k);
   const tn = (c) => (c?.nickname ?? c?.name ?? ""); // team display name
@@ -186,14 +187,14 @@ export default function App() {
     if (!s.city) return;
     localStorage.setItem(SAVE_KEY, JSON.stringify({
       version: 3, scale: 100, names: 2, lastSeen: Date.now(),
-      city: s.city, money: s.money, fans: s.fans, roster: s.roster, merch: s.merch, tv: s.tv,
+      city: s.city, money: s.money, fans: s.fans, roster: s.roster, merch: s.merch, tv: s.tv, stadium: s.stadium,
       seasonStats: s.seasonStats, shopItems: s.shopItems, draftClass: s.draftClass, form: s.form,
       year: s.year, phase: s.phase, rivals: s.rivals, schedule: s.schedule, rivalDays: s.rivalDays,
       gameIndex: s.gameIndex, standings: s.standings, playoffs: s.playoffs,
       history: s.history, trophies: s.trophies, allTime: s.allTime, speed: s.speed, sound: s.sound, seenTips: s.seenTips,
     }));
   }, []);
-  useEffect(() => { saveNow(); }, [city, money, fans, roster, merch, tv, seasonStats, shopItems, draftClass, form, year, phase, rivals, schedule, rivalDays, gameIndex, standings, playoffs, history, trophies, allTime, speed, sound, seenTips, saveNow]);
+  useEffect(() => { saveNow(); }, [city, money, fans, roster, merch, tv, stadium, seasonStats, shopItems, draftClass, form, year, phase, rivals, schedule, rivalDays, gameIndex, standings, playoffs, history, trophies, allTime, speed, sound, seenTips, saveNow]);
   useEffect(() => {
     const iv = setInterval(() => { if (!document.hidden) saveNow(); }, 20000);
     return () => clearInterval(iv);
@@ -304,6 +305,7 @@ export default function App() {
       fans: s.fans, gateBonus: cityBonus("gate"), floorBonus: cityBonus("floor"),
       fansBonus: cityBonus("fans"), cityName: tn(s.city), playoff: playoffLabel,
       formWins: s.form.filter((f) => f === "W").length, streak,
+      ...stadiumFx(s.stadium),
     });
     setMoney((m) => m + res.moneyDelta);
     addAT({ g: 1, [res.won ? "w" : "l"]: 1, tickets: res.attendance, earned: res.moneyDelta });
@@ -629,6 +631,19 @@ export default function App() {
     showTip("backup");
   };
 
+  // ── Stadium upgrades: money + fan milestone, one tier at a time ──
+  const buyUpgrade = (trackId) => {
+    const track = STADIUM.find((t) => t.id === trackId);
+    const lvl = stadium[trackId] || 0;
+    const next = track.tiers[lvl];
+    if (!next || money < next.cost || fans < next.fans) return;
+    setMoney((m) => m - next.cost);
+    setStadium((st) => ({ ...st, [trackId]: lvl + 1 }));
+    addAT({ spent: next.cost, upgrades: 1 });
+    pushLog(`STADIUM: the ${next.name} opens — ${next.label}.`, "win");
+    play.cash();
+  };
+
   const buyMerch = () => {
     if (money >= ECON.merchCost && fans >= ECON.merchFans) {
       setMoney((m) => m - ECON.merchCost); setMerch(true); addAT({ spent: ECON.merchCost });
@@ -765,13 +780,14 @@ export default function App() {
           <FrontOfficeTab
             roster={roster} city={city} fans={fans} money={money}
             merch={merch} tv={tv} isStar={isStar} history={history} trophies={trophies}
+            stadium={stadium} onBuyUpgrade={buyUpgrade}
             onBuyMerch={buyMerch} onBuyTv={buyTv} onNewFranchise={newFranchise}
             getBackupCode={getBackupCode} onRestore={restoreBackup}
           />
         )}
         </div>
       </div>
-      <TabBar tab={tab} onTab={(id) => { setTab(id); play.click(); if (id === "shop") showTip("shop"); }} />
+      <TabBar tab={tab} onTab={(id) => { setTab(id); play.click(); if (id === "shop") showTip("shop"); if (id === "club") showTip("stadium"); }} />
     </div>
   );
 }

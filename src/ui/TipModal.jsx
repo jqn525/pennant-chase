@@ -42,6 +42,13 @@ export const TIPS = {
       "Every playoff game is a sellout — full gate money — and winning the Cup pays a fortune, draws hundreds of fans, and puts a trophy in your case forever.",
     ],
   },
+  stadium: {
+    title: "THE FRONT OFFICE",
+    body: [
+      "This is where the money side of the club lives — including your STADIUM. Four things to build, each three tiers deep: PARKING gets a bigger share of your fans through the gates, SEATS raise how many the yard can hold, CONCESSIONS grow every game's payout, and LIGHTS draw new fans faster after wins.",
+      "Each tier takes money and a big enough fan base. Win, grow, reinvest.",
+    ],
+  },
   backup: {
     title: "PROTECT THE FRANCHISE",
     body: [

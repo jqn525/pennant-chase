@@ -112,6 +112,54 @@ export const ECON = {
   trainBase: 6,           // training: cost per +1 = trainBase × 1.5^((stat−41)/4)
 };
 
+// Stadium upgrades: four tracks, three tiers each, gated by money + fan milestones.
+// value semantics — parking: attendance-rate bonus; seats: new attendance cap;
+// conc: gate multiplier bonus; lights: win fan-growth multiplier.
+export const STADIUM = [
+  {
+    id: "parking", title: "PARKING", tiers: [
+      { name: "Gravel Lot", cost: 1500, fans: 300, label: "+5% attendance", value: 0.05 },
+      { name: "Paved Lot", cost: 4000, fans: 1000, label: "+10% attendance", value: 0.10 },
+      { name: "Parking Garage", cost: 10000, fans: 2500, label: "+15% attendance", value: 0.15 },
+    ],
+  },
+  {
+    id: "seats", title: "SEATS", tiers: [
+      { name: "Bleachers", cost: 3000, fans: 2000, label: "holds 4,000", value: 4000 },
+      { name: "Grandstand", cost: 8000, fans: 3500, label: "holds 6,500", value: 6500 },
+      { name: "Upper Deck", cost: 20000, fans: 6000, label: "holds 10,000", value: 10000 },
+    ],
+  },
+  {
+    id: "conc", title: "CONCESSIONS", tiers: [
+      { name: "Hot Dog Cart", cost: 1200, fans: 200, label: "+15% gate", value: 0.15 },
+      { name: "Food Court", cost: 3500, fans: 800, label: "+30% gate", value: 0.30 },
+      { name: "Restaurant Row", cost: 9000, fans: 2000, label: "+45% gate", value: 0.45 },
+    ],
+  },
+  {
+    id: "lights", title: "LIGHTS", tiers: [
+      { name: "Floodlights", cost: 1000, fans: 150, label: "+10% fan growth", value: 0.10 },
+      { name: "Full Rig", cost: 3000, fans: 600, label: "+25% fan growth", value: 0.25 },
+      { name: "Prime Time", cost: 8000, fans: 1500, label: "+50% fan growth", value: 0.50 },
+    ],
+  },
+];
+
+// Current stadium effects for a levels object like {parking:0..3, seats:0..3, ...}
+export const stadiumFx = (levels = {}) => {
+  const tier = (id) => {
+    const lvl = levels[id] || 0;
+    return lvl ? STADIUM.find((t) => t.id === id).tiers[lvl - 1].value : 0;
+  };
+  return {
+    attCap: tier("seats") || ECON.attCap,
+    rateBonus: tier("parking"),
+    gateMult: 1 + tier("conc"),
+    fansMult: 1 + tier("lights"),
+  };
+};
+
 // Rival offseason improvement: +1 stat bumps = CREEP.base + finishIndex (0=1st),
 // +CREEP.cellarBonus extra for the last-place club. Standing still = falling behind.
 // Rubber band: rivals trailing the PLAYER's rating gain up to rubberCap extra

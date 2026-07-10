@@ -117,6 +117,39 @@ export const SoundOffIcon = ({ size = 12, color = C.creamDim }) => (
   </svg>
 );
 
+// Stadium upgrade tracks
+export const CarIcon = ({ size = 14, color = C.amber }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <path d="M4 13l1.6-4.4A2 2 0 0 1 7.5 7.3h9a2 2 0 0 1 1.9 1.3L20 13" stroke={color} strokeWidth="1.8" strokeLinejoin="round" />
+    <rect x="3" y="13" width="18" height="5" rx="1.5" stroke={color} strokeWidth="1.8" />
+    <circle cx="7.5" cy="18" r="1.8" fill={color} />
+    <circle cx="16.5" cy="18" r="1.8" fill={color} />
+  </svg>
+);
+
+export const SeatsIcon = ({ size = 14, color = C.amber }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <path d="M3 20v-3h18v3M6 17v-4h12v4M9 13V9h6v4" stroke={color} strokeWidth="1.8" strokeLinejoin="round" />
+  </svg>
+);
+
+export const ConcessionIcon = ({ size = 14, color = C.amber }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <path d="M7 8h10l-1.4 12a1.5 1.5 0 0 1-1.5 1.3h-4.2a1.5 1.5 0 0 1-1.5-1.3z" stroke={color} strokeWidth="1.8" strokeLinejoin="round" />
+    <path d="M7.8 12.5h8.4" stroke={color} strokeWidth="1.5" />
+    <path d="M10 8 13.5 3.5" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
+  </svg>
+);
+
+export const LightsIcon = ({ size = 14, color = C.amber }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <rect x="5" y="4" width="14" height="7" rx="1.5" stroke={color} strokeWidth="1.8" />
+    <circle cx="9" cy="7.5" r="1.1" fill={color} />
+    <circle cx="15" cy="7.5" r="1.1" fill={color} />
+    <path d="M12 11v9M8.5 20h7" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
+  </svg>
+);
+
 export const GearIcon = ({ size = 16, color = C.cream }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
     <circle cx="12" cy="12" r="3.2" stroke={color} strokeWidth="1.8" />

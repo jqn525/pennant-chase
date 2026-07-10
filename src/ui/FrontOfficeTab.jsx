@@ -1,13 +1,37 @@
 // ── Front Office tab: revenue streams, trophy case, season history, save management ──
 
 import { useState } from "react";
-import { C, ECON } from "../game/constants.js";
+import { C, ECON, STADIUM } from "../game/constants.js";
 import { fmt } from "../game/utils.js";
 import { btn } from "./styles.js";
 import Panel from "./Panel.jsx";
-import { CoinIcon, FansIcon, TrophyIcon } from "./Icons.jsx";
+import { CoinIcon, FansIcon, TrophyIcon, CarIcon, SeatsIcon, ConcessionIcon, LightsIcon } from "./Icons.jsx";
 
-export default function FrontOfficeTab({ roster, city, fans, money, merch, tv, isStar, history, trophies, onBuyMerch, onBuyTv, onNewFranchise, getBackupCode, onRestore }) {
+const TRACK_ICONS = { parking: CarIcon, seats: SeatsIcon, conc: ConcessionIcon, lights: LightsIcon };
+
+function StadiumTrack({ track, level, money, fans, onBuy }) {
+  const Icon = TRACK_ICONS[track.id];
+  const cur = level > 0 ? track.tiers[level - 1] : null;
+  const next = track.tiers[level];
+  const can = next && money >= next.cost && fans >= next.fans;
+  return (
+    <button onClick={() => onBuy(track.id)} style={{ ...btn(!!can), width: "100%", marginBottom: 6, textAlign: "left" }}>
+      <span style={{ fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
+        <Icon size={13} color={can ? C.amber : C.creamDim} /> {track.title}
+        <span style={{ marginLeft: "auto", fontSize: 10, color: C.dirt, letterSpacing: 1 }}>
+          {cur ? cur.name.toUpperCase() : ""}{!next ? " · MAX" : ""}
+        </span>
+      </span>
+      {next && (
+        <div style={{ fontSize: 10, color: C.creamDim, marginTop: 2 }}>
+          {next.name} · {next.label} · ${fmt(next.cost)}{fans < next.fans ? ` · ${fmt(next.fans)} fans` : ""}
+        </div>
+      )}
+    </button>
+  );
+}
+
+export default function FrontOfficeTab({ roster, city, fans, money, merch, tv, isStar, history, trophies, stadium, onBuyUpgrade, onBuyMerch, onBuyTv, onNewFranchise, getBackupCode, onRestore }) {
   const [armed, setArmed] = useState(false);
   const [copied, setCopied] = useState(false);
   const [manualCode, setManualCode] = useState(null); // shown if clipboard is unavailable
@@ -29,6 +53,12 @@ export default function FrontOfficeTab({ roster, city, fans, money, merch, tv, i
   return (
     <div style={{ display: "flex", flexWrap: "wrap", gap: 14, marginTop: 2 }}>
       <div style={{ flex: "1 1 300px", minWidth: 280 }}>
+        <Panel title="STADIUM">
+          {STADIUM.map((track) => (
+            <StadiumTrack key={track.id} track={track} level={stadium?.[track.id] || 0}
+              money={money} fans={fans} onBuy={onBuyUpgrade} />
+          ))}
+        </Panel>
         <Panel title="REVENUE">
           <button onClick={onBuyMerch} style={{ ...btn(!merch && money >= ECON.merchCost && fans >= ECON.merchFans), width: "100%", marginBottom: 6 }}>
             <span style={{ fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}><CoinIcon /> Merch stand {merch ? "· OPEN" : ""}</span>
