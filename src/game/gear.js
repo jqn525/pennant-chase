@@ -7,9 +7,21 @@
 
 import { LEAGUE, RARITY, BAT_STATS, PIT_STATS } from "./constants.js";
 
-// Slots with pixel-art sprites in public/gear/<slot>.png (48×48, transparent)
+// Pixel-art sprite tiles in public/gear/ (48×48, beige square tiles).
+// Slots with several looks have <slot>.png, <slot>2.png, ... — an item's id
+// hashes to one look so the same item always shows the same art.
 export const GEAR_ART = new Set(["bat", "batGloves", "cleats", "glove", "shades", "sleeve", "rosin"]);
-export const gearArtUrl = (slot) => `${import.meta.env.BASE_URL}gear/${slot}.png`;
+const GEAR_VARIANTS = { bat: 2, batGloves: 3, cleats: 3, glove: 3, shades: 3, sleeve: 3, rosin: 1 };
+export const gearArtUrl = (itemOrSlot) => {
+  const slot = typeof itemOrSlot === "string" ? itemOrSlot : itemOrSlot.slot;
+  let v = 0;
+  if (typeof itemOrSlot !== "string" && itemOrSlot.id) {
+    let h = 0;
+    for (let i = 0; i < itemOrSlot.id.length; i++) h = (h * 31 + itemOrSlot.id.charCodeAt(i)) % 9973;
+    v = h % (GEAR_VARIANTS[slot] || 1);
+  }
+  return `${import.meta.env.BASE_URL}gear/${slot}${v ? v + 1 : ""}.png`;
+};
 
 export const GEAR = [
   { slot: "bat", label: "Bat", stat: "power", role: "bat", flavor: "More carry off the barrel" },

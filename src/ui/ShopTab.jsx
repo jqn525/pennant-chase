@@ -60,8 +60,8 @@ export default function ShopTab({ roster, money, shopItems, onBuy, restockNote, 
             <button onClick={() => setPickId(armed ? null : item.id)}
               style={{ display: "flex", gap: 10, alignItems: "center", width: "100%", background: "transparent", border: "none", padding: 0, cursor: "pointer", textAlign: "left", fontFamily: "inherit", color: C.cream }}>
               {GEAR_ART.has(item.slot) && (
-                <img src={gearArtUrl(item.slot)} alt={def.label} width={40} height={40}
-                  style={{ imageRendering: "pixelated", flexShrink: 0, filter: item.rarity === 3 ? `drop-shadow(0 0 5px ${C.red})` : item.rarity === 2 ? `drop-shadow(0 0 4px ${C.amber}AA)` : "none" }} />
+                <img src={gearArtUrl(item)} alt={def.label} width={40} height={40}
+                  style={{ imageRendering: "pixelated", flexShrink: 0, borderRadius: 5, filter: item.rarity === 3 ? `drop-shadow(0 0 5px ${C.red})` : item.rarity === 2 ? `drop-shadow(0 0 4px ${C.amber}AA)` : "none" }} />
               )}
               <span style={{ flex: 1, minWidth: 0 }}>
                 <span style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
