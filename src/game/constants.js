@@ -105,9 +105,6 @@ export const ECON = {
   cupPay: 10000,          // winning the Pennant Cup
   cupFans: 500,
   playoffFans: 150,       // made the playoffs (missed = -5% fans)
-  merchCost: 150, merchFans: 200,
-  tvCost: 2500, tvFans: 2500,
-  offlineCapHours: 8,     // merch keeps selling while away, up to this
   offlineRate: 1.0,       // tunable damper on away income
   trainBase: 6,           // training: cost per +1 = trainBase × 1.5^((stat−41)/4)
 };
@@ -145,6 +142,33 @@ export const STADIUM = [
     ],
   },
 ];
+
+// Revenue streams, tiered like the stadium. MERCH multiplies jersey sales and
+// extends how long the store sells while you're away; MEDIA multiplies all
+// passive income (tier 1 of each is the original merch stand / TV deal).
+export const REVENUE = [
+  {
+    id: "merch", title: "MERCH", tiers: [
+      { name: "Merch Stand", cost: 150, fans: 200, label: "jersey sales · away 8h", value: 1, offline: 8 },
+      { name: "Team Store", cost: 1500, fans: 1000, label: "sales +75% · away 12h", value: 1.75, offline: 12 },
+      { name: "Flagship Store", cost: 6000, fans: 3000, label: "sales +150% · away 24h", value: 2.5, offline: 24 },
+    ],
+  },
+  {
+    id: "tv", title: "MEDIA", tiers: [
+      { name: "Regional TV", cost: 2500, fans: 2500, label: "sales ×2", value: 2 },
+      { name: "National TV", cost: 8000, fans: 5000, label: "sales ×3", value: 3 },
+      { name: "Coast-to-Coast", cost: 20000, fans: 8000, label: "sales ×4", value: 4 },
+    ],
+  },
+];
+
+// Current revenue effects for merch/tv levels (0-3 each)
+export const revenueFx = (merchLvl = 0, tvLvl = 0) => ({
+  merchMult: merchLvl ? REVENUE[0].tiers[merchLvl - 1].value : 0,
+  tvMult: tvLvl ? REVENUE[1].tiers[tvLvl - 1].value : 1,
+  offlineHours: merchLvl ? REVENUE[0].tiers[merchLvl - 1].offline : 0,
+});
 
 // Current stadium effects for a levels object like {parking:0..3, seats:0..3, ...}
 export const stadiumFx = (levels = {}) => {

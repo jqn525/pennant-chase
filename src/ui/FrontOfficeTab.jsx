@@ -1,19 +1,19 @@
 // ── Front Office tab: revenue streams, trophy case, season history, save management ──
 
 import { useState } from "react";
-import { C, ECON, STADIUM } from "../game/constants.js";
+import { C, STADIUM, REVENUE } from "../game/constants.js";
 import { fmt } from "../game/utils.js";
 import { btn } from "./styles.js";
 import Panel from "./Panel.jsx";
-import { CoinIcon, FansIcon, TrophyIcon, CarIcon, SeatsIcon, ConcessionIcon, LightsIcon } from "./Icons.jsx";
+import { FansIcon, TrophyIcon, CarIcon, SeatsIcon, ConcessionIcon, LightsIcon, ShirtIcon, TvIcon } from "./Icons.jsx";
 
-const TRACK_ICONS = { parking: CarIcon, seats: SeatsIcon, conc: ConcessionIcon, lights: LightsIcon };
+const TRACK_ICONS = { parking: CarIcon, seats: SeatsIcon, conc: ConcessionIcon, lights: LightsIcon, merch: ShirtIcon, tv: TvIcon };
 
-function StadiumTrack({ track, level, money, fans, onBuy }) {
+function UpgradeTrack({ track, level, money, fans, onBuy, locked }) {
   const Icon = TRACK_ICONS[track.id];
   const cur = level > 0 ? track.tiers[level - 1] : null;
   const next = track.tiers[level];
-  const can = next && money >= next.cost && fans >= next.fans;
+  const can = !locked && next && money >= next.cost && fans >= next.fans;
   return (
     <button onClick={() => onBuy(track.id)} style={{ ...btn(!!can), width: "100%", marginBottom: 6, textAlign: "left" }}>
       <span style={{ fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
@@ -31,7 +31,7 @@ function StadiumTrack({ track, level, money, fans, onBuy }) {
   );
 }
 
-export default function FrontOfficeTab({ roster, city, fans, money, merch, tv, isStar, history, trophies, stadium, onBuyUpgrade, onBuyMerch, onBuyTv, onNewFranchise, getBackupCode, onRestore }) {
+export default function FrontOfficeTab({ roster, city, fans, money, merch, tv, isStar, history, trophies, stadium, onBuyUpgrade, onBuyRevenue, onNewFranchise, getBackupCode, onRestore }) {
   const [armed, setArmed] = useState(false);
   const [copied, setCopied] = useState(false);
   const [manualCode, setManualCode] = useState(null); // shown if clipboard is unavailable
@@ -55,20 +55,15 @@ export default function FrontOfficeTab({ roster, city, fans, money, merch, tv, i
       <div style={{ flex: "1 1 300px", minWidth: 280 }}>
         <Panel title="STADIUM">
           {STADIUM.map((track) => (
-            <StadiumTrack key={track.id} track={track} level={stadium?.[track.id] || 0}
+            <UpgradeTrack key={track.id} track={track} level={stadium?.[track.id] || 0}
               money={money} fans={fans} onBuy={onBuyUpgrade} />
           ))}
         </Panel>
         <Panel title="REVENUE">
-          <button onClick={onBuyMerch} style={{ ...btn(!merch && money >= ECON.merchCost && fans >= ECON.merchFans), width: "100%", marginBottom: 6 }}>
-            <span style={{ fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}><CoinIcon /> Merch stand {merch ? "· OPEN" : ""}</span>
-            {!merch && <div style={{ fontSize: 10, color: C.creamDim }}>${ECON.merchCost} + {ECON.merchFans} fans. Sells every second — even while you're away (capped at {ECON.offlineCapHours}h). Stars sell more.</div>}
-            {merch && <div style={{ fontSize: 10, color: C.creamDim }}>Selling jerseys. Stars on the roster: {[...roster.batters, roster.sp, roster.rp].filter(isStar).length}</div>}
-          </button>
-          <button onClick={onBuyTv} style={{ ...btn(!tv && merch && fans >= ECON.tvFans && money >= ECON.tvCost), width: "100%" }}>
-            <span style={{ fontWeight: 600 }}>Regional TV deal {tv ? "· SIGNED" : ""}</span>
-            {!tv && <div style={{ fontSize: 10, color: C.creamDim }}>${fmt(ECON.tvCost)} · requires a merch stand and {fmt(ECON.tvFans)} fans. Doubles passive income.</div>}
-          </button>
+          {REVENUE.map((track) => (
+            <UpgradeTrack key={track.id} track={track} level={track.id === "merch" ? merch : tv}
+              money={money} fans={fans} onBuy={onBuyRevenue} locked={track.id === "tv" && merch < 1} />
+          ))}
         </Panel>
         <Panel title="THE CLUB" style={{ fontSize: 12, lineHeight: 1.8 }}>
           <span style={{ display: "flex", alignItems: "center", gap: 6 }}><FansIcon /> {fmt(fans)} fans in {city.name}</span>

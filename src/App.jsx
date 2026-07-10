@@ -4,7 +4,7 @@
 // the pure simulation lives in src/game/ and the screens in src/ui/.
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { C, LEAGUE, ECON, TRADE, BAT_STATS, PIT_STATS, STADIUM, stadiumFx } from "./game/constants.js";
+import { C, LEAGUE, ECON, TRADE, BAT_STATS, PIT_STATS, STADIUM, stadiumFx, REVENUE, revenueFx } from "./game/constants.js";
 import { fmt } from "./game/utils.js";
 import { genRoster, seedUid, genDraftClass, vetPot, rollPot, pickTrait, freshName, seedNames } from "./game/generators.js";
 import { newGame, stepAtBat, playGameInstant, settleGame } from "./game/engine.js";
@@ -41,8 +41,11 @@ const EMPTY_STAT = { ab: 0, h: 0, d: 0, t: 0, hr: 0, bb: 0, k: 0, r: 0, rbi: 0, 
 const FENCE = { corner: LEAGUE.fenceCorner, center: LEAGUE.fenceCenter };
 
 // Jersey sales per second. Also used to pay capped income for time away.
-const merchRate = (fansN, stars, hasTv, merchCity) =>
-  0.01 * Math.sqrt(fansN) * (1 + 0.3 * stars) * (hasTv ? 2 : 1) * (merchCity ? 1.3 : 1);
+const merchRate = (fansN, stars, merchMult, tvMult, merchCity) =>
+  0.01 * Math.sqrt(fansN) * (1 + 0.3 * stars) * merchMult * tvMult * (merchCity ? 1.3 : 1);
+
+// Older saves stored merch/tv as booleans; true = tier 1 (same effect then and now)
+const lvlOf = (v) => (typeof v === "number" ? v : v ? 1 : 0);
 
 // Home patterns for playoff series (1 = higher seed hosts)
 const HOME_BO5 = [1, 1, 0, 0, 1];
@@ -119,9 +122,9 @@ export default function App() {
   const [money, setMoney] = useState(SAVED?.money ?? ECON.startMoney);
   const [fans, setFans] = useState(SAVED?.fans ?? ECON.startFans);
   const [roster, setRoster] = useState(SAVED?.roster ?? null);
-  const [merch, setMerch] = useState(SAVED?.merch ?? false);
+  const [merch, setMerch] = useState(lvlOf(SAVED?.merch));
   const [stadium, setStadium] = useState(SAVED?.stadium ?? { parking: 0, seats: 0, conc: 0, lights: 0 });
-  const [tv, setTv] = useState(SAVED?.tv ?? false);
+  const [tv, setTv] = useState(lvlOf(SAVED?.tv));
   const [seasonStats, setSeasonStats] = useState(SAVED?.seasonStats ?? {});
   const [shopItems, setShopItems] = useState(SAVED?.shopItems ?? genShipment()); // current shipment
   const [draftClass, setDraftClass] = useState(SAVED?.draftClass ?? null); // winter rookies awaiting signatures
@@ -205,15 +208,16 @@ export default function App() {
   useEffect(() => {
     if (welcomed.current || !SAVED?.city) return;
     welcomed.current = true;
-    const elapsed = Math.min(Math.max(0, Date.now() - (SAVED.lastSeen || Date.now())), ECON.offlineCapHours * 3600e3);
-    if (SAVED.merch && elapsed > 60e3) {
+    const fx = revenueFx(lvlOf(SAVED.merch), lvlOf(SAVED.tv));
+    const elapsed = Math.min(Math.max(0, Date.now() - (SAVED.lastSeen || Date.now())), fx.offlineHours * 3600e3);
+    if (fx.merchMult && elapsed > 60e3) {
       const all = [...SAVED.roster.batters, SAVED.roster.sp, SAVED.roster.rp];
       const stars = all.filter(isStar).length;
-      const gain = merchRate(SAVED.fans, stars, SAVED.tv, SAVED.city.bonus === "merch") * (elapsed / 1000) * ECON.offlineRate;
+      const gain = merchRate(SAVED.fans, stars, fx.merchMult, fx.tvMult, SAVED.city.bonus === "merch") * (elapsed / 1000) * ECON.offlineRate;
       setMoney((m) => m + gain);
       addAT({ earned: gain });
       const h = Math.floor(elapsed / 3600e3), min = Math.floor((elapsed % 3600e3) / 60e3);
-      pushLog(`While you were away (${h}h ${min}m), the merch stand sold $${fmt(gain)} in jerseys.${elapsed >= ECON.offlineCapHours * 3600e3 - 1000 ? ` (${ECON.offlineCapHours}h cap)` : ""}`, "win");
+      pushLog(`While you were away (${h}h ${min}m), the store sold $${fmt(gain)} in jerseys.${elapsed >= fx.offlineHours * 3600e3 - 1000 ? ` (${fx.offlineHours}h cap)` : ""}`, "win");
     } else {
       pushLog(`Welcome back. Your ${SAVED.city.name} club picks up right where it left off — Year ${SAVED.year}.`, "sys");
     }
@@ -237,7 +241,8 @@ export default function App() {
     const iv = setInterval(() => {
       if (document.hidden) return;
       const stars = [...roster.batters, roster.sp, roster.rp].filter(isStar).length;
-      const gain = merchRate(fans, stars, tv, cityBonus("merch"));
+      const fx = revenueFx(merch, tv);
+      const gain = merchRate(fans, stars, fx.merchMult, fx.tvMult, cityBonus("merch"));
       setMoney((m) => m + gain);
       addAT({ earned: gain });
     }, 1000);
@@ -644,17 +649,20 @@ export default function App() {
     play.cash();
   };
 
-  const buyMerch = () => {
-    if (money >= ECON.merchCost && fans >= ECON.merchFans) {
-      setMoney((m) => m - ECON.merchCost); setMerch(true); addAT({ spent: ECON.merchCost });
-      pushLog("Merch stand opens. Jersey sales tick in every second — stars sell more. It even sells while you're away (up to 8 hours).", "win");
-    }
-  };
-  const buyTv = () => {
-    if (money >= ECON.tvCost && fans >= ECON.tvFans && merch) {
-      setMoney((m) => m - ECON.tvCost); setTv(true); addAT({ spent: ECON.tvCost });
-      pushLog("Regional TV deal signed. Merch and media income doubled.", "win");
-    }
+  // ── Revenue streams: merch and media, tiered like the stadium ──
+  const buyRevenue = (trackId) => {
+    const track = REVENUE.find((t) => t.id === trackId);
+    const lvl = trackId === "merch" ? merch : tv;
+    const next = track.tiers[lvl];
+    if (!next || money < next.cost || fans < next.fans) return;
+    if (trackId === "tv" && merch < 1) return; // nothing to broadcast without a store
+    setMoney((m) => m - next.cost);
+    (trackId === "merch" ? setMerch : setTv)(lvl + 1);
+    addAT({ spent: next.cost, upgrades: 1 });
+    pushLog(trackId === "merch"
+      ? `The ${next.name} opens — jerseys sell every second, even while you're away (up to ${next.offline}h).`
+      : `${next.name} deal signed — passive income ×${next.value}.`, "win");
+    play.cash();
   };
 
   const newFranchise = () => {
@@ -781,7 +789,7 @@ export default function App() {
             roster={roster} city={city} fans={fans} money={money}
             merch={merch} tv={tv} isStar={isStar} history={history} trophies={trophies}
             stadium={stadium} onBuyUpgrade={buyUpgrade}
-            onBuyMerch={buyMerch} onBuyTv={buyTv} onNewFranchise={newFranchise}
+            onBuyRevenue={buyRevenue} onNewFranchise={newFranchise}
             getBackupCode={getBackupCode} onRestore={restoreBackup}
           />
         )}

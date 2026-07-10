@@ -150,6 +150,21 @@ export const LightsIcon = ({ size = 14, color = C.amber }) => (
   </svg>
 );
 
+// Revenue tracks
+export const ShirtIcon = ({ size = 14, color = C.amber }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <path d="M9 4 4 7l1.8 4L8 10v9h8v-9l2.2 1L20 7l-5-3a3 3 0 0 1-6 0z" stroke={color} strokeWidth="1.8" strokeLinejoin="round" />
+  </svg>
+);
+
+export const TvIcon = ({ size = 14, color = C.amber }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <rect x="3.5" y="8" width="17" height="12" rx="2" stroke={color} strokeWidth="1.8" />
+    <path d="M8 8 12 4M16 8 12 4" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
+    <path d="M7 12h6M7 15h4" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
+  </svg>
+);
+
 export const GearIcon = ({ size = 16, color = C.cream }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
     <circle cx="12" cy="12" r="3.2" stroke={color} strokeWidth="1.8" />

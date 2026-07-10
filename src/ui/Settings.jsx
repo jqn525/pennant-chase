@@ -85,7 +85,7 @@ export default function Settings({ allTime: at, year, trophies, history, phase, 
         <Section title="ALL-TIME FRONT OFFICE" rows={[
           ["MONEY EARNED", "$" + fmt(at.earned || 0)],
           ["MONEY SPENT", "$" + fmt(at.spent || 0)],
-          ["STADIUM UPGRADES", num(at.upgrades)],
+          ["CLUB UPGRADES", num(at.upgrades)],
           ["GEAR BOUGHT", num(at.gear)],
           ["TRADES MADE", num(at.trades)],
           ["ROOKIES SIGNED", num(at.rookies)],
