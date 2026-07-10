@@ -8,7 +8,7 @@
 import { LEAGUE, RARITY, BAT_STATS, PIT_STATS } from "./constants.js";
 
 // Slots with pixel-art sprites in public/gear/<slot>.png (48×48, transparent)
-export const GEAR_ART = new Set(["bat"]);
+export const GEAR_ART = new Set(["bat", "batGloves", "cleats", "glove", "shades", "sleeve", "rosin"]);
 export const gearArtUrl = (slot) => `${import.meta.env.BASE_URL}gear/${slot}.png`;
 
 export const GEAR = [
