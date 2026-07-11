@@ -141,16 +141,16 @@ export const seriesInfo = (schedule, gameIndex, form) => {
 export const pct = (t) => (t.w + t.l ? t.w / (t.w + t.l) : 0);
 export const gamesBehind = (leader, t) => ((leader.w - t.w) + (t.l - leader.l)) / 2;
 
-// Standings order: indices 0..7 sorted by wins, then rating, then coin flip
+// Standings order: indices 0..7 sorted by wins, then rating, then stable club id.
 export const seedOrder = (standings, ratings) =>
   [0, 1, 2, 3, 4, 5, 6, 7].sort((a, b) =>
     (standings[b].w - standings[a].w) ||
     (ratings[b] - ratings[a]) ||
-    (Math.random() - 0.5));
+    (a - b));
 
 // The whole winter in one pure function.
 // Input: current end-of-season state. Output: next-season fields + log lines.
-export const runOffseason = ({ year, rivals, standings, ratings, championIdx, championName, playerSeed, playerCup, record, fans, history, trophies }) => {
+export const runOffseason = ({ year, rivals, standings, ratings, seedOrder: finalizedOrder, championIdx, championName, playerSeed, playerCup, record, fans, history, trophies }) => {
   const logs = [];
   const madePlayoffs = playerSeed < LEAGUE.playoffTeams;
 
@@ -164,7 +164,7 @@ export const runOffseason = ({ year, rivals, standings, ratings, championIdx, ch
 
   // Rival development: worse finish = bigger winter, and anyone trailing the
   // player's rating gets a rubber-band boost so dynasties stay hunted
-  const order = seedOrder(standings, ratings);
+  const order = finalizedOrder || seedOrder(standings, ratings);
   const newRivals = rivals.map((team, i) => {
     const idx = i + 1;
     const rank = order.indexOf(idx);

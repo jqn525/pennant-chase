@@ -18,6 +18,9 @@ export const GEAR_ART = new Set(["bat", "batGloves", "cleats", "glove", "shades"
 const GEAR_VARIANTS = { bat: 2, batGloves: 3, cleats: 3, glove: 3, shades: 3, sleeve: 3, rosin: 1 };
 export const gearArtUrl = (itemOrSlot) => {
   const slot = typeof itemOrSlot === "string" ? itemOrSlot : itemOrSlot.slot;
+  if (typeof itemOrSlot !== "string" && itemOrSlot.rarity === 3) {
+    return `${import.meta.env.BASE_URL}gear/${slot}-legendary.png`;
+  }
   let v = 0;
   if (typeof itemOrSlot !== "string" && itemOrSlot.id) {
     let h = 0;

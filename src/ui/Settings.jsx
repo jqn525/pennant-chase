@@ -52,7 +52,7 @@ export default function Settings({ allTime: at, year, trophies, history, phase, 
         </div>
 
         <Section title="ALL-TIME FRANCHISE" rows={[
-          ["SEASONS", year],
+          ["SEASONS", (history || []).length],
           ["GAMES", num(games)],
           ["RECORD", `${num(at.w)}-${num(at.l)}`],
           ["WIN PCT", pct],

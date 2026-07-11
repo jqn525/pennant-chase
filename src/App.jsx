@@ -11,6 +11,7 @@ import { newGame, stepAtBat, playGameInstant, settleGame } from "./game/engine.j
 import { makeRivals, makeSchedule, teamRating, quickSim, simSeries, seedOrder, runOffseason, ageRoster, seriesInfo } from "./game/season.js";
 import { eff, isStar, talentGrade, genShipment, genItem, playerValue, GEAR, dealerTier, shipmentWeights, TIER_INFO } from "./game/gear.js";
 import { sfx, play } from "./game/sfx.js";
+import { SAVE_KEY, parseSave, decodeBackup, encodeBackup } from "./game/save.js";
 import TabBar from "./ui/TabBar.jsx";
 import TipModal from "./ui/TipModal.jsx";
 import DraftBoard from "./ui/DraftBoard.jsx";
@@ -52,13 +53,15 @@ const HOME_BO5 = [1, 1, 0, 0, 1];
 const HOME_BO7 = [1, 1, 0, 0, 0, 1, 1];
 
 // ── Save (v3) ──
-const SAVE_KEY = "pennant-chase-save-v3";
-const SAVED = (() => {
+const LOADED = (() => {
   try {
-    const s = JSON.parse(localStorage.getItem(SAVE_KEY));
-    return s?.version === 3 ? s : null;
-  } catch { return null; }
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (!raw) return { value: null, error: null };
+    const parsed = parseSave(raw);
+    return parsed.ok ? { value: parsed.value, error: null } : { value: null, error: parsed.error };
+  } catch { return { value: null, error: "Saving is unavailable in this browser." }; }
 })();
+const SAVED = LOADED.value;
 if (SAVED?.roster) {
   const everyone = [
     SAVED.roster.batters, [SAVED.roster.sp, SAVED.roster.rp],
@@ -148,6 +151,7 @@ export default function App() {
   const [speed, setSpeed] = useState(SAVED?.speed ?? 1);
   const [paused, setPaused] = useState(false);
   const [sound, setSound] = useState(SAVED?.sound ?? true);
+  const [saveError, setSaveError] = useState(LOADED.error);
   sfx.enabled = sound;
   const [seenTips, setSeenTips] = useState(SAVED?.seenTips ?? (SAVED ? ["welcome"] : []));
   const [activeTip, setActiveTip] = useState(null);
@@ -169,8 +173,8 @@ export default function App() {
   const rerender = () => force((x) => x + 1);
 
   const idRef = useRef(1);
-  const gameRef = useRef(null);   // live game (never saved)
-  const ctxRef = useRef(null);    // per-game roster snapshot for the engine
+  const gameRef = useRef(SAVED?.liveGame ?? null);
+  const ctxRef = useRef(SAVED?.liveContext ?? null);
   const restRef = useRef(0);      // beat between games at watchable speeds
 
   // Fresh-state mirror so interval callbacks never read stale closures
@@ -185,18 +189,31 @@ export default function App() {
   }, []);
 
   // ── Save: single writer, called by the autosave effect and a 20s heartbeat ──
-  const saveNow = useCallback(() => {
+  const saveData = useCallback(() => {
     const s = S.current;
-    if (!s.city) return;
-    localStorage.setItem(SAVE_KEY, JSON.stringify({
+    if (!s.city) return null;
+    return {
       version: 3, scale: 100, names: 2, lastSeen: Date.now(),
       city: s.city, money: s.money, fans: s.fans, roster: s.roster, merch: s.merch, tv: s.tv, stadium: s.stadium,
       seasonStats: s.seasonStats, shopItems: s.shopItems, draftClass: s.draftClass, form: s.form,
       year: s.year, phase: s.phase, rivals: s.rivals, schedule: s.schedule, rivalDays: s.rivalDays,
       gameIndex: s.gameIndex, standings: s.standings, playoffs: s.playoffs,
       history: s.history, trophies: s.trophies, allTime: s.allTime, speed: s.speed, sound: s.sound, seenTips: s.seenTips,
-    }));
+      liveGame: gameRef.current, liveContext: ctxRef.current,
+    };
   }, []);
+  const saveNow = useCallback(() => {
+    const data = saveData();
+    if (!data) return false;
+    try {
+      localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+      setSaveError(null);
+      return true;
+    } catch {
+      setSaveError("Your game is running, but this browser couldn't save it. Copy a backup code and check storage permissions.");
+      return false;
+    }
+  }, [saveData]);
   useEffect(() => { saveNow(); }, [city, money, fans, roster, merch, tv, stadium, seasonStats, shopItems, draftClass, form, year, phase, rivals, schedule, rivalDays, gameIndex, standings, playoffs, history, trophies, allTime, speed, sound, seenTips, saveNow]);
   useEffect(() => {
     const iv = setInterval(() => { if (!document.hidden) saveNow(); }, 20000);
@@ -451,7 +468,7 @@ export default function App() {
     const off = runOffseason({
       year: s.year, rivals: s.rivals, standings: s.standings, ratings,
       championIdx, championName: championIdx === 0 ? tn(s.city) : s.rivals[championIdx - 1].name,
-      playerSeed: mySeed, playerCup,
+      playerSeed: mySeed, playerCup, seedOrder: order,
       record: { w: s.standings[0].w, l: s.standings[0].l },
       fans: s.fans, history: s.history, trophies: s.trophies,
     });
@@ -470,6 +487,7 @@ export default function App() {
     setForm([]);
     setYear(off.year);
     gameRef.current = null;
+    ctxRef.current = null;
     off.logs.forEach((l) => pushLog(l.text, l.kind));
     pushLog(`Winter takes its toll — every player loses a step. Train, shop, and reload.`, "sys");
     restock(true);
@@ -666,26 +684,28 @@ export default function App() {
   };
 
   const newFranchise = () => {
-    localStorage.removeItem(SAVE_KEY);
-    window.location.reload();
+    try {
+      localStorage.removeItem(SAVE_KEY);
+      window.location.reload();
+    } catch {
+      setSaveError("This browser couldn't erase the saved franchise. Check storage permissions and try again.");
+    }
   };
 
   // ── Backup codes: the whole franchise as a copyable string ──
   const getBackupCode = () => {
-    saveNow();
-    const raw = localStorage.getItem(SAVE_KEY);
-    return raw ? btoa(unescape(encodeURIComponent(raw))) : "";
+    const data = saveData();
+    return data ? encodeBackup(data) : "";
   };
   const restoreBackup = (code) => {
+    const parsed = decodeBackup(code);
+    if (!parsed.ok) return parsed.error;
     try {
-      const json = decodeURIComponent(escape(atob(code.replace(/\s/g, ""))));
-      const s = JSON.parse(json);
-      if (s?.version !== 3 || !s.city || !s.roster) return "That code doesn't look like a Pennant Chase backup.";
-      localStorage.setItem(SAVE_KEY, json);
+      localStorage.setItem(SAVE_KEY, parsed.json);
       window.location.reload();
       return null;
     } catch {
-      return "Couldn't read that code. Make sure you copied the whole thing, then try again.";
+      return "The backup is valid, but this browser couldn't store it.";
     }
   };
 
@@ -717,11 +737,17 @@ export default function App() {
         : "NEW SHIPMENT WITH THE NEXT SERIES";
 
   // ── City selection screen ──
-  if (!city) return <CitySelect onPick={foundClub} onRestore={restoreBackup} />;
+  if (!city) return (
+    <>
+      {saveError && <div role="alert" style={{ padding: 10, color: C.cream, background: "#4A201C", fontSize: 11 }}>{saveError}</div>}
+      <CitySelect onPick={foundClub} onRestore={restoreBackup} />
+    </>
+  );
 
   return (
     <div style={{ minHeight: "100dvh", background: C.green, color: C.cream, fontFamily: MONO, padding: "calc(12px + env(safe-area-inset-top)) calc(12px + env(safe-area-inset-right)) calc(76px + env(safe-area-inset-bottom)) calc(12px + env(safe-area-inset-left))", boxSizing: "border-box" }}>
       <style>{globalCss}</style>
+      {saveError && <div role="alert" style={{ maxWidth: 1020, margin: "0 auto 10px", padding: "9px 12px", border: `1px solid ${C.red}`, borderRadius: 4, color: C.cream, background: "#4A201C", fontSize: 11 }}>{saveError}</div>}
 
       {menu === "settings" && (
         <Settings
