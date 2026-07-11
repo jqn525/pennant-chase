@@ -5,7 +5,11 @@
 // secondaries ±4%), applied multiplicatively and capped at 99 — gear can
 // push a rating toward perfect, never past it.
 
-import { LEAGUE, RARITY, BAT_STATS, PIT_STATS } from "./constants.js";
+import { LEAGUE, RARITY, BAT_STATS, PIT_STATS, PLAYER_TRAITS } from "./constants.js";
+
+// Trait lookup + the static percentage a player's trait puts on one stat
+export const traitInfo = (id) => PLAYER_TRAITS.find((t) => t.id === id) || null;
+const traitPct = (p, stat) => traitInfo(p.trait)?.mods?.[stat] || 0;
 
 // Pixel-art sprite tiles in public/gear/ (48×48, beige square tiles).
 // Slots with several looks have <slot>.png, <slot>2.png, ... — an item's id
@@ -117,20 +121,20 @@ const gearPct = (p, stat) => {
 // Effective rating after gear: multiplicative, capped at 99, floored at 1
 const boosted = (v, pct) => Math.min(LEAGUE.statCap, Math.max(1, Math.round(v * (1 + pct / 100))));
 
-// The point delta gear adds to one stat (for display: "78 +9")
+// The point delta gear + trait add to one stat (for display: "78 +9")
 export const gearBonus = (p, stat) => {
-  const pct = gearPct(p, stat);
+  const pct = gearPct(p, stat) + traitPct(p, stat);
   return pct ? boosted(p[stat], pct) - p[stat] : 0;
 };
 
-// Effective player: ratings with all gear percentages applied.
-// Identity for gearless players (opponents without equipment, fresh rosters).
+// Effective player: ratings with all gear AND trait percentages applied.
+// Identity for players with neither (keeps hot loops cheap).
 export const eff = (p) => {
-  if (!p.gear) return p;
+  if (!p.gear && !traitInfo(p.trait)?.mods) return p;
   const q = { ...p };
   const stats = p.role === "bat" ? BAT_STATS : PIT_STATS;
   for (const s of stats) {
-    const pct = gearPct(p, s);
+    const pct = gearPct(p, s) + traitPct(p, s);
     if (pct) q[s] = boosted(q[s], pct);
   }
   return q;

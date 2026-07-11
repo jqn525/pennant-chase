@@ -35,8 +35,8 @@ export function stepAtBat(g, ctx, events) {
   let pitcher;
   if (weBat) pitcher = eff(g.opp.sp);
   else {
-    // gear side-effects can touch stamina; workhorses go ~6 batters deeper
-    const limit = 8 + (eff(ctx.sp).stamina - 41) / 2 + (ctx.sp.trait === "workhorse" ? 6 : 0);
+    // stamina (with gear and trait baked in) sets how deep the starter goes
+    const limit = 8 + (eff(ctx.sp).stamina - 41) / 2;
     if (!g.usingRP && g.spFaced >= limit) {
       g.usingRP = true;
       emit(`${ctx.sp.name} is gassed after ${g.spFaced} batters. ${ctx.rp.name} jogs in from the pen.`, "sys");
@@ -62,8 +62,7 @@ export function stepAtBat(g, ctx, events) {
 
   // Wild pitch: with runners aboard, a low-Control arm sometimes lets one go.
   // Consumes the moment — the at-bat continues next tick.
-  const wpControl = pitcher.control + (pitcher.trait === "painter" ? 6 : 0) + (pitcher.trait === "fireballer" ? -4 : 0);
-  if (g.bases.some(Boolean) && Math.random() < clamp(0.018 - (wpControl - ctx.statBase) * 0.001, 0.004, 0.05)) {
+  if (g.bases.some(Boolean) && Math.random() < clamp(0.018 - (pitcher.control - ctx.statBase) * 0.001, 0.004, 0.05)) {
     const third = g.bases[2];
     if (third) {
       weBat ? g.us++ : g.them++;

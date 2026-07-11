@@ -1,12 +1,44 @@
 // ── Roster tab: batting order and season stat tables. Tap any player for his card. ──
 
-import { C, PLAYER_TRAITS } from "../game/constants.js";
-import { btn } from "./styles.js";
+import { C, PLAYER_TRAITS, BAT_STATS } from "../game/constants.js";
+import { btn, PIXEL } from "./styles.js";
 import Panel from "./Panel.jsx";
 import { StarIcon } from "./Icons.jsx";
 import StatTable from "./StatTable.jsx";
-import { ovr } from "../game/gear.js";
+import { ovr, eff } from "../game/gear.js";
 import { portraitUrl } from "./portrait.js";
+
+const STAT_ABBR = { contact: "CON", power: "POW", eye: "EYE", speed: "SPD", defense: "DEF", stuff: "STU", control: "CTL", stamina: "STA" };
+
+// Team average of effective ratings (gear + trait included) per category.
+// Highest category glows amber, lowest sits dim — where to train next, at a glance.
+function TeamRatings({ roster }) {
+  const rows = [
+    { label: "BATTING", players: roster.batters, keys: BAT_STATS },
+    { label: "PITCHING", players: [roster.sp, roster.rp], keys: ["stuff", "control", "stamina"] },
+  ];
+  return (
+    <Panel title="TEAM RATINGS">
+      {rows.map(({ label, players, keys }) => {
+        const avgs = keys.map((k) => Math.round(players.reduce((n, p) => n + eff(p)[k], 0) / players.length));
+        const hi = Math.max(...avgs), lo = Math.min(...avgs);
+        return (
+          <div key={label} style={{ display: "flex", alignItems: "center", gap: 4, padding: "5px 0" }}>
+            <span style={{ width: 64, fontSize: 8, letterSpacing: 1, color: C.creamDim, flexShrink: 0 }}>{label}</span>
+            {keys.map((k, i) => (
+              <span key={k} style={{ flex: 1, textAlign: "center" }}>
+                <span style={{ display: "block", fontSize: 8, letterSpacing: 1, color: C.creamDim }}>{STAT_ABBR[k]}</span>
+                <span style={{ fontFamily: PIXEL, fontSize: 12, color: avgs[i] === hi ? C.amber : avgs[i] === lo ? C.dirt : C.cream }}>
+                  {avgs[i]}
+                </span>
+              </span>
+            ))}
+          </div>
+        );
+      })}
+    </Panel>
+  );
+}
 
 const avg3 = (num, den) => (den ? (num / den).toFixed(3).replace(/^0/, "") : "—");
 const ba = (s) => avg3(s.h, s.ab);
@@ -57,6 +89,7 @@ export default function RosterTab({ roster, stat, isStar, onMoveBatter, onAutoLi
 
   return (
     <div>
+      <TeamRatings roster={roster} />
       <Panel title="BATTING ORDER">
         <div style={{ display: "flex", alignItems: "center", marginBottom: 8, gap: 8 }}>
           <span style={{ flex: 1 }} />

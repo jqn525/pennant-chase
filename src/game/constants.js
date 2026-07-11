@@ -190,17 +190,20 @@ export const stadiumFx = (levels = {}) => {
 // points (rubber × rating gap), so a dynasty gets hunted down within a few years.
 export const CREEP = { base: 8, cellarBonus: 4, rubber: 2, rubberCap: 30, bump: 4 };
 
-// One per player — real engine effects, shown as a badge on the stat card
+// One per player — a defined percentage shift on his ratings, like gear.
+// `mods` bake into effective stats everywhere; `sit` applies with runners on.
+// (ids are stored in saves — labels can change, ids must not)
 export const PLAYER_TRAITS = [
-  { id: "clutch", label: "Clutch", desc: "Locks in with runners on — contact and eye rise", role: "bat" },
-  { id: "freeSwinger", label: "Free Swinger", desc: "Swings for the seats: more homers, more strikeouts", role: "bat" },
-  { id: "contactArtist", label: "Contact Artist", desc: "Puts everything in play — fewer whiffs, less pop", role: "bat" },
-  { id: "glovework", label: "Glovework", desc: "Highlight-reel defense in the field", role: "bat" },
-  { id: "burner", label: "Burner", desc: "Pure speed — stretches singles into doubles", role: "bat" },
-  { id: "fireballer", label: "Fireballer", desc: "Nasty stuff, wobbly control", role: "pit" },
-  { id: "painter", label: "Painter", desc: "Hits corners all day, lighter stuff", role: "pit" },
-  { id: "iceman", label: "Iceman", desc: "Ice in the veins with runners aboard", role: "pit" },
-  { id: "workhorse", label: "Workhorse", desc: "Goes deep into games before tiring", role: "pit" },
+  { id: "clutch", label: "Clutch", role: "bat", sit: { contact: 9, eye: 9 } },
+  { id: "freeSwinger", label: "Free Swinger", role: "bat", mods: { power: 9, contact: -9 } },
+  { id: "contactArtist", label: "Contact Hitter", role: "bat", mods: { contact: 9, power: -6 } },
+  { id: "glovework", label: "Gold Glove", role: "bat", mods: { defense: 9 } },
+  { id: "burner", label: "Burner", role: "bat", mods: { speed: 9 } },
+  { id: "goodEye", label: "Good Eye", role: "bat", mods: { eye: 9 } },
+  { id: "fireballer", label: "Flamethrower", role: "pit", mods: { stuff: 9, control: -6 } },
+  { id: "painter", label: "Crafty", role: "pit", mods: { control: 9, stuff: -6 } },
+  { id: "iceman", label: "Escape Artist", role: "pit", sit: { stuff: 9 } },
+  { id: "workhorse", label: "Workhorse", role: "pit", mods: { stamina: 18 } },
 ];
 
 // Gear rarities: shipment weights and price anchors

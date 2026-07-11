@@ -76,7 +76,13 @@ export default function PlayerCard({ player, isOwn, onClose, money, league, stat
         {trait && (
           <div style={{ textAlign: "center", fontSize: 10, color: C.creamDim, marginTop: 4 }}>
             <span style={{ color: C.amber, border: `1px solid ${C.amber}66`, borderRadius: 3, padding: "1px 6px", letterSpacing: 1, fontSize: 9 }}>{trait.label.toUpperCase()}</span>
-            {" "}{trait.desc}
+            {" "}
+            {Object.entries(trait.mods || trait.sit || {}).map(([st, n], i) => (
+              <span key={st} style={{ color: n > 0 ? C.grass : C.red, fontWeight: 600 }}>
+                {i > 0 ? " · " : ""}{n > 0 ? "+" : ""}{n}% {st.toUpperCase()}
+              </span>
+            ))}
+            {trait.sit && <span style={{ color: C.dirt, letterSpacing: 1 }}> · RUNNERS ON</span>}
           </div>
         )}
 
@@ -121,7 +127,7 @@ export default function PlayerCard({ player, isOwn, onClose, money, league, stat
             );
           })}
           <div style={{ fontSize: 9, color: C.creamDim, marginTop: 4, textAlign: "center" }}>
-            <span style={{ color: C.amber }}>■</span> skill · <span style={{ color: C.grass }}>■</span> gear · <span style={{ color: C.dirt }}>□</span> ceiling
+            <span style={{ color: C.amber }}>■</span> skill · <span style={{ color: C.grass }}>■</span> boost · <span style={{ color: C.dirt }}>□</span> ceiling
           </div>
         </div>
 
