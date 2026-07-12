@@ -2,7 +2,7 @@ import { useState } from "react";
 import { LEAGUE } from "../game/constants.js";
 import Panel from "./Panel.jsx";
 import StatTable from "./StatTable.jsx";
-import FieldView from "./FieldView.jsx";
+import Field3D from "./Field3D.jsx";
 import { PlayIcon, PauseIcon } from "./Icons.jsx";
 import "./BallparkTab.css";
 
@@ -37,7 +37,7 @@ export default function BallparkTab({ g, city, phase, playoffs, gameIndex, stand
             <small>{g && !g.over ? `${g.outs} out${g.outs === 1 ? "" : "s"}` : g?.over ? "Final" : "Ready"}</small>
           </aside>
         </div>
-        <FieldView g={g} />
+        <Field3D g={g} speed={speed} />
       </div>
 
       <div className="tempo-deck" aria-label="Game speed">
