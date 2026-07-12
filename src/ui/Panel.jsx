@@ -5,7 +5,7 @@ export default function Panel({ title, children, style, bodyStyle, titleRight })
     <section className="game-panel" style={style}>
       {title && <div className="game-panel__title">{title}</div>}
       {titleRight && <div className="game-panel__meta">{titleRight}</div>}
-      {bodyStyle ? <div style={bodyStyle}>{children}</div> : children}
+      <div className="game-panel__body" style={bodyStyle}>{children}</div>
     </section>
   );
 }
