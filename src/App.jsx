@@ -752,7 +752,7 @@ export default function App() {
 
       {menu === "settings" && (
         <Settings
-          allTime={allTime} year={year} trophies={trophies} history={history} phase={phase}
+          allTime={allTime} trophies={trophies} history={history} phase={phase}
           sound={sound} onToggleSound={() => setSound((v) => !v)}
           onRules={() => setMenu("rules")} onClose={() => setMenu(null)}
         />

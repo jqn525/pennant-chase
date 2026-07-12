@@ -1,96 +1,103 @@
-// ── Settings overlay: sound, the all-time franchise ledger, and the rulebook ──
-
-import { C, LEAGUE } from "../game/constants.js";
+import { useState } from "react";
+import { LEAGUE } from "../game/constants.js";
 import { fmt } from "../game/utils.js";
-import { panel, btn, overlay, SLAB, MONO, PIXEL } from "./styles.js";
-import { SoundOnIcon, SoundOffIcon, RulebookIcon } from "./Icons.jsx";
+import { overlay } from "./styles.js";
+import { SoundOnIcon, SoundOffIcon, RulebookIcon, TrophyIcon } from "./Icons.jsx";
+import "./Settings.css";
 
 const num = (n) => Math.round(n || 0).toLocaleString();
 const avg = (h, ab) => (ab ? (h / ab).toFixed(3).replace(/^0/, "") : ".000");
 const ip = (outs) => `${Math.floor((outs || 0) / 3)}.${(outs || 0) % 3}`;
 
-function Row({ label, value }) {
+function StatGroup({ title, rows }) {
   return (
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", padding: "5px 2px", borderBottom: `1px solid ${C.greenLine}33` }}>
-      <span style={{ fontSize: 10, color: C.creamDim, letterSpacing: 1.5 }}>{label}</span>
-      <span style={{ fontFamily: MONO, fontSize: 13, fontWeight: 600, color: C.amber, fontVariantNumeric: "tabular-nums" }}>{value}</span>
-    </div>
+    <section className="lifetime-group">
+      <h3>{title}</h3>
+      <div className="lifetime-group__grid">
+        {rows.map(([label, value]) => (
+          <div key={label} className="lifetime-stat"><span>{label}</span><strong>{value}</strong></div>
+        ))}
+      </div>
+    </section>
   );
 }
 
-function Section({ title, rows }) {
-  return (
-    <div style={{ marginTop: 16 }}>
-      <div style={{ fontFamily: PIXEL, fontSize: 9, color: C.dirt, letterSpacing: 1, marginBottom: 4 }}>{title}</div>
-      {rows.map(([label, value]) => <Row key={label} label={label} value={value} />)}
-    </div>
-  );
-}
-
-export default function Settings({ allTime: at, year, trophies, history, phase, sound, onToggleSound, onRules, onClose }) {
+export default function Settings({ allTime: at, trophies, history, phase, sound, onToggleSound, onRules, onClose }) {
+  const [view, setView] = useState("settings");
   const games = at.g || 0;
   const pct = games ? ((at.w || 0) / games).toFixed(3).replace(/^0/, "") : ".000";
   const playoffRuns = (history || []).filter((h) => h.finish <= LEAGUE.playoffTeams).length + (phase === "playoffs" ? 1 : 0);
 
   return (
-    <div style={overlay} onClick={onClose}>
-      <div onClick={(e) => e.stopPropagation()} style={{ ...panel, maxWidth: 460, width: "100%", padding: 20, margin: "10px 0", borderColor: C.amber }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <h2 style={{ fontFamily: SLAB, color: C.amber, fontSize: 20, margin: 0 }}>SETTINGS</h2>
-          <button onClick={onClose} style={{ ...btn(true) }}>Close</button>
-        </div>
+    <div className="settings-overlay" style={overlay} onClick={onClose}>
+      <div className="settings-sheet" onClick={(e) => e.stopPropagation()}>
+        <div className="settings-sheet__handle" />
+        <header className="settings-header">
+          <div><span>Clubhouse</span><h2>{view === "settings" ? "Settings" : "Lifetime"}</h2></div>
+          <button onClick={onClose} aria-label="Close settings">Close</button>
+        </header>
 
-        <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
-          <button onClick={onToggleSound}
-            style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "10px 0", background: sound ? "#3A2E10" : "transparent", border: `1px solid ${sound ? C.amber : C.greenLine}`, borderRadius: 4, color: sound ? C.amber : C.creamDim, fontFamily: MONO, fontSize: 11, cursor: "pointer" }}>
-            {sound ? <SoundOnIcon size={13} color={C.amber} /> : <SoundOffIcon size={13} />} SOUND {sound ? "ON" : "OFF"}
-          </button>
-          <button onClick={onRules}
-            style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "10px 0", background: "transparent", border: `1px solid ${C.greenLine}`, borderRadius: 4, color: C.cream, fontFamily: MONO, fontSize: 11, cursor: "pointer" }}>
-            <RulebookIcon size={13} /> RULEBOOK
-          </button>
-        </div>
+        <nav className="settings-tabs" aria-label="Settings sections">
+          <button className={view === "settings" ? "is-active" : ""} onClick={() => setView("settings")}>Settings</button>
+          <button className={view === "lifetime" ? "is-active" : ""} onClick={() => setView("lifetime")}>Lifetime Stats</button>
+        </nav>
 
-        <Section title="ALL-TIME FRANCHISE" rows={[
-          ["SEASONS", (history || []).length],
-          ["GAMES", num(games)],
-          ["RECORD", `${num(at.w)}-${num(at.l)}`],
-          ["WIN PCT", pct],
-          ["PENNANT CUPS", trophies],
-          ["PLAYOFF RUNS", playoffRuns],
-          ["TICKETS SOLD", num(at.tickets)],
-        ]} />
+        {view === "settings" ? (
+          <div className="settings-menu">
+            <button className="settings-menu__row" onClick={onToggleSound}>
+              <span className="settings-menu__icon">{sound ? <SoundOnIcon size={18} /> : <SoundOffIcon size={18} />}</span>
+              <span><strong>Game audio</strong><small>Sound effects and stadium reactions</small></span>
+              <b className={sound ? "is-on" : ""}>{sound ? "On" : "Off"}</b>
+            </button>
+            <button className="settings-menu__row" onClick={onRules}>
+              <span className="settings-menu__icon"><RulebookIcon size={18} /></span>
+              <span><strong>Rulebook</strong><small>Simulation rules, progression, and controls</small></span>
+              <b aria-hidden="true">›</b>
+            </button>
+            <div className="settings-note">
+              Save management, backup codes, and franchise reset controls live in the Office tab.
+            </div>
+          </div>
+        ) : (
+          <div className="lifetime-ledger">
+            <section className="career-hero">
+              <div><span>Career record</span><strong>{num(at.w)}–{num(at.l)}</strong><small>{pct} win percentage</small></div>
+              <div className="career-hero__cup"><TrophyIcon size={28} /><strong>{trophies}</strong><span>Pennant Cups</span></div>
+              <div className="career-hero__milestones">
+                <span><b>{(history || []).length}</b> Seasons</span>
+                <span><b>{num(games)}</b> Games</span>
+                <span><b>{playoffRuns}</b> Playoff runs</span>
+              </div>
+            </section>
 
-        <Section title="ALL-TIME BATTING" rows={[
-          ["AT BATS", num(at.ab)],
-          ["HITS", num(at.h)],
-          ["AVG", avg(at.h, at.ab)],
-          ["DOUBLES", num(at.d)],
-          ["TRIPLES", num(at.t)],
-          ["HOME RUNS", num(at.hr)],
-          ["RUNS", num(at.r)],
-          ["RBI", num(at.rbi)],
-          ["WALKS", num(at.bb)],
-          ["STRIKEOUTS", num(at.k)],
-        ]} />
+            <StatGroup title="Batting" rows={[
+              ["Average", avg(at.h, at.ab)], ["Hits", num(at.h)], ["Home runs", num(at.hr)],
+              ["Runs", num(at.r)], ["RBI", num(at.rbi)], ["Extra-base hits", num((at.d || 0) + (at.t || 0) + (at.hr || 0))],
+              ["Walks", num(at.bb)], ["Strikeouts", num(at.k)], ["At bats", num(at.ab)],
+            ]} />
+            <StatGroup title="Pitching" rows={[
+              ["Innings", ip(at.outsP)], ["Strikeouts", num(at.kP)], ["Walks", num(at.bbP)],
+              ["Hits allowed", num(at.hP)], ["Runs allowed", num(at.raP)],
+            ]} />
+            <StatGroup title="Club Operations" rows={[
+              ["Money earned", "$" + fmt(at.earned || 0)], ["Money spent", "$" + fmt(at.spent || 0)],
+              ["Tickets sold", num(at.tickets)], ["Upgrades", num(at.upgrades)], ["Gear bought", num(at.gear)],
+              ["Trades", num(at.trades)], ["Rookies signed", num(at.rookies)], ["Training sessions", num(at.train)],
+            ]} />
 
-        <Section title="ALL-TIME PITCHING" rows={[
-          ["INNINGS", ip(at.outsP)],
-          ["STRIKEOUTS", num(at.kP)],
-          ["WALKS", num(at.bbP)],
-          ["HITS ALLOWED", num(at.hP)],
-          ["RUNS ALLOWED", num(at.raP)],
-        ]} />
-
-        <Section title="ALL-TIME FRONT OFFICE" rows={[
-          ["MONEY EARNED", "$" + fmt(at.earned || 0)],
-          ["MONEY SPENT", "$" + fmt(at.spent || 0)],
-          ["CLUB UPGRADES", num(at.upgrades)],
-          ["GEAR BOUGHT", num(at.gear)],
-          ["TRADES MADE", num(at.trades)],
-          ["ROOKIES SIGNED", num(at.rookies)],
-          ["TRAINING SESSIONS", num(at.train)],
-        ]} />
+            {(history || []).length > 0 && (
+              <section className="season-ledger">
+                <h3>Season History</h3>
+                {[...history].reverse().map((season) => (
+                  <div key={season.year} className={season.cup ? "is-champion" : ""}>
+                    <b>Year {season.year}</b><span>{season.playerRecord}</span><span>{season.finish}{["st", "nd", "rd"][season.finish - 1] || "th"}</span>
+                    <strong>{season.cup ? "Champions" : season.champion}</strong>
+                  </div>
+                ))}
+              </section>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
