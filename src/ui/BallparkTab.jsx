@@ -3,12 +3,11 @@ import { LEAGUE } from "../game/constants.js";
 import Panel from "./Panel.jsx";
 import StatTable from "./StatTable.jsx";
 import Field3D from "./Field3D.jsx";
-import { PlayIcon, PauseIcon } from "./Icons.jsx";
 import "./BallparkTab.css";
 
 const EMPTY_LINE = { ab: 0, h: 0, d: 0, t: 0, hr: 0, bb: 0, k: 0, r: 0, rbi: 0 };
 
-export default function BallparkTab({ g, city, phase, playoffs, gameIndex, standings, rivals, log, speed, paused, roster, onSetSpeed, onTogglePause, onOpenCard, series }) {
+export default function BallparkTab({ g, city, phase, playoffs, gameIndex, standings, rivals, log, speed, roster, onOpenCard, series }) {
   const [view, setView] = useState("radio");
   const box = g?.box;
   const team = city.nickname ?? city.name;
@@ -38,15 +37,6 @@ export default function BallparkTab({ g, city, phase, playoffs, gameIndex, stand
           </aside>
         </div>
         <Field3D g={g} speed={speed} />
-      </div>
-
-      <div className="tempo-deck" aria-label="Game speed">
-        <button className={paused ? "is-active" : ""} onClick={onTogglePause}>
-          {paused ? <PlayIcon size={13} /> : <PauseIcon size={13} />}<span>{paused ? "Resume" : "Pause"}</span>
-        </button>
-        {[[1, "1×"], [4, "4×"], ["max", "MAX"]].map(([value, label]) => (
-          <button key={label} className={!paused && speed === value ? "is-active" : ""} onClick={() => onSetSpeed(value)}>{label}</button>
-        ))}
       </div>
 
       <section className="broadcast-sheet">

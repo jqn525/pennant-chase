@@ -53,7 +53,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible {
 
 .game-shell {
   min-height: 100dvh;
-  padding: calc(8px + env(safe-area-inset-top)) 10px calc(88px + env(safe-area-inset-bottom));
+  padding: calc(8px + env(safe-area-inset-top)) 10px calc(142px + env(safe-area-inset-bottom));
   font-family: var(--font-mono);
   background: linear-gradient(180deg, #132e20 0, #0a1e14 42%, #07150e 100%);
 }
@@ -131,7 +131,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible {
 }
 
 @media (min-width: 760px) {
-  .game-shell { padding-inline: 18px; padding-bottom: 94px; }
+  .game-shell { padding-inline: 18px; padding-bottom: 148px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

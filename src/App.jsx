@@ -796,9 +796,7 @@ export default function App() {
           <BallparkTab
             g={g} city={city} year={year} phase={phase} playoffs={playoffs}
             gameIndex={gameIndex} standings={standings} rivals={rivals}
-            log={log} speed={speed} paused={paused} roster={roster}
-            onSetSpeed={(sp) => { setSpeed(sp); setPaused(false); }}
-            onTogglePause={() => setPaused((p) => !p)}
+            log={log} speed={speed} roster={roster}
             onOpenCard={openCard} series={series}
           />
         )}
@@ -826,7 +824,10 @@ export default function App() {
         </motion.main>
         </AnimatePresence>
       </div>
-      <TabBar tab={tab} onTab={(id) => { setTab(id); play.click(); if (id === "shop") showTip("shop"); if (id === "club") showTip("stadium"); }} />
+      <TabBar tab={tab} speed={speed} paused={paused}
+        onSetSpeed={(sp) => { setSpeed(sp); setPaused(false); }}
+        onTogglePause={() => setPaused((p) => !p)}
+        onTab={(id) => { setTab(id); play.click(); if (id === "shop") showTip("shop"); if (id === "club") showTip("stadium"); }} />
     </div>
   );
 }

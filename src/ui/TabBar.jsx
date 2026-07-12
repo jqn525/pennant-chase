@@ -1,4 +1,4 @@
-import { DiamondNavIcon, RosterNavIcon, ShopNavIcon, OfficeNavIcon } from "./Icons.jsx";
+import { DiamondNavIcon, RosterNavIcon, ShopNavIcon, OfficeNavIcon, PlayIcon, PauseIcon } from "./Icons.jsx";
 import "./TabBar.css";
 
 const TABS = [
@@ -8,9 +8,20 @@ const TABS = [
   { id: "club", label: "Office", Icon: OfficeNavIcon },
 ];
 
-export default function TabBar({ tab, onTab }) {
+export default function TabBar({ tab, onTab, speed, paused, onSetSpeed, onTogglePause }) {
   return (
     <nav className="game-nav" aria-label="Primary">
+      <div className="game-nav__speed" aria-label="Game speed controls">
+        <button className={`game-nav__pause${paused ? " is-active" : ""}`} onClick={onTogglePause}
+          aria-label={paused ? "Resume games" : "Pause games"}>
+          {paused ? <PlayIcon size={13} /> : <PauseIcon size={13} />}
+          <span>{paused ? "Resume" : "Pause"}</span>
+        </button>
+        {[[1, "1×"], [4, "4×"], ["max", "MAX"]].map(([value, label]) => (
+          <button key={label} className={!paused && speed === value ? "is-active" : ""}
+            onClick={() => onSetSpeed(value)} aria-label={`Set game speed to ${label}`}>{label}</button>
+        ))}
+      </div>
       <div className="game-nav__rail">
         {TABS.map(({ id, label, Icon }) => {
           const active = tab === id;
