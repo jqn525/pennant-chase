@@ -1,7 +1,4 @@
-// ── The Rulebook overlay ──
-
-import { C } from "../game/constants.js";
-import { panel, btn, overlay, SLAB } from "./styles.js";
+// ── The Rulebook: a full-screen page with pinned section headers ──
 
 const SECTIONS = [
   ["THE BIGS", ["Eight clubs, one league, forever. Every season is 154 games — home and away series against the same seven rivals — then the top four fight through a best-of-5 semifinal and a best-of-7 final for the PENNANT CUP.", "The games play themselves. You are the GM: train players, buy gear, set the batting order, and build a club that can take the Cup. Pause any time; 1× watches every pitch, 4× hustles, MAX plays a whole game every second."]],
@@ -27,16 +24,16 @@ const SECTIONS = [
 
 export default function Rulebook({ onClose }) {
   return (
-    <div style={overlay} onClick={onClose}>
-      <div onClick={(e) => e.stopPropagation()} style={{ ...panel, maxWidth: 700, width: "100%", padding: 20, margin: "10px 0", borderColor: C.amber }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <h2 style={{ fontFamily: SLAB, color: C.amber, fontSize: 20, margin: 0 }}>THE RULEBOOK</h2>
-          <button onClick={onClose} style={{ ...btn(true) }}>Close</button>
-        </div>
+    <div className="page-screen" role="dialog" aria-label="Rulebook">
+      <header className="page-screen__bar">
+        <h2>The Rulebook</h2>
+        <button onClick={onClose}>Close</button>
+      </header>
+      <div className="page-screen__body">
         {SECTIONS.map(([t, ps]) => (
-          <div key={t} style={{ marginTop: 14 }}>
-            <div style={{ fontSize: 10, color: C.dirt, letterSpacing: 2, marginBottom: 6 }}>{t}</div>
-            {ps.map((p, i) => <p key={i} style={{ fontSize: 12, lineHeight: 1.6, margin: "0 0 6px" }}>{p}</p>)}
+          <div key={t}>
+            <div className="page-screen__section">{t}</div>
+            {ps.map((p, i) => <p key={i} style={{ fontSize: 12, lineHeight: 1.65, margin: "6px 2px" }}>{p}</p>)}
           </div>
         ))}
       </div>

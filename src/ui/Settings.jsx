@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { LEAGUE } from "../game/constants.js";
 import { fmt } from "../game/utils.js";
-import { overlay } from "./styles.js";
 import { SoundOnIcon, SoundOffIcon, RulebookIcon, TrophyIcon } from "./Icons.jsx";
 import "./Settings.css";
 
@@ -29,14 +28,12 @@ export default function Settings({ allTime: at, trophies, history, phase, sound,
   const playoffRuns = (history || []).filter((h) => h.finish <= LEAGUE.playoffTeams).length + (phase === "playoffs" ? 1 : 0);
 
   return (
-    <div className="settings-overlay" style={overlay} onClick={onClose}>
-      <div className="settings-sheet" onClick={(e) => e.stopPropagation()}>
-        <div className="settings-sheet__handle" />
-        <header className="settings-header">
-          <div><span>Clubhouse</span><h2>{view === "settings" ? "Settings" : "Lifetime"}</h2></div>
-          <button onClick={onClose} aria-label="Close settings">Close</button>
-        </header>
-
+    <div className="page-screen" role="dialog" aria-label="Settings">
+      <header className="page-screen__bar">
+        <h2>{view === "settings" ? "Settings" : "Lifetime"}</h2>
+        <button onClick={onClose} aria-label="Close settings">Close</button>
+      </header>
+      <div className="page-screen__body">
         <nav className="settings-tabs" aria-label="Settings sections">
           <button className={view === "settings" ? "is-active" : ""} onClick={() => setView("settings")}>Settings</button>
           <button className={view === "lifetime" ? "is-active" : ""} onClick={() => setView("lifetime")}>Lifetime Stats</button>
