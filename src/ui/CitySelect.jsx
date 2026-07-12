@@ -5,6 +5,7 @@ import { C, EDGES, CITY_POOL, NICKNAME_POOL } from "../game/constants.js";
 import { btn, globalCss, MONO, PIXEL, SLAB } from "./styles.js";
 import Panel from "./Panel.jsx";
 import { DiceIcon } from "./Icons.jsx";
+import "./CitySelect.css";
 
 const roll = (pool) => pool[(Math.random() * pool.length) | 0];
 
@@ -34,10 +35,11 @@ export default function CitySelect({ onPick, onRestore }) {
   };
 
   return (
-    <div style={{ minHeight: "100dvh", background: C.green, color: C.cream, fontFamily: MONO, padding: "calc(12px + env(safe-area-inset-top)) calc(12px + env(safe-area-inset-right)) calc(24px + env(safe-area-inset-bottom)) calc(12px + env(safe-area-inset-left))", boxSizing: "border-box" }}>
+    <div className="franchise-create">
       <style>{globalCss}</style>
-      <div style={{ maxWidth: 460, margin: "28px auto 0" }}>
-        <h1 style={{ fontFamily: SLAB, fontSize: 30, letterSpacing: 1, textAlign: "center", margin: "0 0 4px" }}>
+      <div className="franchise-create__content">
+        <div className="franchise-create__pennant">PC</div>
+        <h1 style={{ fontFamily: SLAB, fontSize: 34, letterSpacing: 1, textAlign: "center", margin: "0 0 4px" }}>
           PENNANT<span style={{ color: C.amber }}> CHASE</span>
         </h1>
         <div style={{ textAlign: "center", fontFamily: PIXEL, fontSize: 9, color: C.creamDim, letterSpacing: 1 }}>

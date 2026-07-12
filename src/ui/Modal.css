@@ -1,0 +1,25 @@
+.game-modal { align-items: flex-end !important; }
+.game-modal__sheet {
+  position: relative;
+  width: 100%;
+  max-height: 92dvh;
+  padding-top: 6px;
+  overflow-y: auto;
+  border-radius: 18px 18px 0 0;
+  animation: sheetUp .25s cubic-bezier(.22, 1, .36, 1);
+}
+.game-modal__handle {
+  position: sticky;
+  z-index: 4;
+  top: 0;
+  width: 52px;
+  height: 5px;
+  margin: 2px auto -7px;
+  border-radius: 999px;
+  background: var(--cream-dim);
+  opacity: .55;
+}
+@media (min-width: 700px) {
+  .game-modal { align-items: center !important; }
+  .game-modal__sheet { border-radius: 18px; }
+}

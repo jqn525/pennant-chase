@@ -4,6 +4,7 @@
 // the pure simulation lives in src/game/ and the screens in src/ui/.
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { AnimatePresence, motion } from "motion/react";
 import { C, LEAGUE, ECON, TRADE, BAT_STATS, PIT_STATS, STADIUM, stadiumFx, REVENUE, revenueFx } from "./game/constants.js";
 import { fmt } from "./game/utils.js";
 import { genRoster, seedUid, genDraftClass, vetPot, rollPot, pickTrait, freshName, seedNames } from "./game/generators.js";
@@ -16,7 +17,7 @@ import TabBar from "./ui/TabBar.jsx";
 import TipModal from "./ui/TipModal.jsx";
 import DraftBoard from "./ui/DraftBoard.jsx";
 import PlayerCard from "./ui/PlayerCard.jsx";
-import { globalCss, MONO } from "./ui/styles.js";
+import { globalCss } from "./ui/styles.js";
 import Scoreboard from "./ui/Scoreboard.jsx";
 import CitySelect from "./ui/CitySelect.jsx";
 import Rulebook from "./ui/Rulebook.jsx";
@@ -745,9 +746,9 @@ export default function App() {
   );
 
   return (
-    <div style={{ minHeight: "100dvh", background: C.green, color: C.cream, fontFamily: MONO, padding: "calc(12px + env(safe-area-inset-top)) calc(12px + env(safe-area-inset-right)) calc(76px + env(safe-area-inset-bottom)) calc(12px + env(safe-area-inset-left))", boxSizing: "border-box" }}>
+    <div className="game-shell">
       <style>{globalCss}</style>
-      {saveError && <div role="alert" style={{ maxWidth: 1020, margin: "0 auto 10px", padding: "9px 12px", border: `1px solid ${C.red}`, borderRadius: 4, color: C.cream, background: "#4A201C", fontSize: 11 }}>{saveError}</div>}
+      {saveError && <div role="alert" className="save-alert">{saveError}</div>}
 
       {menu === "settings" && (
         <Settings
@@ -758,7 +759,7 @@ export default function App() {
       )}
       {menu === "rules" && <Rulebook onClose={() => setMenu("settings")} />}
 
-      <div style={{ maxWidth: 1020, margin: "0 auto" }}>
+      <div className="game-content">
         {/* Header */}
         <Scoreboard
           city={city} year={year} record={standings[0]} money={money} fans={fans}
@@ -771,7 +772,10 @@ export default function App() {
           onHelp={() => setMenu("settings")}
         />
 
-        <div key={tab} style={{ animation: "screenIn .18s ease-out" }}>
+        <AnimatePresence mode="wait" initial={false}>
+        <motion.main key={tab} className="screen-stack"
+          initial={{ opacity: 0, x: 18 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -12 }}
+          transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}>
         {activeTip && <TipModal tipId={activeTip} onClose={closeTip} />}
 
         {cardView && (
@@ -819,7 +823,8 @@ export default function App() {
             getBackupCode={getBackupCode} onRestore={restoreBackup}
           />
         )}
-        </div>
+        </motion.main>
+        </AnimatePresence>
       </div>
       <TabBar tab={tab} onTab={(id) => { setTab(id); play.click(); if (id === "shop") showTip("shop"); if (id === "club") showTip("stadium"); }} />
     </div>
