@@ -2,7 +2,7 @@ import { useState } from "react";
 import { LEAGUE } from "../game/constants.js";
 import Panel from "./Panel.jsx";
 import StatTable from "./StatTable.jsx";
-import BallparkScene from "./BallparkScene.jsx";
+import FieldView from "./FieldView.jsx";
 import { PlayIcon, PauseIcon } from "./Icons.jsx";
 import "./BallparkTab.css";
 
@@ -28,7 +28,17 @@ export default function BallparkTab({ g, city, phase, playoffs, gameIndex, stand
   return (
     <div className="ballpark-screen">
       <div className="ballpark-screen__context">{context}</div>
-      <BallparkScene g={g} city={city} />
+      <div className="ballpark-field">
+        <div className="field-score-strip">
+          <div><span>{team}</span><strong>{g?.us ?? 0}</strong></div>
+          <div><span>{g?.opp?.name ?? "Visitors"}</span><strong>{g?.them ?? 0}</strong></div>
+          <aside>
+            <b>{g ? `${g.half === "top" ? "Top" : "Bot"} ${g.inning}` : "Next"}</b>
+            <small>{g && !g.over ? `${g.outs} out${g.outs === 1 ? "" : "s"}` : g?.over ? "Final" : "Ready"}</small>
+          </aside>
+        </div>
+        <FieldView g={g} />
+      </div>
 
       <div className="tempo-deck" aria-label="Game speed">
         <button className={paused ? "is-active" : ""} onClick={onTogglePause}>
