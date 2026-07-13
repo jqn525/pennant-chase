@@ -51,30 +51,33 @@ function buildPark(scene) {
     scene.add(mesh);
   }
 
-  // Infield dirt: rotated square through the bases plus the mound and home circle
+  // The diamond: a ROUNDED dirt pad (infield skin) sized to the 90 ft square,
+  // with the infield grass square set inside the base paths. The visible dirt
+  // is the ring between them — base paths with a curved outer edge, the
+  // classic ballpark look — plus the mound and the home-plate circle.
   const dirtMat = new THREE.MeshLambertMaterial({ color: 0x7c5330 });
-  const dirt = new THREE.Mesh(new THREE.CircleGeometry(98, 4), dirtMat);
-  dirt.rotation.x = -Math.PI / 2;
-  dirt.rotation.z = Math.PI / 4;
-  dirt.position.set(0, 0.02, -63.6);
-  scene.add(dirt);
-  const mound = new THREE.Mesh(new THREE.CylinderGeometry(11, 13, 1.6, 20), dirtMat);
-  mound.position.set(0, 0.8, -60.5);
-  scene.add(mound);
-  const homeDirt = new THREE.Mesh(new THREE.CircleGeometry(14, 20), dirtMat);
-  homeDirt.rotation.x = -Math.PI / 2;
-  homeDirt.position.y = 0.03;
-  scene.add(homeDirt);
+  const PAD_C = -63.6; // midpoint of the diamond (halfway to second base)
+  const skin = new THREE.Mesh(new THREE.CircleGeometry(71, 44), dirtMat);
+  skin.rotation.x = -Math.PI / 2;
+  skin.position.set(0, 0.02, PAD_C);
+  scene.add(skin);
 
-  // Inner grass square
+  // Infield grass: square with corners toward home/1B/2B/3B, inset for paths
   const innerGrass = new THREE.Mesh(
-    new THREE.CircleGeometry(72, 4),
-    new THREE.MeshLambertMaterial({ color: 0x1d422c }),
+    new THREE.CircleGeometry(54, 4),
+    new THREE.MeshLambertMaterial({ color: 0x225031 }),
   );
   innerGrass.rotation.x = -Math.PI / 2;
-  innerGrass.rotation.z = Math.PI / 4;
-  innerGrass.position.set(0, 0.04, -63.6);
+  innerGrass.position.set(0, 0.04, PAD_C);
   scene.add(innerGrass);
+
+  const mound = new THREE.Mesh(new THREE.CylinderGeometry(8, 10, 1.4, 20), dirtMat);
+  mound.position.set(0, 0.7, -60.5);
+  scene.add(mound);
+  const homeDirt = new THREE.Mesh(new THREE.CircleGeometry(10, 20), dirtMat);
+  homeDirt.rotation.x = -Math.PI / 2;
+  homeDirt.position.y = 0.05;
+  scene.add(homeDirt);
 
   // Foul lines
   const lineMat = new THREE.MeshBasicMaterial({ color: 0xd8cba9 });
