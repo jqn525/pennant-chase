@@ -755,6 +755,7 @@ export default function App() {
           allTime={allTime} trophies={trophies} history={history} phase={phase}
           sound={sound} onToggleSound={() => setSound((v) => !v)}
           onRules={() => setMenu("rules")} onClose={() => setMenu(null)}
+          getBackupCode={getBackupCode} onRestore={restoreBackup} onNewFranchise={newFranchise}
         />
       )}
       {menu === "rules" && <Rulebook onClose={() => setMenu("settings")} />}
@@ -816,9 +817,7 @@ export default function App() {
           <FrontOfficeTab
             roster={roster} city={city} fans={fans} money={money}
             merch={merch} tv={tv} isStar={isStar} history={history} trophies={trophies}
-            stadium={stadium} onBuyUpgrade={buyUpgrade}
-            onBuyRevenue={buyRevenue} onNewFranchise={newFranchise}
-            getBackupCode={getBackupCode} onRestore={restoreBackup}
+            stadium={stadium} onBuyUpgrade={buyUpgrade} onBuyRevenue={buyRevenue}
           />
         )}
         </motion.main>

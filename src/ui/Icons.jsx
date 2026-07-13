@@ -166,9 +166,31 @@ export const TvIcon = ({ size = 14, color = C.amber }) => (
 );
 
 export const GearIcon = ({ size = 16, color = C.cream }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true">
+    <path fill={color} d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65a.5.5 0 0 0 .12-.64l-2-3.46a.5.5 0 0 0-.61-.22l-2.49 1a7.03 7.03 0 0 0-1.69-.98l-.38-2.65A.49.49 0 0 0 14 2h-4a.49.49 0 0 0-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1a.5.5 0 0 0-.61.22l-2 3.46a.5.5 0 0 0 .12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65a.5.5 0 0 0-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.39 1.08.73 1.69.98l.38 2.65c.04.24.24.42.49.42h4c.25 0 .45-.18.49-.42l.38-2.65a7.03 7.03 0 0 0 1.69-.98l2.49 1c.22.08.49 0 .61-.22l2-3.46a.5.5 0 0 0-.12-.64l-2.11-1.65zM12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z" />
+  </svg>
+);
+
+// Save-file rows in Settings
+export const SaveIcon = ({ size = 16, color = C.cream }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
-    <circle cx="12" cy="12" r="3.2" stroke={color} strokeWidth="1.8" />
-    <path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M18.7 5.3l-2.1 2.1M7.4 16.6l-2.1 2.1" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
+    <path d="M5 3h10.5L20 7.5V19a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" stroke={color} strokeWidth="1.8" strokeLinejoin="round" />
+    <path d="M8 3v5h7V3" stroke={color} strokeWidth="1.6" />
+    <path d="M8 21v-7h8v7" stroke={color} strokeWidth="1.6" />
+  </svg>
+);
+
+export const ImportIcon = ({ size = 16, color = C.cream }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <path d="M12 3v10M8 9.5l4 4 4-4" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M4.5 16.5v2a2.5 2.5 0 0 0 2.5 2.5h10a2.5 2.5 0 0 0 2.5-2.5v-2" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
+  </svg>
+);
+
+export const RestartIcon = ({ size = 16, color = C.cream }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <path d="M20 12a8 8 0 1 1-2.4-5.7" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
+    <path d="M20 2.8v4.4h-4.4" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 );
 
