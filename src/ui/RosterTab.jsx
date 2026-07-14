@@ -7,7 +7,7 @@ import { StarIcon } from "./Icons.jsx";
 import StatTable from "./StatTable.jsx";
 import { ovr, eff } from "../game/gear.js";
 import { portraitUrl } from "./portrait.js";
-import { teamPayroll } from "../game/salary.js";
+import { teamPayroll, salaryOf } from "../game/salary.js";
 import { fmt } from "../game/utils.js";
 
 const STAT_ABBR = { contact: "CON", power: "POW", eye: "EYE", speed: "SPD", defense: "DEF", stuff: "STU", control: "CTL", stamina: "STA" };
@@ -88,6 +88,7 @@ export default function RosterTab({ roster, stat, isStar, onMoveBatter, onAutoLi
             {p.role === "bat"
               ? <>AVG {ba(s)} · HR {s.hr} · RBI {s.rbi}</>
               : <>ERA {era(s)} · K {s.kP} · IP {ip(s)}</>}
+            <span style={{ color: C.dirt }}> · ${fmt(salaryOf(p))}/yr</span>
           </span>
         </button>
         {order != null && (
