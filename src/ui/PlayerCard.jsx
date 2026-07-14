@@ -92,7 +92,6 @@ export default function PlayerCard({ player, isOwn, onClose, money, league, stat
           <span>{player.pos}</span>
           {isStar?.(player) && <StarIcon size={12} />}
           <span style={{ fontFamily: PIXEL, fontSize: 12, color: C.cream }}>{ovr(player).toFixed(0)} OVR</span>
-          {isOwn && <span style={{ fontFamily: PIXEL, fontSize: 10, color: C.amber }}>${fmt(money)}</span>}
         </div>
         <div style={{ textAlign: "center", fontSize: 10, color: C.creamDim, marginTop: 3 }}>
           SALARY <span style={{ color: C.cream, fontWeight: 600 }}>${fmt(salaryOf(player))}/YR</span>
@@ -173,7 +172,7 @@ export default function PlayerCard({ player, isOwn, onClose, money, league, stat
                 padding: "11px 0", background: "#3A2E10", border: `2px solid ${C.amber}`,
                 borderRadius: 6, color: C.amber, cursor: "pointer",
               }}>
-              TRAIN ALL · ${fmt(trainAllQuote)}
+              TRAIN ALL ${fmt(trainAllQuote)} / ${fmt(money)}
             </button>
           )}
           <div style={{ fontSize: 9, color: C.creamDim, marginTop: 4, textAlign: "center" }}>

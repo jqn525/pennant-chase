@@ -2,6 +2,7 @@ import { useState } from "react";
 import { LEAGUE } from "../game/constants.js";
 import { fmt } from "../game/utils.js";
 import { SoundOnIcon, SoundOffIcon, RulebookIcon, TrophyIcon, SaveIcon, ImportIcon, RestartIcon } from "./Icons.jsx";
+import useLockBody from "./useLockBody.js";
 import "./Settings.css";
 
 const num = (n) => Math.round(n || 0).toLocaleString();
@@ -22,6 +23,7 @@ function StatGroup({ title, rows }) {
 }
 
 export default function Settings({ allTime: at, trophies, history, phase, sound, onToggleSound, onRules, onClose, getBackupCode, onRestore, onNewFranchise }) {
+  useLockBody();
   const [view, setView] = useState("settings");
   const [copied, setCopied] = useState(false);
   const [manualCode, setManualCode] = useState(null); // shown if clipboard is unavailable

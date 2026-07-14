@@ -1,5 +1,7 @@
 // ── The Rulebook: a full-screen page with pinned section headers ──
 
+import useLockBody from "./useLockBody.js";
+
 const SECTIONS = [
   ["THE BIGS", ["Eight clubs, one league, forever. Every season is 154 games — home and away series against the same seven rivals — then the top four fight through a best-of-5 semifinal and a best-of-7 final for the PENNANT CUP.", "The games play themselves. You are the GM: train players, buy gear, set the batting order, and build a club that can take the Cup. Pause any time; 1× watches every pitch, 4× hustles. MAX — a whole game every second — is a champion's privilege: it unlocks with your first Pennant Cup."]],
   ["THE TREADMILL", ["Every winter your rivals reload — and the further ahead of the pack you are, the harder they chase. Your own players lose a step each offseason too (never below league average). Standing still is falling behind.", "While the app is closed the season waits for you. Only the merch store keeps working while you're away — flat out for the first hour, then a trickle, for as long as its tier allows (8h stand, 12h team store, 24h flagship). Media deals only pay while games are on."]],
@@ -24,6 +26,7 @@ const SECTIONS = [
 ];
 
 export default function Rulebook({ onClose }) {
+  useLockBody();
   return (
     <div className="page-screen" role="dialog" aria-label="Rulebook">
       <header className="page-screen__bar">

@@ -5,6 +5,7 @@
   max-height: 92dvh;
   padding-top: 6px;
   overflow-y: auto;
+  overscroll-behavior: contain;
   border-radius: 18px 18px 0 0;
   animation: sheetUp .25s cubic-bezier(.22, 1, .36, 1);
 }
