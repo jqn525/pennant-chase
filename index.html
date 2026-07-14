@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#0D2418" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <link rel="icon" href="/pennant-chase/pwa-icon.svg" />
+    <title>Pennant Chase</title>
+    <style>
+      html, body {
+        margin: 0;
+        padding: 0;
+        background: #152E22;
+        touch-action: pan-x pan-y; /* scroll yes, pinch/double-tap zoom no */
+        -webkit-text-size-adjust: 100%;
+      }
+    </style>
+    <script>
+      // iOS Safari ignores user-scalable=no; block its pinch gesture directly
+      // (touch-action above handles double-tap zoom without slowing taps)
+      document.addEventListener("gesturestart", (e) => e.preventDefault());
+    </script>
+    <script type="module" crossorigin src="/pennant-chase/assets/index-d34imRy0.js"></script>
+    <link rel="stylesheet" crossorigin href="/pennant-chase/assets/index-CstdPrw3.css">
+  <link rel="manifest" href="/pennant-chase/manifest.webmanifest"><script id="vite-plugin-pwa:register-sw" src="/pennant-chase/registerSW.js"></script></head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
