@@ -1,26 +1,18 @@
-.game-modal { align-items: flex-end !important; }
+.game-modal {
+  align-items: center !important;
+  overflow: hidden !important; /* the backdrop never scrolls — only the card */
+  padding: max(16px, env(safe-area-inset-top)) 14px max(16px, env(safe-area-inset-bottom)) !important;
+}
 .game-modal__sheet {
   position: relative;
   width: 100%;
-  max-height: 92dvh;
-  padding-top: 6px;
+  max-height: 88dvh;
   overflow-y: auto;
   overscroll-behavior: contain;
-  border-radius: 18px 18px 0 0;
-  animation: sheetUp .25s cubic-bezier(.22, 1, .36, 1);
+  border-radius: 14px;
+  animation: modalIn .18s cubic-bezier(.22, 1, .36, 1);
 }
-.game-modal__handle {
-  position: sticky;
-  z-index: 4;
-  top: 0;
-  width: 52px;
-  height: 5px;
-  margin: 2px auto -7px;
-  border-radius: 999px;
-  background: var(--cream-dim);
-  opacity: .55;
-}
-@media (min-width: 700px) {
-  .game-modal { align-items: center !important; }
-  .game-modal__sheet { border-radius: 18px; }
+@keyframes modalIn {
+  from { opacity: 0; transform: translateY(12px) scale(.98); }
+  to { opacity: 1; transform: none; }
 }
