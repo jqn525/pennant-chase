@@ -42,6 +42,8 @@
   color: #102318;
   box-shadow: inset 0 1px #ffe8b0;
 }
+.game-nav__speed button.is-locked { opacity: .45; }
+.game-nav__speed button.is-locked svg { margin-right: 4px; vertical-align: -1px; }
 .game-nav__pause span { text-transform: uppercase; }
 .game-nav__pause.is-active {
   border-color: var(--amber);

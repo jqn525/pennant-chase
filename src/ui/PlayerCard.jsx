@@ -42,7 +42,7 @@ function SegBar({ base, bonus, pot, scale }) {
   );
 }
 
-export default function PlayerCard({ player, isOwn, onClose, money, league, stat, trainCost, onTrain, tradeQuote, onTrade, rivals, isStar }) {
+export default function PlayerCard({ player, isOwn, onClose, money, league, stat, trainCost, onTrain, onMaxTrain, onTrainAll, tradeQuote, onTrade, rivals, isStar }) {
   const [slotOpen, setSlotOpen] = useState(null);
   const [tradeOpen, setTradeOpen] = useState(false);
   const [armedTrade, setArmedTrade] = useState(null);
@@ -53,6 +53,25 @@ export default function PlayerCard({ player, isOwn, onClose, money, league, stat
   const slots = GEAR.filter((g) => (g.role === "bat") === isBat);
   const s = stat ? stat(player.id) : null;
   const scale = league.statBase + 32;
+
+  // What TRAIN ALL would spend right now: cheapest point first, to ceilings
+  // or the bank, whichever comes first (mirrors the App-side greedy plan).
+  let trainAllQuote = 0;
+  if (isOwn && trainCost) {
+    const cur = {};
+    keys.forEach((k) => { cur[k] = player[k]; });
+    for (;;) {
+      let best = null, bestCost = Infinity;
+      for (const k of keys) {
+        if (cur[k] >= (player.pot?.[k] ?? Infinity)) continue;
+        const c = trainCost({ ...player, [k]: cur[k] }, k);
+        if (c < bestCost) { best = k; bestCost = c; }
+      }
+      if (!best || trainAllQuote + bestCost > money) break;
+      cur[best]++;
+      trainAllQuote += bestCost;
+    }
+  }
 
   const statCols = s && (isBat
     ? [["AVG", avg3(s.h, s.ab)], ["HR", s.hr], ["RBI", s.rbi]]
@@ -72,6 +91,7 @@ export default function PlayerCard({ player, isOwn, onClose, money, league, stat
           <span>{player.pos}</span>
           {isStar?.(player) && <StarIcon size={12} />}
           <span style={{ fontFamily: PIXEL, fontSize: 12, color: C.cream }}>{ovr(player).toFixed(0)} OVR</span>
+          {isOwn && <span style={{ fontFamily: PIXEL, fontSize: 10, color: C.amber }}>${fmt(money)}</span>}
         </div>
         {trait && (
           <div style={{ textAlign: "center", fontSize: 10, color: C.creamDim, marginTop: 4 }}>
@@ -114,18 +134,43 @@ export default function PlayerCard({ player, isOwn, onClose, money, league, stat
                 </span>
               </span>
             );
+            const chip = (on) => ({
+              fontFamily: "inherit", fontSize: 9, letterSpacing: 1, padding: "4px 9px",
+              background: "transparent", border: `1px solid ${on ? C.amber : "#31543f"}`,
+              borderRadius: 4, color: on ? C.amber : C.creamDim, cursor: on ? "pointer" : "default",
+            });
             return isOwn ? (
-              <button key={k} onClick={() => onTrain(player.id, k)} title={STAT_INFO[k]}
-                style={{ display: "block", width: "100%", background: "transparent", border: "none", padding: "4px 0", cursor: ok ? "pointer" : "default", fontFamily: "inherit", color: C.cream, opacity: 1 }}>
+              <div key={k} style={{ padding: "4px 0" }}>
                 {inner}
-                <span style={{ display: "block", textAlign: "right", fontSize: 9, letterSpacing: 1, color: peaked ? C.dirt : ok ? C.amber : C.creamDim, marginTop: 1 }}>
-                  {peaked ? "PEAKED" : `TRAIN $${fmt(cost)}`}
+                <span style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 6, marginTop: 3 }}>
+                  {peaked ? (
+                    <span style={{ fontSize: 9, letterSpacing: 1, color: C.dirt, padding: "4px 0" }}>PEAKED</span>
+                  ) : (
+                    <>
+                      <button onClick={() => onTrain(player.id, k)} title={STAT_INFO[k]} style={chip(ok)}>
+                        TRAIN ${fmt(cost)}
+                      </button>
+                      <button onClick={() => onMaxTrain(player.id, k)} aria-label={`max ${k}`} style={chip(ok)}>
+                        MAX
+                      </button>
+                    </>
+                  )}
                 </span>
-              </button>
+              </div>
             ) : (
               <div key={k} style={{ padding: "6px 0" }}>{inner}</div>
             );
           })}
+          {isOwn && trainAllQuote > 0 && (
+            <button onClick={() => onTrainAll(player.id)}
+              style={{
+                width: "100%", marginTop: 8, fontFamily: PIXEL, fontSize: 9, letterSpacing: 1,
+                padding: "11px 0", background: "#3A2E10", border: `2px solid ${C.amber}`,
+                borderRadius: 6, color: C.amber, cursor: "pointer",
+              }}>
+              TRAIN ALL · ${fmt(trainAllQuote)}
+            </button>
+          )}
           <div style={{ fontSize: 9, color: C.creamDim, marginTop: 4, textAlign: "center" }}>
             <span style={{ color: C.amber }}>■</span> skill · <span style={{ color: C.grass }}>■</span> boost · <span style={{ color: C.dirt }}>□</span> ceiling
           </div>

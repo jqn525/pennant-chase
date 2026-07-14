@@ -1,4 +1,4 @@
-import { DiamondNavIcon, RosterNavIcon, ShopNavIcon, OfficeNavIcon, PlayIcon, PauseIcon } from "./Icons.jsx";
+import { DiamondNavIcon, RosterNavIcon, ShopNavIcon, OfficeNavIcon, PlayIcon, PauseIcon, LockIcon } from "./Icons.jsx";
 import "./TabBar.css";
 
 const TABS = [
@@ -8,7 +8,7 @@ const TABS = [
   { id: "club", label: "Office", Icon: OfficeNavIcon },
 ];
 
-export default function TabBar({ tab, onTab, speed, paused, onSetSpeed, onTogglePause }) {
+export default function TabBar({ tab, onTab, speed, paused, onSetSpeed, onTogglePause, maxUnlocked }) {
   return (
     <nav className="game-nav" aria-label="Primary">
       <div className="game-nav__speed" aria-label="Game speed controls">
@@ -17,10 +17,16 @@ export default function TabBar({ tab, onTab, speed, paused, onSetSpeed, onToggle
           {paused ? <PlayIcon size={13} /> : <PauseIcon size={13} />}
           <span>{paused ? "Resume" : "Pause"}</span>
         </button>
-        {[[1, "1×"], [4, "4×"], ["max", "MAX"]].map(([value, label]) => (
-          <button key={label} className={!paused && speed === value ? "is-active" : ""}
-            onClick={() => onSetSpeed(value)} aria-label={`Set game speed to ${label}`}>{label}</button>
-        ))}
+        {[[1, "1×"], [4, "4×"], ["max", "MAX"]].map(([value, label]) => {
+          const locked = value === "max" && !maxUnlocked;
+          return (
+            <button key={label} className={!paused && speed === value ? "is-active" : locked ? "is-locked" : ""}
+              onClick={() => !locked && onSetSpeed(value)} disabled={locked}
+              aria-label={locked ? "MAX speed unlocks with your first Pennant Cup" : `Set game speed to ${label}`}>
+              {locked ? <LockIcon size={11} /> : null}{label}
+            </button>
+          );
+        })}
       </div>
       <div className="game-nav__rail">
         {TABS.map(({ id, label, Icon }) => {

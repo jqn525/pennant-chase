@@ -42,9 +42,16 @@ const EMPTY_STAT = { ab: 0, h: 0, d: 0, t: 0, hr: 0, bb: 0, k: 0, r: 0, rbi: 0, 
 
 const FENCE = { corner: LEAGUE.fenceCorner, center: LEAGUE.fenceCenter };
 
-// Jersey sales per second. Also used to pay capped income for time away.
+// Jersey sales per second. Fans scale gently (^0.35) so big markets don't
+// break the economy; store and media tiers multiply on top.
 const merchRate = (fansN, stars, merchMult, tvMult, merchCity) =>
-  0.01 * Math.sqrt(fansN) * (1 + 0.3 * stars) * merchMult * tvMult * (merchCity ? 1.3 : 1);
+  0.02 * Math.pow(fansN, 0.35) * (1 + 0.3 * stars) * merchMult * tvMult * (merchCity ? 1.3 : 1);
+
+// Away selling tapers: the first hour runs at full speed, the rest at 15%.
+const awaySeconds = (ms) => {
+  const s = ms / 1000;
+  return Math.min(s, 3600) + Math.max(0, s - 3600) * 0.15;
+};
 
 // Older saves stored merch/tv as booleans; true = tier 1 (same effect then and now)
 const lvlOf = (v) => (typeof v === "number" ? v : v ? 1 : 0);
@@ -149,7 +156,8 @@ export default function App() {
     for (const k in patch) next[k] = (next[k] || 0) + patch[k];
     return next;
   }), []);
-  const [speed, setSpeed] = useState(SAVED?.speed ?? 1);
+  // MAX speed is earned with the first Pennant Cup — clamp saves that predate the gate
+  const [speed, setSpeed] = useState(SAVED?.speed === "max" && !(SAVED?.trophies > 0) ? 4 : SAVED?.speed ?? 1);
   const [paused, setPaused] = useState(false);
   const [sound, setSound] = useState(SAVED?.sound ?? true);
   const [saveError, setSaveError] = useState(LOADED.error);
@@ -231,7 +239,8 @@ export default function App() {
     if (fx.merchMult && elapsed > 60e3) {
       const all = [...SAVED.roster.batters, SAVED.roster.sp, SAVED.roster.rp];
       const stars = all.filter(isStar).length;
-      const gain = merchRate(SAVED.fans, stars, fx.merchMult, fx.tvMult, SAVED.city.bonus === "merch") * (elapsed / 1000) * ECON.offlineRate;
+      // No media money overnight — the store alone sells, tapering after the first hour
+      const gain = merchRate(SAVED.fans, stars, fx.merchMult, 1, SAVED.city.bonus === "merch") * awaySeconds(elapsed) * ECON.offlineRate;
       setMoney((m) => m + gain);
       addAT({ earned: gain });
       const h = Math.floor(elapsed / 3600e3), min = Math.floor((elapsed % 3600e3) / 60e3);
@@ -396,6 +405,7 @@ export default function App() {
     }
     if (p.wins.us >= need && p.round === "final") {
       pushLog(`— PENNANT CUP CHAMPIONS — ${tn(s.city)} take the final ${p.wins.us}-${p.wins.them}. $${fmt(ECON.cupPay)} and the parade lasts three days.`, "win");
+      if (s.trophies === 0) pushLog(`MAX SPEED UNLOCKED — champions set the pace.`, "win");
       play.fanfare();
       return offseason(0, true);
     }
@@ -557,6 +567,60 @@ export default function App() {
       const upd = (o) => (o.id === pid ? { ...o, [key]: o[key] + 1 } : o);
       return { batters: r.batters.map(upd), sp: upd(r.sp), rp: upd(r.rp) };
     });
+  };
+
+  // Bulk training: buy point after point, cheapest first, until ceilings or
+  // the budget stop it. Returns {points: {key: n}, total, count} — pure.
+  const planTraining = (p, keys, budget) => {
+    const cur = {};
+    keys.forEach((k) => { cur[k] = p[k]; });
+    const points = {};
+    let total = 0, count = 0;
+    for (;;) {
+      let best = null, bestCost = Infinity;
+      for (const k of keys) {
+        if (cur[k] >= (p.pot?.[k] ?? Infinity)) continue;
+        const c = trainCost({ ...p, [k]: cur[k] }, k);
+        if (c < bestCost) { best = k; bestCost = c; }
+      }
+      if (!best || total + bestCost > budget) break;
+      cur[best]++;
+      points[best] = (points[best] || 0) + 1;
+      total += bestCost;
+      count++;
+    }
+    return { points, total, count };
+  };
+
+  const applyTraining = (pid, plan, label) => {
+    if (!plan.count) return;
+    setMoney((m) => m - plan.total);
+    addAT({ spent: plan.total, train: plan.count });
+    const upd = (o) => {
+      if (o.id !== pid) return o;
+      const q = { ...o };
+      for (const k in plan.points) q[k] += plan.points[k];
+      return q;
+    };
+    setRoster((r) => ({ batters: r.batters.map(upd), sp: upd(r.sp), rp: upd(r.rp) }));
+    if (label) pushLog(label, "win");
+    play.cash();
+  };
+
+  const maxTrain = (pid, key) => {
+    const p = [...roster.batters, roster.sp, roster.rp].find((x) => x.id === pid);
+    if (!p) return;
+    applyTraining(pid, planTraining(p, [key], money));
+  };
+
+  const trainAllFor = (pid) => {
+    const p = [...roster.batters, roster.sp, roster.rp].find((x) => x.id === pid);
+    if (!p) return;
+    const keys = p.role === "bat" ? BAT_STATS : PIT_STATS;
+    const plan = planTraining(p, keys, money);
+    if (!plan.count) return;
+    const gains = Object.entries(plan.points).map(([k, n]) => `${k} +${n}`).join(", ");
+    applyTraining(pid, plan, `TRAINING CAMP: ${p.name} adds ${plan.count} point${plan.count > 1 ? "s" : ""} (${gains}) for $${fmt(plan.total)}.`);
   };
 
   const moveBatter = (id, dir) => {
@@ -783,7 +847,7 @@ export default function App() {
           <PlayerCard
             player={cardView.player} isOwn={cardView.isOwn} onClose={() => setCardId(null)}
             money={money} league={LEAGUE} stat={stat} isStar={isStar}
-            trainCost={trainCost} onTrain={train}
+            trainCost={trainCost} onTrain={train} onMaxTrain={maxTrain} onTrainAll={trainAllFor}
             tradeQuote={tradeQuote} onTrade={makeTrade} rivals={rivals}
           />
         )}
@@ -823,8 +887,8 @@ export default function App() {
         </motion.main>
         </AnimatePresence>
       </div>
-      <TabBar tab={tab} speed={speed} paused={paused}
-        onSetSpeed={(sp) => { setSpeed(sp); setPaused(false); }}
+      <TabBar tab={tab} speed={speed} paused={paused} maxUnlocked={trophies > 0}
+        onSetSpeed={(sp) => { if (sp === "max" && !(trophies > 0)) return; setSpeed(sp); setPaused(false); }}
         onTogglePause={() => setPaused((p) => !p)}
         onTab={(id) => { setTab(id); play.click(); if (id === "shop") showTip("shop"); if (id === "club") showTip("stadium"); }} />
     </div>
