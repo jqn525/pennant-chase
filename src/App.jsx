@@ -341,9 +341,10 @@ export default function App() {
       formWins: s.form.filter((f) => f === "W").length, streak,
       ...stadiumFx(s.stadium),
     });
-    // Payroll drips out one game at a time during the regular season
+    // Payroll drips out one game at a time during the regular season.
+    // Wages defer when the vault is empty — the bank never goes negative.
     const wage = s.phase === "regular" ? Math.round(teamPayroll(s.roster) / LEAGUE.seasonGames) : 0;
-    setMoney((m) => m + res.moneyDelta - wage);
+    setMoney((m) => Math.max(0, m + res.moneyDelta - wage));
     addAT({ g: 1, [res.won ? "w" : "l"]: 1, tickets: res.attendance, earned: res.moneyDelta, ...(wage ? { spent: wage } : {}) });
     if (res.fansDelta) setFans((f) => f + res.fansDelta);
     if (res.won && s.speed !== "max") play.cash();

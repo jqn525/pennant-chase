@@ -89,7 +89,7 @@ export const LEAGUE = {
 };
 
 export const ECON = {
-  startMoney: 200,
+  startMoney: 750,
   startFans: 25,
   // Ticket sales: attendance = fans × (30% cold … 60% hot, by last-10 form),
   // capped; playoff games sell out. Gate = base + attendance × ticketPrice.
@@ -218,9 +218,9 @@ export const RARITY = {
 // Payroll drips out per regular-season game; the winter luxury tax bills the
 // overage above the cap, escalating for consecutive years over.
 export const SALARY = {
-  base: 500,        // $/season at league-average OVR
+  base: 200,        // $/season at league-average OVR — a fresh club breaks even
   growth10: 3,      // salary multiplies by this per +10 OVR
-  cap: 30000,       // team payroll line
+  cap: 20000,       // team payroll line — starts to bite around an all-85 roster
   taxStep: 0.5,     // +50% tax rate per consecutive year over
   posMult: { SP: 1.5, RP: 0.7, SS: 1.15, CF: 1.15, C: 0.85 },
 };
