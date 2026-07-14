@@ -1,14 +1,16 @@
+/* Centered when it fits, scrolls as one whole card when taller than the
+   screen (margin:auto pattern). A short pop-up has no overflow, so there is
+   nothing to scroll; the page behind is locked either way. */
 .game-modal {
-  align-items: center !important;
-  overflow: hidden !important; /* the backdrop never scrolls — only the card */
+  overflow-y: auto !important;
+  align-items: flex-start !important;
+  overscroll-behavior: contain;
   padding: max(16px, env(safe-area-inset-top)) 14px max(16px, env(safe-area-inset-bottom)) !important;
 }
 .game-modal__sheet {
   position: relative;
   width: 100%;
-  max-height: 88dvh;
-  overflow-y: auto;
-  overscroll-behavior: contain;
+  margin: auto;
   border-radius: 14px;
   animation: modalIn .18s cubic-bezier(.22, 1, .36, 1);
 }
