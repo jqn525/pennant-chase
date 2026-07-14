@@ -213,6 +213,18 @@ export const RARITY = {
   3: { name: "LEGENDARY", weight: 7, cost: 2100, pct: 15 },
 };
 
+// Salaries: pay grows steeply with effective OVR (×growth10 per 10 points
+// above statBase), shaped by position — aces cost most, catchers modest.
+// Payroll drips out per regular-season game; the winter luxury tax bills the
+// overage above the cap, escalating for consecutive years over.
+export const SALARY = {
+  base: 500,        // $/season at league-average OVR
+  growth10: 3,      // salary multiplies by this per +10 OVR
+  cap: 30000,       // team payroll line
+  taxStep: 0.5,     // +50% tax rate per consecutive year over
+  posMult: { SP: 1.5, RP: 0.7, SS: 1.15, CF: 1.15, C: 0.85 },
+};
+
 // Trades: deterministic pricing — rivals charge a premium and buy at a discount
 export const TRADE = { fee: 200, buyPremium: 1.6, sellDiscount: 0.5, valuePerOvr: 225 };
 

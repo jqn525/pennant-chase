@@ -1,12 +1,14 @@
 // ── Roster tab: batting order and season stat tables. Tap any player for his card. ──
 
-import { C, PLAYER_TRAITS, BAT_STATS } from "../game/constants.js";
+import { C, PLAYER_TRAITS, BAT_STATS, SALARY } from "../game/constants.js";
 import { btn, PIXEL } from "./styles.js";
 import Panel from "./Panel.jsx";
 import { StarIcon } from "./Icons.jsx";
 import StatTable from "./StatTable.jsx";
 import { ovr, eff } from "../game/gear.js";
 import { portraitUrl } from "./portrait.js";
+import { teamPayroll } from "../game/salary.js";
+import { fmt } from "../game/utils.js";
 
 const STAT_ABBR = { contact: "CON", power: "POW", eye: "EYE", speed: "SPD", defense: "DEF", stuff: "STU", control: "CTL", stamina: "STA" };
 
@@ -17,8 +19,19 @@ function TeamRatings({ roster }) {
     { label: "BATTING", players: roster.batters, keys: BAT_STATS },
     { label: "PITCHING", players: [roster.sp, roster.rp], keys: ["stuff", "control", "stamina"] },
   ];
+  const payroll = teamPayroll(roster);
+  const over = payroll > SALARY.cap;
+  const near = !over && payroll > SALARY.cap * 0.8;
   return (
     <Panel title="TEAM RATINGS">
+      <div style={{ display: "flex", alignItems: "baseline", gap: 4, padding: "5px 0", borderBottom: "1px solid #2c554044" }}>
+        <span style={{ width: 64, fontSize: 8, letterSpacing: 1, color: C.creamDim, flexShrink: 0 }}>PAYROLL</span>
+        <span style={{ fontFamily: PIXEL, fontSize: 11, color: over ? "#D9584A" : near ? C.amber : C.cream }}>
+          ${fmt(payroll)}
+        </span>
+        <span style={{ fontSize: 9, color: C.creamDim, letterSpacing: 1 }}> / ${fmt(SALARY.cap)} CAP</span>
+        {over && <span style={{ marginLeft: "auto", fontSize: 8, letterSpacing: 1, color: "#D9584A" }}>LUXURY TAX DUE AT WINTER</span>}
+      </div>
       {rows.map(({ label, players, keys }) => {
         const avgs = keys.map((k) => Math.round(players.reduce((n, p) => n + eff(p)[k], 0) / players.length));
         const hi = Math.max(...avgs), lo = Math.min(...avgs);

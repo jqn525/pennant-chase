@@ -5,6 +5,7 @@ import { fmt } from "../game/utils.js";
 import { panel, btn, PIXEL } from "./styles.js";
 import Panel from "./Panel.jsx";
 import { portraitUrl } from "./portrait.js";
+import { salaryOf } from "../game/salary.js";
 
 export default function DraftBoard({ draftClass, roster, money, year, onSign, onClose, onView }) {
   const releasedFor = (rook) => {
@@ -38,6 +39,7 @@ export default function DraftBoard({ draftClass, roster, money, year, onSign, on
               </button>
               {trait && <span style={{ fontSize: 9, letterSpacing: 1, color: C.amber, border: `1px solid ${C.amber}55`, borderRadius: 3, padding: "1px 5px" }}>{trait.label.toUpperCase()}</span>}
               <span style={{ marginLeft: "auto", fontSize: 12, color: afford ? C.amber : C.red, fontVariantNumeric: "tabular-nums" }}>${fmt(rook.signCost)}</span>
+              <span style={{ fontSize: 9, color: C.creamDim, whiteSpace: "nowrap" }}>${fmt(salaryOf(rook))}/yr</span>
             </div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 4, margin: "6px 0" }}>
               {keys.map((k) => (

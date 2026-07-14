@@ -49,6 +49,13 @@ export const TIPS = {
       "Each tier takes money and a big enough fan base. Win, grow, reinvest.",
     ],
   },
+  payroll: {
+    title: "THE PAYROLL",
+    body: [
+      "Every player draws a salary now — and the better he is, the more he earns. Aces cost the most, shortstops and center fielders carry a premium, and every point of training or gear raises a player's price. Wages come out of every regular-season gate.",
+      "The Roster tab shows your PAYROLL against the league's cap. Finish a season over it and the winter brings a LUXURY TAX: the full overage, and the rate climbs every consecutive year you stay over. Champions can afford greatness. Nobody keeps it free.",
+    ],
+  },
   backup: {
     title: "PROTECT THE FRANCHISE",
     body: [

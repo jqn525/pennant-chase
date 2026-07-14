@@ -10,6 +10,7 @@ import { StarIcon, BallIcon } from "./Icons.jsx";
 import { GEAR, GEAR_ART, gearArtUrl, gearBonus, ovr } from "../game/gear.js";
 import Modal from "./Modal.jsx";
 import { portraitUrl } from "./portrait.js";
+import { salaryOf, payRank } from "../game/salary.js";
 
 const avg3 = (num, den) => (den ? (num / den).toFixed(3).replace(/^0/, "") : "—");
 const rarityColor = { 1: "#8A9A8F", 2: C.amber, 3: C.red };
@@ -92,6 +93,10 @@ export default function PlayerCard({ player, isOwn, onClose, money, league, stat
           {isStar?.(player) && <StarIcon size={12} />}
           <span style={{ fontFamily: PIXEL, fontSize: 12, color: C.cream }}>{ovr(player).toFixed(0)} OVR</span>
           {isOwn && <span style={{ fontFamily: PIXEL, fontSize: 10, color: C.amber }}>${fmt(money)}</span>}
+        </div>
+        <div style={{ textAlign: "center", fontSize: 10, color: C.creamDim, marginTop: 3 }}>
+          SALARY <span style={{ color: C.cream, fontWeight: 600 }}>${fmt(salaryOf(player))}/YR</span>
+          {rivals && <span> · #{payRank(player, rivals)} {player.pos}</span>}
         </div>
         {trait && (
           <div style={{ textAlign: "center", fontSize: 10, color: C.creamDim, marginTop: 4 }}>
@@ -271,7 +276,7 @@ export default function PlayerCard({ player, isOwn, onClose, money, league, stat
                 <div key={team.name} style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 0", fontSize: 11, borderBottom: `1px solid ${C.greenLine}33` }}>
                   <span style={{ flex: 1, minWidth: 0 }}>
                     <span style={{ fontWeight: 600 }}>{quote.them.name}</span>
-                    <span style={{ color: C.creamDim }}> · {team.name} · OVR {ovr(quote.them).toFixed(0)}{t ? ` · ${t.label}` : ""}</span>
+                    <span style={{ color: C.creamDim }}> · {team.name} · OVR {ovr(quote.them).toFixed(0)} · ${fmt(salaryOf(quote.them))}/yr{t ? ` · ${t.label}` : ""}</span>
                   </span>
                   <span style={{ fontSize: 10, color: quote.cash > 0 ? C.red : C.grass, whiteSpace: "nowrap" }}>
                     {quote.cash > 0 ? `pay $${fmt(quote.cash)}` : `get $${fmt(-quote.cash)}`}

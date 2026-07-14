@@ -5,7 +5,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { C, LEAGUE, ECON, TRADE, BAT_STATS, PIT_STATS, STADIUM, stadiumFx, REVENUE, revenueFx } from "./game/constants.js";
+import { C, LEAGUE, ECON, TRADE, BAT_STATS, PIT_STATS, STADIUM, stadiumFx, REVENUE, revenueFx, SALARY } from "./game/constants.js";
 import { fmt } from "./game/utils.js";
 import { genRoster, seedUid, genDraftClass, vetPot, rollPot, pickTrait, freshName, seedNames } from "./game/generators.js";
 import { newGame, stepAtBat, playGameInstant, settleGame } from "./game/engine.js";
@@ -13,6 +13,7 @@ import { makeRivals, makeSchedule, teamRating, quickSim, simSeries, seedOrder, r
 import { eff, isStar, talentGrade, genShipment, genItem, playerValue, GEAR, dealerTier, shipmentWeights, TIER_INFO } from "./game/gear.js";
 import { sfx, play } from "./game/sfx.js";
 import { SAVE_KEY, parseSave, decodeBackup, encodeBackup } from "./game/save.js";
+import { teamPayroll, luxuryTax } from "./game/salary.js";
 import TabBar from "./ui/TabBar.jsx";
 import TipModal from "./ui/TipModal.jsx";
 import DraftBoard from "./ui/DraftBoard.jsx";
@@ -151,6 +152,7 @@ export default function App() {
   const [history, setHistory] = useState(SAVED?.history ?? []);
   const [trophies, setTrophies] = useState(SAVED?.trophies ?? 0);
   const [allTime, setAllTime] = useState(SAVED?.allTime ?? seedAllTime());
+  const [capYears, setCapYears] = useState(SAVED?.capYears ?? 0); // consecutive winters over the cap
   const addAT = useCallback((patch) => setAllTime((a) => {
     const next = { ...a };
     for (const k in patch) next[k] = (next[k] || 0) + patch[k];
@@ -188,7 +190,7 @@ export default function App() {
 
   // Fresh-state mirror so interval callbacks never read stale closures
   const S = useRef({});
-  S.current = { city, money, fans, roster, merch, tv, stadium, seasonStats, shopItems, draftClass, form, year, phase, rivals, schedule, rivalDays, gameIndex, standings, playoffs, history, trophies, allTime, speed, sound, seenTips };
+  S.current = { city, money, fans, roster, merch, tv, stadium, seasonStats, shopItems, draftClass, form, year, phase, rivals, schedule, rivalDays, gameIndex, standings, playoffs, history, trophies, allTime, capYears, speed, sound, seenTips };
 
   const cityBonus = (k) => (city?.bonus === k);
   const tn = (c) => (c?.nickname ?? c?.name ?? ""); // team display name
@@ -207,7 +209,7 @@ export default function App() {
       seasonStats: s.seasonStats, shopItems: s.shopItems, draftClass: s.draftClass, form: s.form,
       year: s.year, phase: s.phase, rivals: s.rivals, schedule: s.schedule, rivalDays: s.rivalDays,
       gameIndex: s.gameIndex, standings: s.standings, playoffs: s.playoffs,
-      history: s.history, trophies: s.trophies, allTime: s.allTime, speed: s.speed, sound: s.sound, seenTips: s.seenTips,
+      history: s.history, trophies: s.trophies, allTime: s.allTime, capYears: s.capYears, speed: s.speed, sound: s.sound, seenTips: s.seenTips,
       liveGame: gameRef.current, liveContext: ctxRef.current,
     };
   }, []);
@@ -223,7 +225,7 @@ export default function App() {
       return false;
     }
   }, [saveData]);
-  useEffect(() => { saveNow(); }, [city, money, fans, roster, merch, tv, stadium, seasonStats, shopItems, draftClass, form, year, phase, rivals, schedule, rivalDays, gameIndex, standings, playoffs, history, trophies, allTime, speed, sound, seenTips, saveNow]);
+  useEffect(() => { saveNow(); }, [city, money, fans, roster, merch, tv, stadium, seasonStats, shopItems, draftClass, form, year, phase, rivals, schedule, rivalDays, gameIndex, standings, playoffs, history, trophies, allTime, capYears, speed, sound, seenTips, saveNow]);
   useEffect(() => {
     const iv = setInterval(() => { if (!document.hidden) saveNow(); }, 20000);
     return () => clearInterval(iv);
@@ -339,8 +341,10 @@ export default function App() {
       formWins: s.form.filter((f) => f === "W").length, streak,
       ...stadiumFx(s.stadium),
     });
-    setMoney((m) => m + res.moneyDelta);
-    addAT({ g: 1, [res.won ? "w" : "l"]: 1, tickets: res.attendance, earned: res.moneyDelta });
+    // Payroll drips out one game at a time during the regular season
+    const wage = s.phase === "regular" ? Math.round(teamPayroll(s.roster) / LEAGUE.seasonGames) : 0;
+    setMoney((m) => m + res.moneyDelta - wage);
+    addAT({ g: 1, [res.won ? "w" : "l"]: 1, tickets: res.attendance, earned: res.moneyDelta, ...(wage ? { spent: wage } : {}) });
     if (res.fansDelta) setFans((f) => f + res.fansDelta);
     if (res.won && s.speed !== "max") play.cash();
     pushLog(res.text, res.kind);
@@ -484,6 +488,23 @@ export default function App() {
       fans: s.fans, history: s.history, trophies: s.trophies,
     });
     if (playerCup) { setMoney((m) => m + ECON.cupPay); addAT({ earned: ECON.cupPay }); }
+
+    // The luxury tax: the winter bill for a payroll above the cap,
+    // escalating for every consecutive year the club stays over.
+    const payroll = teamPayroll(s.roster);
+    const { overage, tax } = luxuryTax(payroll, s.capYears + 1);
+    if (overage > 0) {
+      const nthYear = s.capYears + 1;
+      const paid = Math.min(Math.round(s.money + (playerCup ? ECON.cupPay : 0)), tax);
+      setCapYears(nthYear);
+      setMoney((m) => Math.max(0, m - tax));
+      addAT({ spent: paid });
+      pushLog(`— LUXURY TAX — payroll $${fmt(payroll)} sits over the $${fmt(SALARY.cap)} cap. The league bills $${fmt(tax)}${nthYear > 1 ? ` (year ${nthYear} over — the rate climbs)` : ""}.${paid < tax ? " The vault couldn't cover it — the league seizes what's there." : ""}`, "out");
+    } else if (s.capYears > 0) {
+      setCapYears(0);
+      pushLog(`Payroll back under the cap — the league's collectors move on.`, "sys");
+    }
+    if (payroll > SALARY.cap * 0.8) showTip("payroll");
     setFans((f) => Math.max(25, f + off.fansDelta));
     setRivals(off.rivals);
     setRoster((r) => ageRoster(r));
