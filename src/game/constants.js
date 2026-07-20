@@ -109,7 +109,14 @@ export const ECON = {
   playoffFansPct: 0.10,   // made the playoffs (missed = -5% fans)
   offlineRate: 1.0,       // tunable damper on away income
   trainBase: 6,           // training: cost per +1 = trainBase × 1.5^((stat−41)/4)
+  eliteAt: 78,            // above this, every point also pays the surcharge…
+  eliteRamp: 1.15,        // …× eliteRamp^(stat − eliteAt). Greatness is expensive.
 };
+
+// Franchise players: only tagged players train past the development cap.
+// You start with `slots` tags; every Pennant Cup adds one slot and lifts the
+// cap by devPerCup. A tag stays on the man until he leaves the roster.
+export const FRANCHISE = { slots: 2, devCap: 76, devPerCup: 2 };
 
 // Stadium upgrades: four tracks, tiered, gated by money + fan milestones.
 // value semantics — parking: attendance-rate bonus; seats: new attendance cap;
@@ -191,7 +198,7 @@ export const stadiumFx = (levels = {}) => {
 // +CREEP.cellarBonus extra for the last-place club. Standing still = falling behind.
 // Rubber band: rivals trailing the PLAYER's rating gain up to rubberCap extra
 // points (rubber × rating gap), so a dynasty gets hunted down within a few years.
-export const CREEP = { base: 8, cellarBonus: 4, rubber: 2, rubberCap: 30, bump: 4 };
+export const CREEP = { base: 12, cellarBonus: 6, rubber: 2, rubberCap: 40, bump: 4 };
 
 // One per player — a defined percentage shift on his ratings, like gear.
 // `mods` bake into effective stats everywhere; `sit` applies with runners on.

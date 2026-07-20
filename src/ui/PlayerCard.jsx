@@ -43,7 +43,7 @@ function SegBar({ base, bonus, pot, scale }) {
   );
 }
 
-export default function PlayerCard({ player, isOwn, onClose, money, league, stat, trainCost, onTrain, onMaxTrain, onTrainAll, tradeQuote, onTrade, rivals, isStar }) {
+export default function PlayerCard({ player, isOwn, onClose, money, league, stat, trainCost, onTrain, onMaxTrain, onTrainAll, tradeQuote, onTrade, rivals, isStar, franchise }) {
   const [slotOpen, setSlotOpen] = useState(null);
   const [tradeOpen, setTradeOpen] = useState(false);
   const [armedTrade, setArmedTrade] = useState(null);
@@ -55,6 +55,13 @@ export default function PlayerCard({ player, isOwn, onClose, money, league, stat
   const s = stat ? stat(player.id) : null;
   const scale = league.statBase + 32;
 
+  // Training stops at natural potential — or at the league development cap
+  // unless this man carries a franchise tag.
+  const ceilOf = (k) => {
+    const pot = player.pot?.[k] ?? Infinity;
+    return player.franchise || !franchise ? pot : Math.min(pot, franchise.cap);
+  };
+
   // What TRAIN ALL would spend right now: cheapest point first, to ceilings
   // or the bank, whichever comes first (mirrors the App-side greedy plan).
   let trainAllQuote = 0;
@@ -64,7 +71,7 @@ export default function PlayerCard({ player, isOwn, onClose, money, league, stat
     for (;;) {
       let best = null, bestCost = Infinity;
       for (const k of keys) {
-        if (cur[k] >= (player.pot?.[k] ?? Infinity)) continue;
+        if (cur[k] >= ceilOf(k)) continue;
         const c = trainCost({ ...player, [k]: cur[k] }, k);
         if (c < bestCost) { best = k; bestCost = c; }
       }
@@ -91,6 +98,9 @@ export default function PlayerCard({ player, isOwn, onClose, money, league, stat
         <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 8, fontSize: 11, color: C.creamDim }}>
           <span>{player.pos}</span>
           {isStar?.(player) && <StarIcon size={12} />}
+          {player.franchise && (
+            <span style={{ fontFamily: PIXEL, fontSize: 8, color: C.amber, border: `1px solid ${C.amber}`, borderRadius: 3, padding: "2px 5px", letterSpacing: 1 }}>FRANCHISE</span>
+          )}
           <span style={{ fontFamily: PIXEL, fontSize: 12, color: C.cream }}>{ovr(player).toFixed(0)} OVR</span>
         </div>
         <div style={{ textAlign: "center", fontSize: 10, color: C.creamDim, marginTop: 3 }}>
@@ -124,14 +134,16 @@ export default function PlayerCard({ player, isOwn, onClose, money, league, stat
           {keys.map((k) => {
             const base = player[k];
             const pot = player.pot?.[k];
+            const ceil = isOwn ? ceilOf(k) : pot;
             const peaked = pot != null && base >= pot;
+            const capped = !peaked && ceil !== Infinity && base >= ceil; // held back by the league cap, not talent
             const cost = isOwn && trainCost ? trainCost(player, k) : 0;
-            const ok = isOwn && money >= cost && !peaked;
+            const ok = isOwn && money >= cost && !peaked && !capped;
             const bonus = gearBonus(player, k);
             const inner = (
               <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <span style={{ width: 66, fontSize: 10, letterSpacing: 1, color: C.cream, textTransform: "uppercase", textAlign: "right", flexShrink: 0 }}>{k}:</span>
-                <SegBar base={base} bonus={bonus} pot={pot} scale={scale} />
+                <SegBar base={base} bonus={bonus} pot={ceil === Infinity ? pot : ceil} scale={scale} />
                 <span style={{ width: 58, textAlign: "right", flexShrink: 0 }}>
                   <span key={base} style={{ fontFamily: PIXEL, fontSize: 12, color: C.cream, display: "inline-block", animation: "statPop .5s" }}>{base}</span>
                   {bonus !== 0 && <span style={{ fontSize: 10, fontWeight: 600, color: bonus > 0 ? C.grass : C.red }}> {bonus > 0 ? "+" : ""}{bonus}</span>}
@@ -147,8 +159,8 @@ export default function PlayerCard({ player, isOwn, onClose, money, league, stat
               <div key={k} style={{ padding: "4px 0" }}>
                 {inner}
                 <span style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 6, marginTop: 3 }}>
-                  {peaked ? (
-                    <span style={{ fontSize: 9, letterSpacing: 1, color: C.dirt, padding: "4px 0" }}>PEAKED</span>
+                  {peaked || capped ? (
+                    <span style={{ fontSize: 9, letterSpacing: 1, color: C.dirt, padding: "4px 0" }}>{peaked ? "PEAKED" : "LEAGUE CAP"}</span>
                   ) : (
                     <>
                       <button onClick={() => onTrain(player.id, k)} title={STAT_INFO[k]} style={chip(ok)}>
@@ -175,8 +187,25 @@ export default function PlayerCard({ player, isOwn, onClose, money, league, stat
               TRAIN ALL ${fmt(trainAllQuote)} / ${fmt(money)}
             </button>
           )}
+          {isOwn && franchise && !player.franchise && (() => {
+            const slotFree = franchise.used < franchise.max;
+            return (
+              <button onClick={() => slotFree && franchise.onTag(player.id)}
+                style={{
+                  width: "100%", marginTop: 8, fontFamily: PIXEL, fontSize: 9, letterSpacing: 1,
+                  padding: "11px 0", background: "transparent",
+                  border: `2px solid ${slotFree ? C.amber : "#31543f"}`, borderRadius: 6,
+                  color: slotFree ? C.amber : C.creamDim, cursor: slotFree ? "pointer" : "default",
+                }}>
+                {slotFree
+                  ? `FRANCHISE TAG (${franchise.used}/${franchise.max} used) — TRAIN PAST ${franchise.cap}`
+                  : `NO FRANCHISE TAGS LEFT (${franchise.used}/${franchise.max}) — WIN THE CUP FOR MORE`}
+              </button>
+            );
+          })()}
           <div style={{ fontSize: 9, color: C.creamDim, marginTop: 4, textAlign: "center" }}>
             <span style={{ color: C.amber }}>■</span> skill · <span style={{ color: C.grass }}>■</span> boost · <span style={{ color: C.dirt }}>□</span> ceiling
+            {isOwn && franchise && !player.franchise && <span> (league cap {franchise.cap})</span>}
           </div>
         </div>
 

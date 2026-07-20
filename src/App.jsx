@@ -5,12 +5,12 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { C, LEAGUE, ECON, TRADE, BAT_STATS, PIT_STATS, STADIUM, stadiumFx, REVENUE, revenueFx, SALARY } from "./game/constants.js";
+import { C, LEAGUE, ECON, TRADE, BAT_STATS, PIT_STATS, STADIUM, stadiumFx, REVENUE, revenueFx, SALARY, FRANCHISE } from "./game/constants.js";
 import { fmt } from "./game/utils.js";
-import { genRoster, seedUid, genDraftClass, vetPot, rollPot, pickTrait, freshName, seedNames } from "./game/generators.js";
+import { genRoster, seedUid, genDraftClass, vetPot, rollPot, pickTrait, freshName, seedNames, creepRival, seedRivalStars } from "./game/generators.js";
 import { newGame, stepAtBat, playGameInstant, settleGame, ticketGate } from "./game/engine.js";
 import { makeRivals, makeSchedule, teamRating, quickSim, simSeries, seedOrder, runOffseason, ageRoster, seriesInfo } from "./game/season.js";
-import { eff, isStar, talentGrade, genShipment, genItem, playerValue, GEAR, dealerTier, shipmentWeights, TIER_INFO } from "./game/gear.js";
+import { eff, isStar, talentGrade, genShipment, genItem, playerValue, GEAR, dealerTier, shipmentWeights, TIER_INFO, devCapFor } from "./game/gear.js";
 import { sfx, play } from "./game/sfx.js";
 import { SAVE_KEY, parseSave, decodeBackup, encodeBackup } from "./game/save.js";
 import { teamPayroll, luxuryTax } from "./game/salary.js";
@@ -127,6 +127,19 @@ if (SAVED?.roster) {
     }
   }
 
+  // One-time balance patch: the development cap arrives (training stats clamp
+  // to it — franchise tags start unassigned) and every rival club gains the
+  // stars a real lineup carries.
+  if (SAVED.balance !== 1) {
+    const cap = devCapFor(SAVED.trophies || 0);
+    const clamp = (p) => {
+      const keys = p.role === "bat" ? BAT_STATS : PIT_STATS;
+      for (const k of keys) p[k] = Math.min(p[k], cap);
+    };
+    [...SAVED.roster.batters, SAVED.roster.sp, SAVED.roster.rp].forEach(clamp);
+    (SAVED.rivals || []).forEach(seedRivalStars);
+  }
+
   // One-time big-league rescale: fans ×50 and money ×5 onto the new economy,
   // with in-flight prices (rookies, shop shelves) bumped to match. Stadium and
   // revenue tier levels carry over as-is — the tables grew around them.
@@ -218,7 +231,7 @@ export default function App() {
     const s = S.current;
     if (!s.city) return null;
     return {
-      version: 3, scale: 100, names: 2, econ: 2, lastSeen: Date.now(),
+      version: 3, scale: 100, names: 2, econ: 2, balance: 1, lastSeen: Date.now(),
       city: s.city, money: s.money, fans: s.fans, roster: s.roster, merch: s.merch, tv: s.tv, stadium: s.stadium,
       seasonStats: s.seasonStats, shopItems: s.shopItems, draftClass: s.draftClass, form: s.form,
       year: s.year, phase: s.phase, rivals: s.rivals, schedule: s.schedule, rivalDays: s.rivalDays,
@@ -394,10 +407,14 @@ export default function App() {
 
     if (s.phase === "regular") {
       if (s.gameIndex >= LEAGUE.seasonGames) return enterPlayoffs();
-      // fresh shipment at the shop whenever a new series begins
+      // fresh shipment at the shop whenever a new series begins — and around
+      // the league, every club sharpens up a little (rivals develop in-season)
       if (s.gameIndex > 0) {
         const prev = s.schedule[s.gameIndex - 1], next = s.schedule[s.gameIndex];
-        if (prev.opp !== next.opp || prev.home !== next.home) restock(false);
+        if (prev.opp !== next.opp || prev.home !== next.home) {
+          restock(false);
+          setRivals((rv) => rv.map((t) => creepRival(t, 1, 2)));
+        }
       }
       return startNextGame();
     }
@@ -605,8 +622,15 @@ export default function App() {
   // ── GM actions (all apply from the NEXT game — the live game uses a snapshot) ──
   const trainCost = (p, key) => {
     let c = ECON.trainBase * Math.pow(1.5, (p[key] - 41) / 4);
+    if (p[key] >= ECON.eliteAt) c *= Math.pow(ECON.eliteRamp, p[key] - ECON.eliteAt);
     if (cityBonus("train")) c *= 0.85;
     return Math.ceil(c);
+  };
+  // Where training stops: natural potential for franchise players, the
+  // league development cap (which rises with trophies) for everyone else.
+  const trainCeil = (p, key) => {
+    const pot = p.pot?.[key] ?? Infinity;
+    return p.franchise ? pot : Math.min(pot, devCapFor(S.current.trophies));
   };
   const train = (pid, key) => {
     setRoster((r) => {
@@ -614,7 +638,7 @@ export default function App() {
       const p = all.find((x) => x.id === pid);
       const cost = trainCost(p, key);
       if (money < cost) return r;
-      if (p[key] >= (p.pot?.[key] ?? Infinity)) return r; // peaked — nothing left to teach
+      if (p[key] >= trainCeil(p, key)) return r; // peaked or capped — nothing left to teach
       setMoney((m) => m - cost);
       addAT({ spent: cost, train: 1 });
       play.click();
@@ -633,7 +657,7 @@ export default function App() {
     for (;;) {
       let best = null, bestCost = Infinity;
       for (const k of keys) {
-        if (cur[k] >= (p.pot?.[k] ?? Infinity)) continue;
+        if (cur[k] >= trainCeil(p, k)) continue;
         const c = trainCost({ ...p, [k]: cur[k] }, k);
         if (c < bestCost) { best = k; bestCost = c; }
       }
@@ -675,6 +699,21 @@ export default function App() {
     if (!plan.count) return;
     const gains = Object.entries(plan.points).map(([k, n]) => `${k} +${n}`).join(", ");
     applyTraining(pid, plan, `TRAINING CAMP: ${p.name} adds ${plan.count} point${plan.count > 1 ? "s" : ""} (${gains}) for $${fmt(plan.total)}.`);
+  };
+
+  // ── Franchise tags: scarce licenses to develop true superstars ──
+  const franchiseSlots = () => FRANCHISE.slots + trophies;
+  const franchiseUsed = () => (roster ? [...roster.batters, roster.sp, roster.rp].filter((p) => p.franchise).length : 0);
+  const tagFranchise = (pid) => {
+    if (franchiseUsed() >= franchiseSlots()) return;
+    setRoster((r) => {
+      const upd = (o) => (o.id === pid && !o.franchise ? { ...o, franchise: true } : o);
+      const next = { batters: r.batters.map(upd), sp: upd(r.sp), rp: upd(r.rp) };
+      const p = [...next.batters, next.sp, next.rp].find((x) => x.id === pid);
+      if (p?.franchise) pushLog(`${p.name} is named a FRANCHISE PLAYER — his ceiling is now his talent, not the league's cap.`, "win");
+      return next;
+    });
+    play.cash();
   };
 
   const moveBatter = (id, dir) => {
@@ -903,6 +942,7 @@ export default function App() {
             money={money} league={LEAGUE} stat={stat} isStar={isStar}
             trainCost={trainCost} onTrain={train} onMaxTrain={maxTrain} onTrainAll={trainAllFor}
             tradeQuote={tradeQuote} onTrade={makeTrade} rivals={rivals}
+            franchise={{ used: franchiseUsed(), max: franchiseSlots(), cap: devCapFor(trophies), onTag: tagFranchise }}
           />
         )}
 

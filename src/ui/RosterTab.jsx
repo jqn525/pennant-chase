@@ -80,6 +80,7 @@ export default function RosterTab({ roster, stat, isStar, onMoveBatter, onAutoLi
             <span style={{ width: 26, color: C.creamDim }}>{p.pos}</span>
             <span style={{ fontWeight: 600, flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {p.name}{isStar(p) && <StarIcon />}
+              {p.franchise && <span style={{ fontSize: 8, color: C.amber, border: `1px solid ${C.amber}`, borderRadius: 3, padding: "0 3px", marginLeft: 4, verticalAlign: "middle", letterSpacing: 1 }}>F</span>}
             </span>
             {trait && <span style={{ fontSize: 8, letterSpacing: 1, color: C.amber, border: `1px solid ${C.amber}44`, borderRadius: 3, padding: "1px 4px", whiteSpace: "nowrap" }}>{trait.label.toUpperCase()}</span>}
             <span style={{ fontSize: 10, color: C.amber }}>OVR {ovr(p).toFixed(0)}</span>

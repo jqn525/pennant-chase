@@ -17,7 +17,7 @@ export const TIPS = {
   card: {
     title: "THE PLAYER CARD",
     body: [
-      "This is a player's whole life on one card. Tap a skill row to TRAIN it with money — the notch on each bar is his natural ceiling. Once a skill is PEAKED, only gear can push it higher.",
+      "This is a player's whole life on one card. Tap a skill row to TRAIN it with money — the notch on each bar is where training stops: his natural ceiling, or the LEAGUE CAP. Only a FRANCHISE PLAYER (you hold two tags; each Pennant Cup earns another) trains past the cap toward true stardom.",
       "The equipment shelf shows what he's wearing; the TRADE DESK swaps him position-for-position with any rival club — gear travels with the player.",
     ],
   },

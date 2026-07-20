@@ -5,7 +5,7 @@
 // secondaries ±4%), applied multiplicatively and capped at 99 — gear can
 // push a rating toward perfect, never past it.
 
-import { LEAGUE, RARITY, BAT_STATS, PIT_STATS, PLAYER_TRAITS } from "./constants.js";
+import { LEAGUE, RARITY, BAT_STATS, PIT_STATS, PLAYER_TRAITS, FRANCHISE } from "./constants.js";
 
 // Trait lookup + the static percentage a player's trait puts on one stat
 export const traitInfo = (id) => PLAYER_TRAITS.find((t) => t.id === id) || null;
@@ -146,9 +146,14 @@ export const eff = (p) => {
 export const isStar = (p) => {
   const e = eff(p);
   return p.role === "bat"
-    ? (e.contact + e.power + e.eye + e.speed) / 4 >= 73
-    : (e.stuff + e.control) / 2 >= 73;
+    ? (e.contact + e.power + e.eye + e.speed) / 4 >= 80
+    : (e.stuff + e.control) / 2 >= 80;
 };
+
+// The league-wide development cap: training stops here for everyone except
+// franchise players. Rises with every Pennant Cup, never past 97.
+export const devCapFor = (trophies) =>
+  Math.min(LEAGUE.statCap - 2, FRANCHISE.devCap + FRANCHISE.devPerCup * (trophies || 0));
 
 // Player overall: mean of effective attributes for his role
 export const ovr = (p) => {
