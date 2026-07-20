@@ -25,7 +25,10 @@
 .settings-menu__row small { margin-top: 2px; color: var(--cream-dim); font-size: 10px; line-height: 1.35; }
 .settings-menu__row > b { color: var(--cream-dim); font-family: var(--font-data); font-size: 16px; text-transform: uppercase; }
 .settings-menu__row > b.is-on { color: var(--amber); }
-.settings-note { padding: 12px; color: var(--cream-dim); font-size: 10px; line-height: 1.5; text-align: center; }
+.settings-note { padding: 12px 12px 4px; color: var(--cream-dim); font-size: 10px; line-height: 1.5; text-align: center; }
+.settings-version { padding: 0 12px 12px; color: var(--cream-dim); font-family: var(--font-data); font-size: 10px; letter-spacing: .6px; text-align: center; opacity: .7; }
+.settings-version a { color: var(--cream-dim); text-decoration: none; }
+.settings-version a:hover, .settings-version a:focus-visible { color: var(--amber); text-decoration: underline; }
 .settings-menu__row--danger { border-color: #7a3d33; }
 .settings-menu__row--danger strong { color: var(--red); }
 .settings-menu__row--danger .settings-menu__icon { border-color: #7a3d33; color: var(--red); }
