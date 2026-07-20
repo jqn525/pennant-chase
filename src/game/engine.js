@@ -15,7 +15,7 @@ export const newGame = (opp, home, oppIdx) => ({
   opp, oppIdx, home,
   inning: 1, half: "top", outs: 0, bases: [null, null, null],
   us: 0, them: 0, usIdx: 0, themIdx: 0, spFaced: 0, usingRP: false,
-  over: false, hrUs: 0, result: null,
+  over: false, hrUs: 0, result: null, gatePaid: 0,
   box: { us: {}, them: {}, lobUs: 0, lobThem: 0, errUs: 0, errThem: 0 },
   balls: [], // every ball in play this game: {spray, dist, t} for the field view
   statAcc: {}, // player id -> {statKey: delta}, flushed by the caller
@@ -235,42 +235,50 @@ export function playGameInstant(g, ctx) {
   if (!g.over) finish(g); // pathological marathon: call it where it stands
 }
 
+// Ticket gate for a game in progress or done. Attendance is a share of the
+// fan base: 30% for a cold club up to 60% when the form is hot; playoffs sell
+// out. Used by the live half-inning drip AND by settleGame, so they agree.
+export function ticketGate({ fans, playoff, formWins = 0, attCap = ECON.attCap, rateBonus = 0, gateBonus, gateMult = 1 }) {
+  const rate = playoff ? 1 : Math.min(0.6 + rateBonus, 0.3 + rateBonus + 0.03 * formWins);
+  const attendance = Math.round(Math.min(fans, attCap) * rate);
+  return { attendance, gate: attendance * ECON.ticketPrice * (gateBonus ? 1.25 : 1) * gateMult };
+}
+
 // Money and fans for a finished game. Pure — caller applies the deltas.
 // formWins = wins in the last-10 form BEFORE this game; streak = trailing
-// consecutive wins before this game. Attendance is a share of the fan base:
-// 30% for a cold club up to 60% when the form is hot; playoffs sell out.
+// consecutive wins before this game. moneyDelta pays only what the live
+// half-inning drip (g.gatePaid) hasn't already handed over.
 export function settleGame(g, { fans, gateBonus, floorBonus, fansBonus, cityName, playoff, formWins = 0, streak = 0, attCap = ECON.attCap, rateBonus = 0, gateMult = 1, fansMult = 1 }) {
   const won = g.us > g.them;
   let fansDelta = 0, kind;
   const score = won ? `${cityName} ${g.us}, ${g.opp.name} ${g.them}` : `${g.opp.name} ${g.them}, ${cityName} ${g.us}`;
 
-  const rate = playoff ? 1 : Math.min(0.6 + rateBonus, 0.3 + rateBonus + 0.03 * formWins);
-  const attendance = Math.round(Math.min(fans, attCap) * rate);
-  let gate = attendance * ECON.ticketPrice * (gateBonus ? 1.25 : 1);
-  gate += won ? ECON.gateWinBase : ECON.gateLossBase * (floorBonus ? 2 : 1);
-  gate *= gateMult;
+  const tg = ticketGate({ fans, playoff, formWins, attCap, rateBonus, gateBonus, gateMult });
+  const attendance = tg.attendance;
+  const gate = tg.gate + (won ? ECON.gateWinBase : ECON.gateLossBase * (floorBonus ? 2 : 1)) * gateMult;
 
   let streakNote = "";
   if (won) {
-    fansDelta = (LEAGUE.fansPerWin + g.hrUs * 2) * fansMult;
+    // Flat gains (homers, streaks, city edge) plus a compounding 1% of the
+    // base itself — lights multiply both, but streak/city only the flat part
+    // so growth never runs past ~1.5% a win.
+    let flat = (LEAGUE.fansPerWin + g.hrUs * LEAGUE.fansPerHR) * fansMult;
     const run = streak + 1; // including this win
-    if (run >= 3) {
-      const mult = Math.min(ECON.streakMax, 1 + ECON.streakStep * (run - 2));
-      fansDelta = Math.round(fansDelta * mult);
-      streakNote = ` ${run} straight — the bandwagon rolls, +${fansDelta} fans!`;
-    }
-    if (fansBonus) fansDelta = fansDelta * 1.25;
-    fansDelta = Math.round(fansDelta);
+    const onARun = run >= 3;
+    if (onARun) flat *= Math.min(ECON.streakMax, 1 + ECON.streakStep * (run - 2));
+    if (fansBonus) flat *= 1.25;
+    fansDelta = Math.round(flat + fans * ECON.fanWinPct * fansMult);
+    if (onARun) streakNote = ` ${run} straight — the bandwagon rolls, +${fansDelta} fans!`;
     kind = "win";
   } else {
     kind = "out";
   }
 
-  let moneyDelta = gate;
+  let moneyDelta = Math.max(0, gate - (g.gatePaid || 0));
   let text;
   if (playoff) {
     if (won) moneyDelta += ECON.playoffWinPay;
-    text = `FINAL (${playoff}): ${score}. Sellout crowd of ${attendance} — gate $${Math.round(moneyDelta)}.`;
+    text = `FINAL (${playoff}): ${score}. Sellout crowd of ${attendance} — gate $${Math.round(won ? gate + ECON.playoffWinPay : gate)}.`;
   } else {
     text = `FINAL: ${score}. ${attendance} in the seats — gate $${Math.round(gate)}.${won && !streakNote ? ` +${fansDelta} fans.` : ""}${streakNote}`;
   }

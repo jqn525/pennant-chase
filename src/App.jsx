@@ -8,7 +8,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { C, LEAGUE, ECON, TRADE, BAT_STATS, PIT_STATS, STADIUM, stadiumFx, REVENUE, revenueFx, SALARY } from "./game/constants.js";
 import { fmt } from "./game/utils.js";
 import { genRoster, seedUid, genDraftClass, vetPot, rollPot, pickTrait, freshName, seedNames } from "./game/generators.js";
-import { newGame, stepAtBat, playGameInstant, settleGame } from "./game/engine.js";
+import { newGame, stepAtBat, playGameInstant, settleGame, ticketGate } from "./game/engine.js";
 import { makeRivals, makeSchedule, teamRating, quickSim, simSeries, seedOrder, runOffseason, ageRoster, seriesInfo } from "./game/season.js";
 import { eff, isStar, talentGrade, genShipment, genItem, playerValue, GEAR, dealerTier, shipmentWeights, TIER_INFO } from "./game/gear.js";
 import { sfx, play } from "./game/sfx.js";
@@ -46,7 +46,7 @@ const FENCE = { corner: LEAGUE.fenceCorner, center: LEAGUE.fenceCenter };
 // Jersey sales per second. Fans scale gently (^0.35) so big markets don't
 // break the economy; store and media tiers multiply on top.
 const merchRate = (fansN, stars, merchMult, tvMult, merchCity) =>
-  0.02 * Math.pow(fansN, 0.35) * (1 + 0.3 * stars) * merchMult * tvMult * (merchCity ? 1.3 : 1);
+  0.03 * Math.pow(fansN, 0.35) * (1 + 0.3 * stars) * merchMult * tvMult * (merchCity ? 1.3 : 1);
 
 // Away selling tapers: the first hour runs at full speed, the rest at 15%.
 const awaySeconds = (ms) => {
@@ -126,6 +126,20 @@ if (SAVED?.roster) {
       }
     }
   }
+
+  // One-time big-league rescale: fans ×50 and money ×5 onto the new economy,
+  // with in-flight prices (rookies, shop shelves) bumped to match. Stadium and
+  // revenue tier levels carry over as-is — the tables grew around them.
+  if (SAVED.econ !== 2) {
+    SAVED.fans = Math.round(SAVED.fans * 50);
+    SAVED.money = Math.round(SAVED.money * 5);
+    (SAVED.draftClass || []).forEach((p) => { if (p.signCost) p.signCost = Math.round(p.signCost * 1.75); });
+    (SAVED.shopItems || []).forEach((i) => { i.cost = Math.round(i.cost * 5 / 3); });
+    if (SAVED.allTime) for (const k of ["earned", "spent"]) {
+      if (SAVED.allTime[k]) SAVED.allTime[k] = Math.round(SAVED.allTime[k] * 5);
+    }
+    if (SAVED.liveGame) SAVED.liveGame.gatePaid = 0;
+  }
 }
 
 export default function App() {
@@ -204,7 +218,7 @@ export default function App() {
     const s = S.current;
     if (!s.city) return null;
     return {
-      version: 3, scale: 100, names: 2, lastSeen: Date.now(),
+      version: 3, scale: 100, names: 2, econ: 2, lastSeen: Date.now(),
       city: s.city, money: s.money, fans: s.fans, roster: s.roster, merch: s.merch, tv: s.tv, stadium: s.stadium,
       seasonStats: s.seasonStats, shopItems: s.shopItems, draftClass: s.draftClass, form: s.form,
       year: s.year, phase: s.phase, rivals: s.rivals, schedule: s.schedule, rivalDays: s.rivalDays,
@@ -506,7 +520,7 @@ export default function App() {
       pushLog(`Payroll back under the cap — the league's collectors move on.`, "sys");
     }
     if (payroll > SALARY.cap * 0.8) showTip("payroll");
-    setFans((f) => Math.max(25, f + off.fansDelta));
+    setFans((f) => Math.max(ECON.startFans, f + off.fansDelta));
     setRivals(off.rivals);
     setRoster((r) => ageRoster(r));
     setSchedule(off.schedule);
@@ -534,6 +548,7 @@ export default function App() {
   // ── One live at-bat (1x / 4x speeds) ──
   const liveStep = () => {
     const g = gameRef.current;
+    const prevHalf = g.half, prevInning = g.inning;
     const ev = [];
     stepAtBat(g, ctxRef.current, ev);
     ev.forEach((e) => {
@@ -543,6 +558,23 @@ export default function App() {
       else if (/laces|stand-up double|TRIPLE|drops in front/.test(e.text)) play.crack();
     });
     flushStats(g);
+    // Turnstile money: each completed half-inning pays its slice of the ticket
+    // gate as the game plays. settle() pays only what's left (gate − gatePaid),
+    // so MAX speed (which never comes through here) can't double-pay.
+    if (!g.over && (g.half !== prevHalf || g.inning !== prevInning)) {
+      const s = S.current;
+      const fx = stadiumFx(s.stadium);
+      const { gate } = ticketGate({
+        fans: s.fans, playoff: s.phase === "playoffs",
+        formWins: s.form.filter((f) => f === "W").length,
+        attCap: fx.attCap, rateBonus: fx.rateBonus,
+        gateBonus: cityBonus("gate"), gateMult: fx.gateMult,
+      });
+      const drip = gate / (LEAGUE.innings * 2);
+      g.gatePaid = (g.gatePaid || 0) + drip;
+      setMoney((m) => m + drip);
+      addAT({ earned: drip });
+    }
     if (g.over) settle(g);
   };
 
