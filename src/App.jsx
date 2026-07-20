@@ -632,29 +632,14 @@ export default function App() {
     const pot = p.pot?.[key] ?? Infinity;
     return p.franchise ? pot : Math.min(pot, devCapFor(S.current.trophies));
   };
-  const train = (pid, key) => {
-    setRoster((r) => {
-      const all = [...r.batters, r.sp, r.rp];
-      const p = all.find((x) => x.id === pid);
-      const cost = trainCost(p, key);
-      if (money < cost) return r;
-      if (p[key] >= trainCeil(p, key)) return r; // peaked or capped — nothing left to teach
-      setMoney((m) => m - cost);
-      addAT({ spent: cost, train: 1 });
-      play.click();
-      const upd = (o) => (o.id === pid ? { ...o, [key]: o[key] + 1 } : o);
-      return { batters: r.batters.map(upd), sp: upd(r.sp), rp: upd(r.rp) };
-    });
-  };
-
-  // Bulk training: buy point after point, cheapest first, until ceilings or
-  // the budget stop it. Returns {points: {key: n}, total, count} — pure.
-  const planTraining = (p, keys, budget) => {
+  // Bulk training: buy point after point, cheapest first, until ceilings,
+  // the budget, or maxPoints stop it. Returns {points: {key: n}, total, count}.
+  const planTraining = (p, keys, budget, maxPoints = Infinity) => {
     const cur = {};
     keys.forEach((k) => { cur[k] = p[k]; });
     const points = {};
     let total = 0, count = 0;
-    for (;;) {
+    while (count < maxPoints) {
       let best = null, bestCost = Infinity;
       for (const k of keys) {
         if (cur[k] >= trainCeil(p, k)) continue;
@@ -685,10 +670,11 @@ export default function App() {
     play.cash();
   };
 
-  const maxTrain = (pid, key) => {
+  // Train up to n points of one stat (n = 1, 5, or Infinity for MAX)
+  const trainN = (pid, key, n) => {
     const p = [...roster.batters, roster.sp, roster.rp].find((x) => x.id === pid);
     if (!p) return;
-    applyTraining(pid, planTraining(p, [key], money));
+    applyTraining(pid, planTraining(p, [key], money, n));
   };
 
   const trainAllFor = (pid) => {
@@ -940,7 +926,7 @@ export default function App() {
           <PlayerCard
             player={cardView.player} isOwn={cardView.isOwn} onClose={() => setCardId(null)}
             money={money} league={LEAGUE} stat={stat} isStar={isStar}
-            trainCost={trainCost} onTrain={train} onMaxTrain={maxTrain} onTrainAll={trainAllFor}
+            trainCost={trainCost} trainCeil={trainCeil} onTrainN={trainN} onTrainAll={trainAllFor}
             tradeQuote={tradeQuote} onTrade={makeTrade} rivals={rivals}
             franchise={{ used: franchiseUsed(), max: franchiseSlots(), cap: devCapFor(trophies), onTag: tagFranchise }}
           />
