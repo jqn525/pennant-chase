@@ -116,7 +116,11 @@ export default function PlayerCard({ player, isOwn, onClose, money, league, stat
           PENNANT CHASE · {flipped ? "THE CARD" : "PLAYER FILE"}
         </div>
 
-        {/* Identity: text only — the man's likeness lives on the card face */}
+        {/* Identity: text only — the man's likeness lives on the card face.
+            Hidden once flipped: the card itself already carries his name,
+            position and numbers, and the space lets it sit without scrolling
+            so it can own every touch gesture. */}
+        {!flipped && (
         <div style={{ margin: "9px 0 4px" }}>
           <div style={{ fontFamily: PIXEL, fontSize: 14, color: C.amber, lineHeight: 1.35, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {player.name.toUpperCase()}
@@ -148,6 +152,7 @@ export default function PlayerCard({ player, isOwn, onClose, money, league, stat
             </div>
           )}
         </div>
+        )}
 
         {/* Flip to the collectible */}
         <button onClick={flip} style={{

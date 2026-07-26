@@ -21,36 +21,84 @@ export default function CardFace({ player, city, year, stat, money, onPrint, isO
   const isBat = player.role === "bat";
   const s = stat ? stat(player.id) : null;
   const ref = useRef(null);
-  const [tilt, setTilt] = useState({ x: 50, y: 50 });
+  const raf = useRef(0);
+  const settle = useRef(0);
+  // iOS 13+ won't deliver motion events until you ask, and only from a tap
+  const gated = typeof DeviceOrientationEvent !== "undefined"
+    && typeof DeviceOrientationEvent.requestPermission === "function";
+  const [tiltOn, setTiltOn] = useState(() => {
+    try { return !gated || localStorage.getItem("pc-tilt") === "1"; } catch { return !gated; }
+  });
 
-  // Holo tracks the light: finger/pointer on the card, or the phone's own tilt
+  // Holo tracks the light: a finger on the glass, or the phone's own tilt.
+  // Written straight to the node — a re-render per touchmove would stutter,
+  // and the sim's money ticker re-renders this card every second regardless.
   useEffect(() => {
     const el = ref.current;
     if (!el || tier.id === 0) return;
-    const move = (e) => {
+    const clamp = (n) => Math.max(0, Math.min(100, n));
+    const light = (x, y) => {
+      el.style.setProperty("--mx", `${x}%`);
+      el.style.setProperty("--my", `${y}%`);
+    };
+    const track = (e) => {
       const t = e.touches?.[0] ?? e;
+      if (t.clientX == null) return;
+      cancelAnimationFrame(settle.current);
+      cancelAnimationFrame(raf.current);
       const r = el.getBoundingClientRect();
-      setTilt({
-        x: Math.max(0, Math.min(100, ((t.clientX - r.left) / r.width) * 100)),
-        y: Math.max(0, Math.min(100, ((t.clientY - r.top) / r.height) * 100)),
+      raf.current = requestAnimationFrame(() => {
+        el.classList.add("is-lit");
+        light(clamp(((t.clientX - r.left) / r.width) * 100), clamp(((t.clientY - r.top) / r.height) * 100));
       });
+    };
+    // Let the light glide home instead of freezing where the finger left
+    const release = () => {
+      el.classList.remove("is-lit");
+      const sx = parseFloat(el.style.getPropertyValue("--mx")) || 50;
+      const sy = parseFloat(el.style.getPropertyValue("--my")) || 50;
+      const t0 = performance.now();
+      const step = (now) => {
+        const k = Math.min(1, (now - t0) / 650);
+        const e = 1 - Math.pow(1 - k, 3);
+        light(sx + (50 - sx) * e, sy + (50 - sy) * e);
+        if (k < 1) settle.current = requestAnimationFrame(step);
+      };
+      settle.current = requestAnimationFrame(step);
     };
     const orient = (e) => {
       if (e.gamma == null) return;
-      setTilt({
-        x: Math.max(0, Math.min(100, 50 + e.gamma * 1.8)),
-        y: Math.max(0, Math.min(100, 50 + (e.beta - 45) * 1.4)),
-      });
+      cancelAnimationFrame(settle.current);
+      light(clamp(50 + e.gamma * 1.8), clamp(50 + (e.beta - 45) * 1.4));
     };
-    el.addEventListener("pointermove", move);
-    el.addEventListener("touchmove", move, { passive: true });
-    window.addEventListener("deviceorientation", orient);
+
+    el.addEventListener("touchstart", track, { passive: true }); // a still finger lights it too
+    el.addEventListener("touchmove", track, { passive: true });
+    el.addEventListener("touchend", release);
+    el.addEventListener("touchcancel", release);
+    el.addEventListener("pointermove", track);
+    el.addEventListener("pointerleave", release);
+    if (tiltOn) window.addEventListener("deviceorientation", orient);
     return () => {
-      el.removeEventListener("pointermove", move);
-      el.removeEventListener("touchmove", move);
+      cancelAnimationFrame(raf.current);
+      cancelAnimationFrame(settle.current);
+      el.removeEventListener("touchstart", track);
+      el.removeEventListener("touchmove", track);
+      el.removeEventListener("touchend", release);
+      el.removeEventListener("touchcancel", release);
+      el.removeEventListener("pointermove", track);
+      el.removeEventListener("pointerleave", release);
       window.removeEventListener("deviceorientation", orient);
     };
-  }, [tier.id]);
+  }, [tier.id, tiltOn]);
+
+  const askTilt = async () => {
+    try {
+      if ((await DeviceOrientationEvent.requestPermission()) !== "granted") return;
+      localStorage.setItem("pc-tilt", "1");
+      setTiltOn(true);
+    } catch { /* user dismissed the prompt */ }
+  };
 
   const up = isOwn ? nextPrint(player) : null;
   const statLine = isBat
@@ -59,8 +107,7 @@ export default function CardFace({ player, city, year, stat, money, onPrint, isO
 
   return (
     <div className="tcard-wrap">
-      <div ref={ref} className={`tcard tcard--${tier.key}`}
-        style={{ "--mx": `${tilt.x}%`, "--my": `${tilt.y}%` }}>
+      <div ref={ref} className={`tcard tcard--${tier.key}`}>
         <div className="tcard__border">
           <div className="tcard__head">
             <span className="tcard__brand">PENNANT<br />CHASE</span>
@@ -109,6 +156,11 @@ export default function CardFace({ player, city, year, stat, money, onPrint, isO
           onClick={() => money >= up.cost && onPrint(player.id)}>
           PRINT {up.name} — ${fmt(up.cost)}
           <small>{money < up.cost ? `short $${fmt(up.cost - money)}` : up.flavor}</small>
+        </button>
+      )}
+      {gated && !tiltOn && tier.id > 0 && (
+        <button className="tcard-tilt" onClick={askTilt}>
+          TILT TO SHIMMER<small>use the phone's motion sensor</small>
         </button>
       )}
       {isOwn && !up && tier.id < 3 && (

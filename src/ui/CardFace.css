@@ -17,7 +17,10 @@
   font-family: var(--font-data);
   user-select: none;
   -webkit-user-select: none;
-  touch-action: pan-y;
+  /* The card owns its gestures — a drag in any direction works the foil
+     rather than being stolen by page scroll. Safe because the flipped view
+     is sized to fit without scrolling. */
+  touch-action: none;
 }
 .tcard__border {
   display: flex;
@@ -195,7 +198,16 @@
 }
 
 /* ── Shine layers (inert until a tier turns them on) ── */
-.tcard__holo, .tcard__glare { position: absolute; inset: 0; z-index: 2; opacity: 0; pointer-events: none; }
+.tcard__holo, .tcard__glare {
+  position: absolute; inset: 0; z-index: 2; opacity: 0; pointer-events: none;
+  transition: opacity .28s ease;
+}
+/* Under a finger the foil catches more light and the card lifts a little */
+.tcard { transition: transform .2s ease, box-shadow .2s ease; }
+.tcard.is-lit { transform: scale(1.015); box-shadow: 0 14px 34px #010604cc, inset 0 0 0 1px #ffffff44; }
+.tcard.is-lit .tcard__holo { opacity: .64; }
+.tcard.is-lit .tcard__glare { opacity: .5; }
+.tcard--unique.is-lit .tcard__holo { opacity: .68; }
 
 /* COMMON — cardboard, no shine at all. Just honest print grain. */
 .tcard--common .tcard__photo::after {
@@ -328,6 +340,21 @@
 }
 .tcard-print small { color: var(--cream-dim); font-family: var(--font-data); font-size: 9px; letter-spacing: .5px; }
 .tcard-print:disabled { border-color: #31543f; background: transparent; color: var(--cream-dim); cursor: default; }
+.tcard-tilt {
+  display: grid;
+  gap: 2px;
+  width: min(100%, 300px);
+  padding: 8px;
+  border: 1px solid var(--cream-dim);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--cream);
+  font-family: var(--font-pixel);
+  font-size: 8px;
+  letter-spacing: 1px;
+  cursor: pointer;
+}
+.tcard-tilt small { color: var(--cream-dim); font-family: var(--font-data); font-size: 9px; letter-spacing: .4px; }
 .tcard-note {
   width: min(100%, 300px);
   color: var(--cream-dim);
