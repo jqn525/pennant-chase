@@ -8,7 +8,15 @@ import StatTable from "./StatTable.jsx";
 import { ovr, eff } from "../game/gear.js";
 import { portraitUrl } from "./portrait.js";
 import { teamPayroll, salaryOf } from "../game/salary.js";
+import { CARD_TIERS, printedTier, nextPrint } from "../game/cards.js";
 import { fmt } from "../game/utils.js";
+
+// Ink for the little rarity chip on a roster row
+const CHIP = {
+  uncommon: { color: C.grass, border: `1px solid ${C.grass}88` },
+  rare: { color: "#9fd0ff", border: "1px solid #9fd0ff99" },
+  unique: { color: "#f5d27a", border: "1px solid #f5d27a" },
+};
 
 const STAT_ABBR = { contact: "CON", power: "POW", eye: "EYE", speed: "SPD", defense: "DEF", stuff: "STU", control: "CTL", stamina: "STA" };
 
@@ -81,6 +89,12 @@ export default function RosterTab({ roster, stat, isStar, onMoveBatter, onAutoLi
             <span style={{ fontWeight: 600, flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {p.name}{isStar(p) && <StarIcon />}
               {p.franchise && <span style={{ fontSize: 8, color: C.amber, border: `1px solid ${C.amber}`, borderRadius: 3, padding: "0 3px", marginLeft: 4, verticalAlign: "middle", letterSpacing: 1 }}>F</span>}
+              {printedTier(p) > 0 && (
+                <span style={{ fontSize: 8, marginLeft: 4, verticalAlign: "middle", letterSpacing: 1, borderRadius: 3, padding: "0 3px", ...CHIP[CARD_TIERS[printedTier(p)].key] }}>
+                  {CARD_TIERS[printedTier(p)].key === "unique" ? "1/1" : CARD_TIERS[printedTier(p)].name[0]}
+                </span>
+              )}
+              {nextPrint(p) && <span title="A better card is ready to print" style={{ marginLeft: 4, color: C.amber, fontSize: 12, verticalAlign: "middle" }}>•</span>}
             </span>
             {trait && <span style={{ fontSize: 8, letterSpacing: 1, color: C.amber, border: `1px solid ${C.amber}44`, borderRadius: 3, padding: "1px 4px", whiteSpace: "nowrap" }}>{trait.label.toUpperCase()}</span>}
             <span style={{ fontSize: 10, color: C.amber }}>OVR {ovr(p).toFixed(0)}</span>

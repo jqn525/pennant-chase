@@ -19,6 +19,7 @@ export const TIPS = {
     body: [
       "This is a player's whole life on one card. Tap a skill row to TRAIN it with money — the notch on each bar is where training stops: his natural ceiling, or the LEAGUE CAP. Only a FRANCHISE PLAYER (you hold two tags; each Pennant Cup earns another) trains past the cap toward true stardom.",
       "The equipment shelf shows what he's wearing; the TRADE DESK swaps him position-for-position with any rival club — gear travels with the player.",
+      "Hit VIEW CARD to flip him over and hold his actual baseball card. Everyone starts as plain COMMON cardboard — train him past 70, 80 and 88 OVR to earn the right to reprint him as UNCOMMON, RARE HOLO, and finally a ONE-OF-ONE.",
     ],
   },
   shop: {

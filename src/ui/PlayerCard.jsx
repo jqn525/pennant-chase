@@ -1,6 +1,7 @@
-// ── The Player Card: pixel-art pop-up styled after the user's mockup ──
-// Chunky amber frames with labels breaking the border, segmented skill bars,
-// portrait box, equipment icon row, big stat footer. isOwn enables train/trade.
+// ── The Player Card: two faces of one man ──
+// Front is the GM's ledger — minimal text: who he is, what he can be trained
+// to, what he's wearing. Flip it and you're holding the collectible: his
+// actual baseball card, printed at whatever rarity he's earned.
 
 import { useState } from "react";
 import { C, BAT_STATS, PIT_STATS, STAT_INFO, PLAYER_TRAITS, RARITY } from "../game/constants.js";
@@ -8,8 +9,9 @@ import { fmt } from "../game/utils.js";
 import { btn, MONO, PIXEL, pixelPanel, pixelLegend } from "./styles.js";
 import { StarIcon, BallIcon } from "./Icons.jsx";
 import { GEAR, GEAR_ART, gearArtUrl, gearBonus, ovr } from "../game/gear.js";
+import { CARD_TIERS, printedTier, nextPrint } from "../game/cards.js";
 import Modal from "./Modal.jsx";
-import { portraitUrl } from "./portrait.js";
+import CardFace from "./CardFace.jsx";
 import { salaryOf, payRank } from "../game/salary.js";
 
 const avg3 = (num, den) => (den ? (num / den).toFixed(3).replace(/^0/, "") : "—");
@@ -36,11 +38,13 @@ function SkillBar({ base, bonus, ceil, scale }) {
   );
 }
 
-export default function PlayerCard({ player, isOwn, onClose, money, league, stat, trainCost, trainCeil, onTrainN, onTrainAll, tradeQuote, onTrade, rivals, isStar, franchise }) {
+export default function PlayerCard({ player, isOwn, onClose, money, league, stat, trainCost, trainCeil, onTrainN, onTrainAll, tradeQuote, onTrade, rivals, isStar, franchise, city, year, onPrintCard }) {
   const [slotOpen, setSlotOpen] = useState(null);
   const [tradeOpen, setTradeOpen] = useState(false);
   const [armedTrade, setArmedTrade] = useState(null);
   const [buyN, setBuyN] = useState(1); // buy mode: 1, 5, or Infinity (MAX)
+  const [flipped, setFlipped] = useState(false);
+  const [turning, setTurning] = useState(false);
 
   const isBat = player.role === "bat";
   const keys = isBat ? BAT_STATS : PIT_STATS;
@@ -75,54 +79,94 @@ export default function PlayerCard({ player, isOwn, onClose, money, league, stat
   };
   const trainAllQuote = isOwn && trainCost ? quotePlan(keys, Infinity) : { total: 0, count: 0 };
 
+  // The card he's had printed, and whether the press owes him a better one
+  const tier = CARD_TIERS[printedTier(player)];
+  const canPrintNow = isOwn && !!nextPrint(player);
+  const TIER_INK = {
+    common: { color: C.creamDim, border: `1px solid ${C.creamDim}66` },
+    uncommon: { color: C.grass, border: `1px solid ${C.grass}88` },
+    rare: { color: "#9fd0ff", border: "1px solid #9fd0ff99" },
+    unique: { color: "#f5d27a", border: "1px solid #f5d27a" },
+  };
+  const tierChip = TIER_INK[tier.key];
+
+  // Half-turn, swap faces, half-turn back — reads as a flip without the
+  // equal-height demands (and iOS quirks) of a true backface rotation.
+  const flip = () => {
+    const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    if (reduced) return setFlipped((f) => !f);
+    setTurning(true);
+    setTimeout(() => { setFlipped((f) => !f); setTurning(false); }, 170);
+  };
+
   const statCols = s && (isBat
     ? [["AVG", avg3(s.h, s.ab)], ["HR", s.hr], ["RBI", s.rbi]]
     : [["ERA", s.outsP ? ((s.raP * 27) / s.outsP).toFixed(2) : "—"], ["K", s.kP], ["IP", s.outsP ? `${Math.floor(s.outsP / 3)}.${s.outsP % 3}` : "—"]]);
 
   return (
     <Modal onClose={onClose}>
-      <div style={{ background: FACE, border: `4px solid ${C.amber}`, borderRadius: 10, padding: "12px 12px 14px", fontFamily: MONO, color: C.cream, boxShadow: "0 12px 40px #000C" }}>
+      <div style={{
+        background: FACE, border: `4px solid ${C.amber}`, borderRadius: 10, padding: "12px 12px 14px",
+        fontFamily: MONO, color: C.cream, boxShadow: "0 12px 40px #000C",
+        transform: turning ? "perspective(1100px) rotateY(90deg)" : "perspective(1100px) rotateY(0deg)",
+        transition: "transform .17s ease-in", transformOrigin: "center",
+      }}>
         {/* Kicker */}
         <div style={{ textAlign: "center", fontFamily: PIXEL, fontSize: 8, color: C.creamDim, letterSpacing: 1 }}>
-          PENNANT CHASE · PLAYER CARD
+          PENNANT CHASE · {flipped ? "THE CARD" : "PLAYER FILE"}
         </div>
 
-        {/* Identity block: portrait left, everything about the man on the right */}
-        <div style={{ display: "flex", gap: 12, alignItems: "center", margin: "10px 0 4px" }}>
-          <div style={{ border: `3px solid ${C.amber}`, borderRadius: 6, overflow: "hidden", lineHeight: 0, flexShrink: 0 }}>
-            <img src={portraitUrl(player)} alt={`${player.name} portrait`} width={72} height={72}
-              style={{ imageRendering: "pixelated", display: "block" }} />
+        {/* Identity: text only — the man's likeness lives on the card face */}
+        <div style={{ margin: "9px 0 4px" }}>
+          <div style={{ fontFamily: PIXEL, fontSize: 14, color: C.amber, lineHeight: 1.35, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {player.name.toUpperCase()}
           </div>
-          <div style={{ minWidth: 0, flex: 1 }}>
-            <div style={{ fontFamily: PIXEL, fontSize: 13, color: C.amber, lineHeight: 1.35, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              {player.name.toUpperCase()}
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 11, color: C.creamDim, marginTop: 3 }}>
-              <span>{player.pos}</span>
-              {isStar?.(player) && <StarIcon size={12} />}
-              {player.franchise && (
-                <span style={{ fontFamily: PIXEL, fontSize: 7, color: C.amber, border: `1px solid ${C.amber}`, borderRadius: 3, padding: "2px 4px", letterSpacing: 1 }}>FRANCHISE</span>
-              )}
-              <span style={{ fontFamily: PIXEL, fontSize: 12, color: C.cream }}>{ovr(player).toFixed(0)} OVR</span>
-            </div>
-            <div style={{ fontSize: 10, color: C.creamDim, marginTop: 3 }}>
-              SALARY <span style={{ color: C.cream, fontWeight: 600 }}>${fmt(salaryOf(player))}/YR</span>
-              {rivals && <span> · #{payRank(player, rivals)} {player.pos}</span>}
-            </div>
-            {trait && (
-              <div style={{ fontSize: 10, color: C.creamDim, marginTop: 4, display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap" }}>
-                <span style={{ color: C.amber, border: `1px solid ${C.amber}66`, borderRadius: 3, padding: "1px 5px", letterSpacing: 1, fontSize: 9 }}>{trait.label.toUpperCase()}</span>
-                {Object.entries(trait.mods || trait.sit || {}).map(([st, n]) => (
-                  <span key={st} style={{ color: n > 0 ? C.grass : C.red, fontWeight: 600 }}>
-                    {n > 0 ? "+" : ""}{n}% {st.toUpperCase()}
-                  </span>
-                ))}
-                {trait.sit && <span style={{ color: C.dirt, letterSpacing: 1 }}>RUNNERS ON</span>}
-              </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 11, color: C.creamDim, marginTop: 4, flexWrap: "wrap" }}>
+            <span>{player.pos}</span>
+            {isStar?.(player) && <StarIcon size={12} />}
+            {player.franchise && (
+              <span style={{ fontFamily: PIXEL, fontSize: 7, color: C.amber, border: `1px solid ${C.amber}`, borderRadius: 3, padding: "2px 4px", letterSpacing: 1 }}>FRANCHISE</span>
             )}
+            <span style={{ fontFamily: PIXEL, fontSize: 7, letterSpacing: 1, borderRadius: 3, padding: "2px 4px", ...tierChip }}>
+              {tier.name}
+            </span>
+            <span style={{ fontFamily: PIXEL, fontSize: 12, color: C.cream, marginLeft: "auto" }}>{ovr(player).toFixed(0)} OVR</span>
           </div>
+          <div style={{ fontSize: 10, color: C.creamDim, marginTop: 4 }}>
+            SALARY <span style={{ color: C.cream, fontWeight: 600 }}>${fmt(salaryOf(player))}/YR</span>
+            {rivals && <span> · #{payRank(player, rivals)} {player.pos}</span>}
+          </div>
+          {trait && (
+            <div style={{ fontSize: 10, color: C.creamDim, marginTop: 5, display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap" }}>
+              <span style={{ color: C.amber, border: `1px solid ${C.amber}66`, borderRadius: 3, padding: "1px 5px", letterSpacing: 1, fontSize: 9 }}>{trait.label.toUpperCase()}</span>
+              {Object.entries(trait.mods || trait.sit || {}).map(([st, n]) => (
+                <span key={st} style={{ color: n > 0 ? C.grass : C.red, fontWeight: 600 }}>
+                  {n > 0 ? "+" : ""}{n}% {st.toUpperCase()}
+                </span>
+              ))}
+              {trait.sit && <span style={{ color: C.dirt, letterSpacing: 1 }}>RUNNERS ON</span>}
+            </div>
+          )}
         </div>
 
+        {/* Flip to the collectible */}
+        <button onClick={flip} style={{
+          width: "100%", margin: "10px 0 2px", fontFamily: PIXEL, fontSize: 9, letterSpacing: 1,
+          padding: "10px 0", background: canPrintNow ? "#3A2E10" : "transparent",
+          border: `2px solid ${canPrintNow ? C.amber : C.creamDim}`, borderRadius: 6,
+          color: canPrintNow ? C.amber : C.cream, cursor: "pointer",
+        }}>
+          {flipped ? "◀ BACK TO FILE" : canPrintNow ? "VIEW CARD ⟳ — NEW PRINT READY" : "VIEW CARD ⟳"}
+        </button>
+
+        {flipped && (
+          <div style={{ margin: "12px 0 2px" }}>
+            <CardFace player={player} city={city} year={year} stat={stat}
+              money={money} onPrint={onPrintCard} isOwn={isOwn} />
+          </div>
+        )}
+
+        {!flipped && (<>
         {/* SKILLS */}
         <div style={pixelPanel}>
           <div style={pixelLegend(FACE)}>SKILLS</div>
@@ -336,10 +380,11 @@ export default function PlayerCard({ player, isOwn, onClose, money, league, stat
             })}
           </div>
         )}
+        </>)}
 
         {/* Actions */}
         <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
-          {isOwn && (
+          {isOwn && !flipped && (
             <button onClick={() => setTradeOpen((o) => !o)}
               style={{ flex: 1, fontFamily: PIXEL, fontSize: 9, padding: "10px 0", background: "transparent", border: `3px solid ${C.amber}`, borderRadius: 6, color: C.amber, cursor: "pointer", letterSpacing: 1 }}>
               {tradeOpen ? "HIDE TRADES" : "TRADE DESK"}

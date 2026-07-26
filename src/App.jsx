@@ -11,6 +11,7 @@ import { genRoster, seedUid, genDraftClass, vetPot, rollPot, pickTrait, freshNam
 import { newGame, stepAtBat, playGameInstant, settleGame, ticketGate } from "./game/engine.js";
 import { makeRivals, makeSchedule, teamRating, quickSim, simSeries, seedOrder, runOffseason, ageRoster, seriesInfo } from "./game/season.js";
 import { eff, isStar, talentGrade, genShipment, genItem, playerValue, GEAR, dealerTier, shipmentWeights, TIER_INFO, devCapFor } from "./game/gear.js";
+import { nextPrint, cardDraw } from "./game/cards.js";
 import { sfx, play } from "./game/sfx.js";
 import { SAVE_KEY, parseSave, decodeBackup, encodeBackup } from "./game/save.js";
 import { teamPayroll, luxuryTax } from "./game/salary.js";
@@ -44,9 +45,10 @@ const EMPTY_STAT = { ab: 0, h: 0, d: 0, t: 0, hr: 0, bb: 0, k: 0, r: 0, rbi: 0, 
 const FENCE = { corner: LEAGUE.fenceCorner, center: LEAGUE.fenceCenter };
 
 // Jersey sales per second. Fans scale gently (^0.35) so big markets don't
-// break the economy; store and media tiers multiply on top.
-const merchRate = (fansN, stars, merchMult, tvMult, merchCity) =>
-  0.03 * Math.pow(fansN, 0.35) * (1 + 0.3 * stars) * merchMult * tvMult * (merchCity ? 1.3 : 1);
+// break the economy; store and media tiers multiply on top. `draw` is the
+// pull of the club's printed trading cards — a holo star moves merchandise.
+const merchRate = (fansN, draw, merchMult, tvMult, merchCity) =>
+  0.03 * Math.pow(fansN, 0.35) * (1 + draw) * merchMult * tvMult * (merchCity ? 1.3 : 1);
 
 // Away selling tapers: the first hour runs at full speed, the rest at 15%.
 const awaySeconds = (ms) => {
@@ -267,9 +269,9 @@ export default function App() {
     const elapsed = Math.min(Math.max(0, Date.now() - (SAVED.lastSeen || Date.now())), fx.offlineHours * 3600e3);
     if (fx.merchMult && elapsed > 60e3) {
       const all = [...SAVED.roster.batters, SAVED.roster.sp, SAVED.roster.rp];
-      const stars = all.filter(isStar).length;
+      const draw = cardDraw(all);
       // No media money overnight — the store alone sells, tapering after the first hour
-      const gain = merchRate(SAVED.fans, stars, fx.merchMult, 1, SAVED.city.bonus === "merch") * awaySeconds(elapsed) * ECON.offlineRate;
+      const gain = merchRate(SAVED.fans, draw, fx.merchMult, 1, SAVED.city.bonus === "merch") * awaySeconds(elapsed) * ECON.offlineRate;
       setMoney((m) => m + gain);
       addAT({ earned: gain });
       const h = Math.floor(elapsed / 3600e3), min = Math.floor((elapsed % 3600e3) / 60e3);
@@ -296,9 +298,9 @@ export default function App() {
     if (!merch || !roster) return;
     const iv = setInterval(() => {
       if (document.hidden) return;
-      const stars = [...roster.batters, roster.sp, roster.rp].filter(isStar).length;
+      const draw = cardDraw([...roster.batters, roster.sp, roster.rp]);
       const fx = revenueFx(merch, tv);
-      const gain = merchRate(fans, stars, fx.merchMult, fx.tvMult, cityBonus("merch"));
+      const gain = merchRate(fans, draw, fx.merchMult, fx.tvMult, cityBonus("merch"));
       setMoney((m) => m + gain);
       addAT({ earned: gain });
     }, 1000);
@@ -702,6 +704,19 @@ export default function App() {
     play.cash();
   };
 
+  // ── The printing press: pay to reprint a man's card at the rarity he's earned ──
+  const printCard = (pid) => {
+    const p = [...roster.batters, roster.sp, roster.rp].find((x) => x.id === pid);
+    const up = p && nextPrint(p);
+    if (!up || money < up.cost) return;
+    setMoney((m) => m - up.cost);
+    addAT({ spent: up.cost, prints: 1 });
+    const upd = (o) => (o.id === pid ? { ...o, cardTier: up.id } : o);
+    setRoster((r) => ({ batters: r.batters.map(upd), sp: upd(r.sp), rp: upd(r.rp) }));
+    pushLog(`— CARD PULLED — the presses run ${p.name}'s ${up.name} (${up.flavor}). ${up.id === 3 ? "One copy exists. Ever." : ""}`, "win");
+    up.id >= 2 ? play.fanfare() : play.cash();
+  };
+
   const moveBatter = (id, dir) => {
     setRoster((r) => {
       const b = [...r.batters];
@@ -929,6 +944,7 @@ export default function App() {
             trainCost={trainCost} trainCeil={trainCeil} onTrainN={trainN} onTrainAll={trainAllFor}
             tradeQuote={tradeQuote} onTrade={makeTrade} rivals={rivals}
             franchise={{ used: franchiseUsed(), max: franchiseSlots(), cap: devCapFor(trophies), onTag: tagFranchise }}
+            city={city} year={year} onPrintCard={printCard}
           />
         )}
 

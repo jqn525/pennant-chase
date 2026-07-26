@@ -163,8 +163,10 @@ export const ovr = (p) => {
     : (e.stuff + e.control + e.stamina) / 3;
 };
 
-// Trade value: how far above the league floor a player plays
-export const playerValue = (p, perOvr) => Math.max(50, (ovr(p) - LEAGUE.statBase + 4) * perOvr);
+// Trade value: how far above the league floor a player plays. A man with a
+// holo card printed costs more to pry loose — rivals know what he's worth.
+export const playerValue = (p, perOvr) =>
+  Math.max(50, (ovr(p) - LEAGUE.statBase + 4) * perOvr) * (1 + 0.15 * (p.cardTier || 0));
 
 // Team talent vs the league level, as a letter grade
 export const talentGrade = (roster, statBase = LEAGUE.statBase) => {
