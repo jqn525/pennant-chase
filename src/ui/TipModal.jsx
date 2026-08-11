@@ -17,8 +17,9 @@ export const TIPS = {
   card: {
     title: "THE PLAYER CARD",
     body: [
-      "This is a player's whole life on one card. Tap a skill row to TRAIN it with money — the notch on each bar is his natural ceiling. Once a skill is PEAKED, only gear can push it higher.",
+      "This is a player's whole life on one card. Tap a skill row to TRAIN it with money — the notch on each bar is where training stops: his natural ceiling, or the LEAGUE CAP. Only a FRANCHISE PLAYER (you hold two tags; each Pennant Cup earns another) trains past the cap toward true stardom.",
       "The equipment shelf shows what he's wearing; the TRADE DESK swaps him position-for-position with any rival club — gear travels with the player.",
+      "Hit VIEW CARD to flip him over and hold his actual baseball card. Everyone starts as plain COMMON cardboard — train him past 70, 80 and 88 OVR to earn the right to reprint him as UNCOMMON, RARE HOLO, and finally a ONE-OF-ONE.",
     ],
   },
   shop: {
@@ -39,13 +40,13 @@ export const TIPS = {
     title: "OCTOBER BASEBALL",
     body: [
       "You made the playoffs! Best-of-5 semifinal, then a best-of-7 for the PENNANT CUP.",
-      "Every playoff game is a sellout — full gate money — and winning the Cup pays a fortune, draws hundreds of fans, and puts a trophy in your case forever.",
+      "Every playoff game is a sellout — full gate money — and winning the Cup pays a fortune, swells your fan base by a full quarter, and puts a trophy in your case forever.",
     ],
   },
   stadium: {
     title: "THE FRONT OFFICE",
     body: [
-      "This is where the money side of the club lives — including your STADIUM. Four things to build, each three tiers deep: PARKING gets a bigger share of your fans through the gates, SEATS raise how many the yard can hold, CONCESSIONS grow every game's payout, and LIGHTS draw new fans faster after wins.",
+      "This is where the money side of the club lives — including your STADIUM. Four things to build, tier by tier: PARKING gets a bigger share of your fans through the gates, SEATS raise how many the yard can hold — all the way to 60,000 — CONCESSIONS grow every game's payout, and LIGHTS draw new fans faster after wins.",
       "Each tier takes money and a big enough fan base. Win, grow, reinvest.",
     ],
   },

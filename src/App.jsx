@@ -5,12 +5,14 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { C, LEAGUE, ECON, TRADE, BAT_STATS, PIT_STATS, STADIUM, stadiumFx, REVENUE, revenueFx, SALARY } from "./game/constants.js";
+import { C, LEAGUE, ECON, TRADE, BAT_STATS, PIT_STATS, STADIUM, stadiumFx, REVENUE, revenueFx, SALARY, FRANCHISE } from "./game/constants.js";
 import { fmt } from "./game/utils.js";
-import { genRoster, seedUid, genDraftClass, vetPot, rollPot, pickTrait, freshName, seedNames } from "./game/generators.js";
-import { newGame, stepAtBat, playGameInstant, settleGame } from "./game/engine.js";
+import { genRoster, seedUid, genDraftClass, vetPot, rollPot, pickTrait, freshName, seedNames, creepRival, seedRivalStars } from "./game/generators.js";
+import { newGame, stepAtBat, playGameInstant, settleGame, ticketGate } from "./game/engine.js";
 import { makeRivals, makeSchedule, teamRating, quickSim, simSeries, seedOrder, runOffseason, ageRoster, seriesInfo } from "./game/season.js";
-import { eff, isStar, talentGrade, genShipment, genItem, playerValue, GEAR, dealerTier, shipmentWeights, TIER_INFO } from "./game/gear.js";
+import { eff, isStar, talentGrade, genShipment, genItem, playerValue, GEAR, dealerTier, shipmentWeights, TIER_INFO, devCapFor } from "./game/gear.js";
+import { nextPrint, cardDraw } from "./game/cards.js";
+import { LOADOUTS, loadoutById, applyLoadout, sortRival } from "./game/lineup.js";
 import { sfx, play } from "./game/sfx.js";
 import { SAVE_KEY, parseSave, decodeBackup, encodeBackup } from "./game/save.js";
 import { teamPayroll, luxuryTax } from "./game/salary.js";
@@ -44,9 +46,10 @@ const EMPTY_STAT = { ab: 0, h: 0, d: 0, t: 0, hr: 0, bb: 0, k: 0, r: 0, rbi: 0, 
 const FENCE = { corner: LEAGUE.fenceCorner, center: LEAGUE.fenceCenter };
 
 // Jersey sales per second. Fans scale gently (^0.35) so big markets don't
-// break the economy; store and media tiers multiply on top.
-const merchRate = (fansN, stars, merchMult, tvMult, merchCity) =>
-  0.02 * Math.pow(fansN, 0.35) * (1 + 0.3 * stars) * merchMult * tvMult * (merchCity ? 1.3 : 1);
+// break the economy; store and media tiers multiply on top. `draw` is the
+// pull of the club's printed trading cards — a holo star moves merchandise.
+const merchRate = (fansN, draw, merchMult, tvMult, merchCity) =>
+  0.03 * Math.pow(fansN, 0.35) * (1 + draw) * merchMult * tvMult * (merchCity ? 1.3 : 1);
 
 // Away selling tapers: the first hour runs at full speed, the rest at 15%.
 const awaySeconds = (ms) => {
@@ -126,6 +129,38 @@ if (SAVED?.roster) {
       }
     }
   }
+
+  // One-time balance patch: the development cap arrives (training stats clamp
+  // to it — franchise tags start unassigned) and every rival club gains the
+  // stars a real lineup carries.
+  if (SAVED.balance !== 1) {
+    const cap = devCapFor(SAVED.trophies || 0);
+    const clamp = (p) => {
+      const keys = p.role === "bat" ? BAT_STATS : PIT_STATS;
+      for (const k of keys) p[k] = Math.min(p[k], cap);
+    };
+    [...SAVED.roster.batters, SAVED.roster.sp, SAVED.roster.rp].forEach(clamp);
+    (SAVED.rivals || []).forEach(seedRivalStars);
+  }
+
+  // One-time big-league rescale: fans ×50 and money ×5 onto the new economy,
+  // with in-flight prices (rookies, shop shelves) bumped to match. Stadium and
+  // revenue tier levels carry over as-is — the tables grew around them.
+  if (SAVED.econ !== 2) {
+    SAVED.fans = Math.round(SAVED.fans * 50);
+    SAVED.money = Math.round(SAVED.money * 5);
+    (SAVED.draftClass || []).forEach((p) => { if (p.signCost) p.signCost = Math.round(p.signCost * 1.75); });
+    (SAVED.shopItems || []).forEach((i) => { i.cost = Math.round(i.cost * 5 / 3); });
+    if (SAVED.allTime) for (const k of ["earned", "spent"]) {
+      if (SAVED.allTime[k]) SAVED.allTime[k] = Math.round(SAVED.allTime[k] * 5);
+    }
+    if (SAVED.liveGame) SAVED.liveGame.gatePaid = 0;
+  }
+
+  // Give pre-loadout saves their rival lineup philosophies. Skipped when a
+  // game is mid-flight (the live game indexes into one rival's order); every
+  // winter re-sorts anyway, so those saves converge a season later.
+  if (SAVED.rivals && !SAVED.liveGame) SAVED.rivals.forEach(sortRival);
 }
 
 export default function App() {
@@ -153,6 +188,7 @@ export default function App() {
   const [trophies, setTrophies] = useState(SAVED?.trophies ?? 0);
   const [allTime, setAllTime] = useState(SAVED?.allTime ?? seedAllTime());
   const [capYears, setCapYears] = useState(SAVED?.capYears ?? 0); // consecutive winters over the cap
+  const [lineupLoadout, setLineupLoadout] = useState(SAVED?.lineupLoadout ?? null); // null = custom order
   const addAT = useCallback((patch) => setAllTime((a) => {
     const next = { ...a };
     for (const k in patch) next[k] = (next[k] || 0) + patch[k];
@@ -190,7 +226,7 @@ export default function App() {
 
   // Fresh-state mirror so interval callbacks never read stale closures
   const S = useRef({});
-  S.current = { city, money, fans, roster, merch, tv, stadium, seasonStats, shopItems, draftClass, form, year, phase, rivals, schedule, rivalDays, gameIndex, standings, playoffs, history, trophies, allTime, capYears, speed, sound, seenTips };
+  S.current = { city, money, fans, roster, merch, tv, stadium, seasonStats, shopItems, draftClass, form, year, phase, rivals, schedule, rivalDays, gameIndex, standings, playoffs, history, trophies, allTime, capYears, speed, sound, seenTips, lineupLoadout };
 
   const cityBonus = (k) => (city?.bonus === k);
   const tn = (c) => (c?.nickname ?? c?.name ?? ""); // team display name
@@ -204,12 +240,13 @@ export default function App() {
     const s = S.current;
     if (!s.city) return null;
     return {
-      version: 3, scale: 100, names: 2, lastSeen: Date.now(),
+      version: 3, scale: 100, names: 2, econ: 2, balance: 1, lastSeen: Date.now(),
       city: s.city, money: s.money, fans: s.fans, roster: s.roster, merch: s.merch, tv: s.tv, stadium: s.stadium,
       seasonStats: s.seasonStats, shopItems: s.shopItems, draftClass: s.draftClass, form: s.form,
       year: s.year, phase: s.phase, rivals: s.rivals, schedule: s.schedule, rivalDays: s.rivalDays,
       gameIndex: s.gameIndex, standings: s.standings, playoffs: s.playoffs,
       history: s.history, trophies: s.trophies, allTime: s.allTime, capYears: s.capYears, speed: s.speed, sound: s.sound, seenTips: s.seenTips,
+      lineupLoadout: s.lineupLoadout ?? null,
       liveGame: gameRef.current, liveContext: ctxRef.current,
     };
   }, []);
@@ -225,7 +262,7 @@ export default function App() {
       return false;
     }
   }, [saveData]);
-  useEffect(() => { saveNow(); }, [city, money, fans, roster, merch, tv, stadium, seasonStats, shopItems, draftClass, form, year, phase, rivals, schedule, rivalDays, gameIndex, standings, playoffs, history, trophies, allTime, capYears, speed, sound, seenTips, saveNow]);
+  useEffect(() => { saveNow(); }, [city, money, fans, roster, merch, tv, stadium, seasonStats, shopItems, draftClass, form, year, phase, rivals, schedule, rivalDays, gameIndex, standings, playoffs, history, trophies, allTime, capYears, speed, sound, seenTips, lineupLoadout, saveNow]);
   useEffect(() => {
     const iv = setInterval(() => { if (!document.hidden) saveNow(); }, 20000);
     return () => clearInterval(iv);
@@ -240,9 +277,9 @@ export default function App() {
     const elapsed = Math.min(Math.max(0, Date.now() - (SAVED.lastSeen || Date.now())), fx.offlineHours * 3600e3);
     if (fx.merchMult && elapsed > 60e3) {
       const all = [...SAVED.roster.batters, SAVED.roster.sp, SAVED.roster.rp];
-      const stars = all.filter(isStar).length;
+      const draw = cardDraw(all);
       // No media money overnight — the store alone sells, tapering after the first hour
-      const gain = merchRate(SAVED.fans, stars, fx.merchMult, 1, SAVED.city.bonus === "merch") * awaySeconds(elapsed) * ECON.offlineRate;
+      const gain = merchRate(SAVED.fans, draw, fx.merchMult, 1, SAVED.city.bonus === "merch") * awaySeconds(elapsed) * ECON.offlineRate;
       setMoney((m) => m + gain);
       addAT({ earned: gain });
       const h = Math.floor(elapsed / 3600e3), min = Math.floor((elapsed % 3600e3) / 60e3);
@@ -269,9 +306,9 @@ export default function App() {
     if (!merch || !roster) return;
     const iv = setInterval(() => {
       if (document.hidden) return;
-      const stars = [...roster.batters, roster.sp, roster.rp].filter(isStar).length;
+      const draw = cardDraw([...roster.batters, roster.sp, roster.rp]);
       const fx = revenueFx(merch, tv);
-      const gain = merchRate(fans, stars, fx.merchMult, fx.tvMult, cityBonus("merch"));
+      const gain = merchRate(fans, draw, fx.merchMult, fx.tvMult, cityBonus("merch"));
       setMoney((m) => m + gain);
       addAT({ earned: gain });
     }, 1000);
@@ -380,10 +417,14 @@ export default function App() {
 
     if (s.phase === "regular") {
       if (s.gameIndex >= LEAGUE.seasonGames) return enterPlayoffs();
-      // fresh shipment at the shop whenever a new series begins
+      // fresh shipment at the shop whenever a new series begins — and around
+      // the league, every club sharpens up a little (rivals develop in-season)
       if (s.gameIndex > 0) {
         const prev = s.schedule[s.gameIndex - 1], next = s.schedule[s.gameIndex];
-        if (prev.opp !== next.opp || prev.home !== next.home) restock(false);
+        if (prev.opp !== next.opp || prev.home !== next.home) {
+          restock(false);
+          setRivals((rv) => rv.map((t) => creepRival(t, 1, 2)));
+        }
       }
       return startNextGame();
     }
@@ -506,7 +547,7 @@ export default function App() {
       pushLog(`Payroll back under the cap — the league's collectors move on.`, "sys");
     }
     if (payroll > SALARY.cap * 0.8) showTip("payroll");
-    setFans((f) => Math.max(25, f + off.fansDelta));
+    setFans((f) => Math.max(ECON.startFans, f + off.fansDelta));
     setRivals(off.rivals);
     setRoster((r) => ageRoster(r));
     setSchedule(off.schedule);
@@ -534,6 +575,7 @@ export default function App() {
   // ── One live at-bat (1x / 4x speeds) ──
   const liveStep = () => {
     const g = gameRef.current;
+    const prevHalf = g.half, prevInning = g.inning;
     const ev = [];
     stepAtBat(g, ctxRef.current, ev);
     ev.forEach((e) => {
@@ -543,6 +585,23 @@ export default function App() {
       else if (/laces|stand-up double|TRIPLE|drops in front/.test(e.text)) play.crack();
     });
     flushStats(g);
+    // Turnstile money: each completed half-inning pays its slice of the ticket
+    // gate as the game plays. settle() pays only what's left (gate − gatePaid),
+    // so MAX speed (which never comes through here) can't double-pay.
+    if (!g.over && (g.half !== prevHalf || g.inning !== prevInning)) {
+      const s = S.current;
+      const fx = stadiumFx(s.stadium);
+      const { gate } = ticketGate({
+        fans: s.fans, playoff: s.phase === "playoffs",
+        formWins: s.form.filter((f) => f === "W").length,
+        attCap: fx.attCap, rateBonus: fx.rateBonus,
+        gateBonus: cityBonus("gate"), gateMult: fx.gateMult,
+      });
+      const drip = gate / (LEAGUE.innings * 2);
+      g.gatePaid = (g.gatePaid || 0) + drip;
+      setMoney((m) => m + drip);
+      addAT({ earned: drip });
+    }
     if (g.over) settle(g);
   };
 
@@ -573,35 +632,27 @@ export default function App() {
   // ── GM actions (all apply from the NEXT game — the live game uses a snapshot) ──
   const trainCost = (p, key) => {
     let c = ECON.trainBase * Math.pow(1.5, (p[key] - 41) / 4);
+    if (p[key] >= ECON.eliteAt) c *= Math.pow(ECON.eliteRamp, p[key] - ECON.eliteAt);
     if (cityBonus("train")) c *= 0.85;
     return Math.ceil(c);
   };
-  const train = (pid, key) => {
-    setRoster((r) => {
-      const all = [...r.batters, r.sp, r.rp];
-      const p = all.find((x) => x.id === pid);
-      const cost = trainCost(p, key);
-      if (money < cost) return r;
-      if (p[key] >= (p.pot?.[key] ?? Infinity)) return r; // peaked — nothing left to teach
-      setMoney((m) => m - cost);
-      addAT({ spent: cost, train: 1 });
-      play.click();
-      const upd = (o) => (o.id === pid ? { ...o, [key]: o[key] + 1 } : o);
-      return { batters: r.batters.map(upd), sp: upd(r.sp), rp: upd(r.rp) };
-    });
+  // Where training stops: natural potential for franchise players, the
+  // league development cap (which rises with trophies) for everyone else.
+  const trainCeil = (p, key) => {
+    const pot = p.pot?.[key] ?? Infinity;
+    return p.franchise ? pot : Math.min(pot, devCapFor(S.current.trophies));
   };
-
-  // Bulk training: buy point after point, cheapest first, until ceilings or
-  // the budget stop it. Returns {points: {key: n}, total, count} — pure.
-  const planTraining = (p, keys, budget) => {
+  // Bulk training: buy point after point, cheapest first, until ceilings,
+  // the budget, or maxPoints stop it. Returns {points: {key: n}, total, count}.
+  const planTraining = (p, keys, budget, maxPoints = Infinity) => {
     const cur = {};
     keys.forEach((k) => { cur[k] = p[k]; });
     const points = {};
     let total = 0, count = 0;
-    for (;;) {
+    while (count < maxPoints) {
       let best = null, bestCost = Infinity;
       for (const k of keys) {
-        if (cur[k] >= (p.pot?.[k] ?? Infinity)) continue;
+        if (cur[k] >= trainCeil(p, k)) continue;
         const c = trainCost({ ...p, [k]: cur[k] }, k);
         if (c < bestCost) { best = k; bestCost = c; }
       }
@@ -629,10 +680,11 @@ export default function App() {
     play.cash();
   };
 
-  const maxTrain = (pid, key) => {
+  // Train up to n points of one stat (n = 1, 5, or Infinity for MAX)
+  const trainN = (pid, key, n) => {
     const p = [...roster.batters, roster.sp, roster.rp].find((x) => x.id === pid);
     if (!p) return;
-    applyTraining(pid, planTraining(p, [key], money));
+    applyTraining(pid, planTraining(p, [key], money, n));
   };
 
   const trainAllFor = (pid) => {
@@ -645,6 +697,34 @@ export default function App() {
     applyTraining(pid, plan, `TRAINING CAMP: ${p.name} adds ${plan.count} point${plan.count > 1 ? "s" : ""} (${gains}) for $${fmt(plan.total)}.`);
   };
 
+  // ── Franchise tags: scarce licenses to develop true superstars ──
+  const franchiseSlots = () => FRANCHISE.slots + trophies;
+  const franchiseUsed = () => (roster ? [...roster.batters, roster.sp, roster.rp].filter((p) => p.franchise).length : 0);
+  const tagFranchise = (pid) => {
+    if (franchiseUsed() >= franchiseSlots()) return;
+    setRoster((r) => {
+      const upd = (o) => (o.id === pid && !o.franchise ? { ...o, franchise: true } : o);
+      const next = { batters: r.batters.map(upd), sp: upd(r.sp), rp: upd(r.rp) };
+      const p = [...next.batters, next.sp, next.rp].find((x) => x.id === pid);
+      if (p?.franchise) pushLog(`${p.name} is named a FRANCHISE PLAYER — his ceiling is now his talent, not the league's cap.`, "win");
+      return next;
+    });
+    play.cash();
+  };
+
+  // ── The printing press: pay to reprint a man's card at the rarity he's earned ──
+  const printCard = (pid) => {
+    const p = [...roster.batters, roster.sp, roster.rp].find((x) => x.id === pid);
+    const up = p && nextPrint(p);
+    if (!up || money < up.cost) return;
+    setMoney((m) => m - up.cost);
+    addAT({ spent: up.cost, prints: 1 });
+    const upd = (o) => (o.id === pid ? { ...o, cardTier: up.id } : o);
+    setRoster((r) => ({ batters: r.batters.map(upd), sp: upd(r.sp), rp: upd(r.rp) }));
+    pushLog(`— CARD PULLED — the presses run ${p.name}'s ${up.name} (${up.flavor}). ${up.id === 3 ? "One copy exists. Ever." : ""}`, "win");
+    up.id >= 2 ? play.fanfare() : play.cash();
+  };
+
   const moveBatter = (id, dir) => {
     setRoster((r) => {
       const b = [...r.batters];
@@ -654,11 +734,14 @@ export default function App() {
       [b[i], b[j]] = [b[j], b[i]];
       return { ...r, batters: b };
     });
+    setLineupLoadout(null); // touching the order by hand makes it a custom lineup
   };
-  const autoLineup = () => {
-    const quality = (p) => { const q = eff(p); return q.contact + q.eye + q.power * 0.7 + q.speed * 0.3; };
-    setRoster((r) => ({ ...r, batters: [...r.batters].sort((a, b) => quality(b) - quality(a)) }));
-    pushLog("Skipper sets the lineup by the numbers — best bats up top. Applies from the next game.", "sys");
+  const chooseLoadout = (id) => {
+    const plan = loadoutById(id);
+    if (!plan) return;
+    setRoster((r) => ({ ...r, batters: applyLoadout(r.batters, id) }));
+    setLineupLoadout(id);
+    pushLog(`Skipper posts a new card: ${plan.name}. ${plan.blurb} Applies from the next game.`, "sys");
   };
 
   const boostText = (item) =>
@@ -869,8 +952,10 @@ export default function App() {
           <PlayerCard
             player={cardView.player} isOwn={cardView.isOwn} onClose={() => setCardId(null)}
             money={money} league={LEAGUE} stat={stat} isStar={isStar}
-            trainCost={trainCost} onTrain={train} onMaxTrain={maxTrain} onTrainAll={trainAllFor}
+            trainCost={trainCost} trainCeil={trainCeil} onTrainN={trainN} onTrainAll={trainAllFor}
             tradeQuote={tradeQuote} onTrade={makeTrade} rivals={rivals}
+            franchise={{ used: franchiseUsed(), max: franchiseSlots(), cap: devCapFor(trophies), onTag: tagFranchise }}
+            city={city} year={year} onPrintCard={printCard}
           />
         )}
 
@@ -895,7 +980,7 @@ export default function App() {
         {tab === "roster" && roster && (
           <RosterTab
             roster={roster} stat={stat} isStar={isStar}
-            onMoveBatter={moveBatter} onAutoLineup={autoLineup} onOpenCard={openCard}
+            onMoveBatter={moveBatter} loadout={lineupLoadout} onChooseLoadout={chooseLoadout} onOpenCard={openCard}
           />
         )}
 
