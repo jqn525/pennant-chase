@@ -6,6 +6,7 @@
 
 import { resolveAtBat } from "./atBat.js";
 import { eff } from "./gear.js";
+import { makePitch, makeWildPitch } from "./pitch.js";
 import { LEAGUE, ECON } from "./constants.js";
 
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
@@ -71,6 +72,7 @@ export function stepAtBat(g, ctx, events) {
       gb(third.id, "r");
     }
     g.bases = [null, g.bases[0], g.bases[1]];
+    g.pitch = { n: (g.pitchSeq = (g.pitchSeq || 0) + 1), ...makeWildPitch() };
     emit(`Wild pitch! It skips to the backstop and the runners move up${third ? " — a run scores!" : "."}`, third ? "hr" : "play", side, teamName);
     // a wild pitch can end the game on a walk-off
     if (g.half === "bottom" && g.inning >= ctx.innings && (g.home ? g.us : g.them) > (g.home ? g.them : g.us)) finish(g);
@@ -84,10 +86,11 @@ export function stepAtBat(g, ctx, events) {
   const out = resolveAtBat(batter, pitcher, fielders, ctx.fence, ctx.statBase, { forceOn1: !!g.bases[0], outs: g.outs, runnersOn: g.bases.some(Boolean) });
   const who = `${batter.name} (${batter.pos})`;
 
-  // Field view: record where the ball landed
+  // Field view: the decisive pitch of the at-bat, then where the ball landed
+  g.pitch = { n: (g.pitchSeq = (g.pitchSeq || 0) + 1), ...makePitch(pitcher, out.type) };
   if (out.dist != null && g.balls.length < 100) {
     const t = out.type === "HR" ? "hr" : out.type === "HIT" ? "hit" : out.type === "E" ? "err" : "out";
-    g.balls.push({ spray: out.spray, dist: Math.round(out.dist), t });
+    g.balls.push({ spray: out.spray, dist: Math.round(out.dist), t, launch: out.launch });
   }
 
   if (out.type === "K") {

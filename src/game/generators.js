@@ -2,6 +2,7 @@
 
 import { FIRST, LAST, POSITIONS, TRAITS, BAT_STATS, PIT_STATS, PLAYER_TRAITS, LEAGUE, DRAFT, CREEP, CITY_POOL, NICKNAME_POOL } from "./constants.js";
 import { jitter } from "./utils.js";
+import { sortRival } from "./lineup.js";
 
 let uid = 1;
 // After loading a save, push the id counter past the saved players' ids
@@ -97,7 +98,7 @@ export const genRivalTeam = (name, traitId, base) => {
   const trait = TRAITS.find((t) => t.id === traitId);
   const m = trait.mod;
   const b = (k) => Math.min(LEAGUE.statCap, Math.max(40, jitter(base, 10) + (m[k] || 0)));
-  return seedRivalStars({
+  return sortRival(seedRivalStars({
     name,
     traitId,
     batters: POSITIONS.map((p) => ({
@@ -107,7 +108,7 @@ export const genRivalTeam = (name, traitId, base) => {
       trait: pickTrait("bat"),
     })),
     sp: { id: uid++, name: rname(), pos: "SP", role: "SP", stuff: b("stuff"), control: b("control"), stamina: jitter(base, 10), defense: b("defense"), trait: pickTrait("pit") },
-  });
+  }));
 };
 
 // Rival development: spread `points` random +bump boosts across the club.
@@ -125,7 +126,9 @@ export const creepRival = (team, points, bump = CREEP.bump) => {
     const [p, k] = tSpots[(Math.random() * tSpots.length) | 0];
     p[k] = Math.min(LEAGUE.statCap, p[k] + bump);
   }
-  return t;
+  // Growth can shuffle who deserves the marquee slots — the skipper re-sets
+  // the order to the club's philosophy after every development pass
+  return sortRival(t);
 };
 
 // The winter draft class: raw rookies with big ceilings. The worse you

@@ -12,6 +12,7 @@ import { newGame, stepAtBat, playGameInstant, settleGame, ticketGate } from "./g
 import { makeRivals, makeSchedule, teamRating, quickSim, simSeries, seedOrder, runOffseason, ageRoster, seriesInfo } from "./game/season.js";
 import { eff, isStar, talentGrade, genShipment, genItem, playerValue, GEAR, dealerTier, shipmentWeights, TIER_INFO, devCapFor } from "./game/gear.js";
 import { nextPrint, cardDraw } from "./game/cards.js";
+import { LOADOUTS, loadoutById, applyLoadout, sortRival } from "./game/lineup.js";
 import { sfx, play } from "./game/sfx.js";
 import { SAVE_KEY, parseSave, decodeBackup, encodeBackup } from "./game/save.js";
 import { teamPayroll, luxuryTax } from "./game/salary.js";
@@ -155,6 +156,11 @@ if (SAVED?.roster) {
     }
     if (SAVED.liveGame) SAVED.liveGame.gatePaid = 0;
   }
+
+  // Give pre-loadout saves their rival lineup philosophies. Skipped when a
+  // game is mid-flight (the live game indexes into one rival's order); every
+  // winter re-sorts anyway, so those saves converge a season later.
+  if (SAVED.rivals && !SAVED.liveGame) SAVED.rivals.forEach(sortRival);
 }
 
 export default function App() {
@@ -182,6 +188,7 @@ export default function App() {
   const [trophies, setTrophies] = useState(SAVED?.trophies ?? 0);
   const [allTime, setAllTime] = useState(SAVED?.allTime ?? seedAllTime());
   const [capYears, setCapYears] = useState(SAVED?.capYears ?? 0); // consecutive winters over the cap
+  const [lineupLoadout, setLineupLoadout] = useState(SAVED?.lineupLoadout ?? null); // null = custom order
   const addAT = useCallback((patch) => setAllTime((a) => {
     const next = { ...a };
     for (const k in patch) next[k] = (next[k] || 0) + patch[k];
@@ -219,7 +226,7 @@ export default function App() {
 
   // Fresh-state mirror so interval callbacks never read stale closures
   const S = useRef({});
-  S.current = { city, money, fans, roster, merch, tv, stadium, seasonStats, shopItems, draftClass, form, year, phase, rivals, schedule, rivalDays, gameIndex, standings, playoffs, history, trophies, allTime, capYears, speed, sound, seenTips };
+  S.current = { city, money, fans, roster, merch, tv, stadium, seasonStats, shopItems, draftClass, form, year, phase, rivals, schedule, rivalDays, gameIndex, standings, playoffs, history, trophies, allTime, capYears, speed, sound, seenTips, lineupLoadout };
 
   const cityBonus = (k) => (city?.bonus === k);
   const tn = (c) => (c?.nickname ?? c?.name ?? ""); // team display name
@@ -239,6 +246,7 @@ export default function App() {
       year: s.year, phase: s.phase, rivals: s.rivals, schedule: s.schedule, rivalDays: s.rivalDays,
       gameIndex: s.gameIndex, standings: s.standings, playoffs: s.playoffs,
       history: s.history, trophies: s.trophies, allTime: s.allTime, capYears: s.capYears, speed: s.speed, sound: s.sound, seenTips: s.seenTips,
+      lineupLoadout: s.lineupLoadout ?? null,
       liveGame: gameRef.current, liveContext: ctxRef.current,
     };
   }, []);
@@ -254,7 +262,7 @@ export default function App() {
       return false;
     }
   }, [saveData]);
-  useEffect(() => { saveNow(); }, [city, money, fans, roster, merch, tv, stadium, seasonStats, shopItems, draftClass, form, year, phase, rivals, schedule, rivalDays, gameIndex, standings, playoffs, history, trophies, allTime, capYears, speed, sound, seenTips, saveNow]);
+  useEffect(() => { saveNow(); }, [city, money, fans, roster, merch, tv, stadium, seasonStats, shopItems, draftClass, form, year, phase, rivals, schedule, rivalDays, gameIndex, standings, playoffs, history, trophies, allTime, capYears, speed, sound, seenTips, lineupLoadout, saveNow]);
   useEffect(() => {
     const iv = setInterval(() => { if (!document.hidden) saveNow(); }, 20000);
     return () => clearInterval(iv);
@@ -726,11 +734,14 @@ export default function App() {
       [b[i], b[j]] = [b[j], b[i]];
       return { ...r, batters: b };
     });
+    setLineupLoadout(null); // touching the order by hand makes it a custom lineup
   };
-  const autoLineup = () => {
-    const quality = (p) => { const q = eff(p); return q.contact + q.eye + q.power * 0.7 + q.speed * 0.3; };
-    setRoster((r) => ({ ...r, batters: [...r.batters].sort((a, b) => quality(b) - quality(a)) }));
-    pushLog("Skipper sets the lineup by the numbers — best bats up top. Applies from the next game.", "sys");
+  const chooseLoadout = (id) => {
+    const plan = loadoutById(id);
+    if (!plan) return;
+    setRoster((r) => ({ ...r, batters: applyLoadout(r.batters, id) }));
+    setLineupLoadout(id);
+    pushLog(`Skipper posts a new card: ${plan.name}. ${plan.blurb} Applies from the next game.`, "sys");
   };
 
   const boostText = (item) =>
@@ -969,7 +980,7 @@ export default function App() {
         {tab === "roster" && roster && (
           <RosterTab
             roster={roster} stat={stat} isStar={isStar}
-            onMoveBatter={moveBatter} onAutoLineup={autoLineup} onOpenCard={openCard}
+            onMoveBatter={moveBatter} loadout={lineupLoadout} onChooseLoadout={chooseLoadout} onOpenCard={openCard}
           />
         )}
 

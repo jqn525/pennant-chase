@@ -9,6 +9,7 @@ import { ovr, eff } from "../game/gear.js";
 import { portraitUrl } from "./portrait.js";
 import { teamPayroll, salaryOf } from "../game/salary.js";
 import { CARD_TIERS, printedTier, nextPrint } from "../game/cards.js";
+import { LOADOUTS } from "../game/lineup.js";
 import { fmt } from "../game/utils.js";
 
 // Ink for the little rarity chip on a roster row
@@ -69,7 +70,7 @@ const ops = (s) => (s.ab ? ((s.h + s.bb) / (s.ab + s.bb) + (s.h + s.d + 2 * s.t 
 const ip = (s) => (s.outsP ? `${Math.floor(s.outsP / 3)}.${s.outsP % 3}` : "—");
 const era = (s) => (s.outsP ? ((s.raP * 27) / s.outsP).toFixed(2) : "—");
 
-export default function RosterTab({ roster, stat, isStar, onMoveBatter, onAutoLineup, onOpenCard }) {
+export default function RosterTab({ roster, stat, isStar, onMoveBatter, loadout, onChooseLoadout, onOpenCard }) {
   const arrowBtn = {
     flex: 1, width: 34, background: "transparent", border: `1px solid ${C.greenLine}`,
     borderRadius: 4, color: C.creamDim, fontSize: 10, cursor: "pointer", padding: 0,
@@ -120,12 +121,24 @@ export default function RosterTab({ roster, stat, isStar, onMoveBatter, onAutoLi
     <div>
       <TeamRatings roster={roster} />
       <Panel title="BATTING ORDER">
-        <div style={{ display: "flex", alignItems: "center", marginBottom: 8, gap: 8 }}>
-          <span style={{ flex: 1 }} />
-          <button onClick={onAutoLineup}
-            style={{ ...btn(true), marginLeft: "auto", fontSize: 10, letterSpacing: 1, padding: "5px 8px" }}>
-            AUTO-SET ORDER
-          </button>
+        {/* Loadouts: tap a philosophy and the skipper fills the card */}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 4 }}>
+          {LOADOUTS.map((l) => {
+            const on = loadout === l.id;
+            return (
+              <button key={l.id} onClick={() => onChooseLoadout(l.id)}
+                style={{
+                  fontFamily: PIXEL, fontSize: 7, letterSpacing: 1, padding: "6px 7px", cursor: "pointer",
+                  borderRadius: 4, border: `1px solid ${on ? C.amber : C.greenLine}`,
+                  background: on ? "#3A2E10" : "transparent", color: on ? C.amber : C.creamDim,
+                }}>
+                {l.name}
+              </button>
+            );
+          })}
+        </div>
+        <div style={{ fontSize: 10, color: C.creamDim, marginBottom: 8 }}>
+          {loadout ? LOADOUTS.find((l) => l.id === loadout)?.blurb : "Custom order — set with the arrows, or pick a philosophy."}
         </div>
         {roster.batters.map((p, i) => row(p, i + 1))}
         {[roster.sp, roster.rp].map((p) => row(p, null))}
