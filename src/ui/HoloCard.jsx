@@ -14,6 +14,8 @@ export function HoloCard({
   role = "LINE VANGUARD",
   types = ["ground"],
   stats = { fire: 58, mob: 62, arm: 40 },
+  statList, // optional [{ k, v }] — overrides `stats` columns
+  portrait, // optional image URL — replaces the crest glyph
   level,
   locked = false,
   lockMsg = "LOCKED",
@@ -80,7 +82,11 @@ export function HoloCard({
 
         {/* portrait */}
         <div className="holo-portrait">
-          <span className={`crest ${crestColor}`}>{crest}</span>
+          {portrait ? (
+            <img className="holo-face" src={portrait} alt={`${name} portrait`} />
+          ) : (
+            <span className={`crest ${crestColor}`}>{crest}</span>
+          )}
           <span className="role-ic">{role}</span>
         </div>
 
@@ -95,18 +101,16 @@ export function HoloCard({
 
         {/* stats */}
         <div className="holo-stats">
-          <div className="holo-stat">
-            <div className="v">{stats.fire ?? "—"}</div>
-            <div className="k">FIRE</div>
-          </div>
-          <div className="holo-stat">
-            <div className="v">{stats.mob ?? "—"}</div>
-            <div className="k">MOB</div>
-          </div>
-          <div className="holo-stat">
-            <div className="v">{stats.arm ?? "—"}</div>
-            <div className="k">ARM</div>
-          </div>
+          {(statList ?? [
+            { k: "FIRE", v: stats.fire },
+            { k: "MOB", v: stats.mob },
+            { k: "ARM", v: stats.arm },
+          ]).map(({ k, v }) => (
+            <div className="holo-stat" key={k}>
+              <div className="v">{v ?? "—"}</div>
+              <div className="k">{k}</div>
+            </div>
+          ))}
         </div>
       </div>
 

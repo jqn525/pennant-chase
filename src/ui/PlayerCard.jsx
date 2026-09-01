@@ -6,11 +6,12 @@ import { useState } from "react";
 import { C, BAT_STATS, PIT_STATS, STAT_INFO, PLAYER_TRAITS, RARITY } from "../game/constants.js";
 import { fmt } from "../game/utils.js";
 import { btn, MONO, PIXEL, pixelPanel, pixelLegend } from "./styles.js";
-import { StarIcon, BallIcon } from "./Icons.jsx";
+import { StarIcon } from "./Icons.jsx";
 import { GEAR, GEAR_ART, gearArtUrl, gearBonus, ovr } from "../game/gear.js";
 import Modal from "./Modal.jsx";
 import { portraitUrl } from "./portrait.js";
 import { salaryOf, payRank } from "../game/salary.js";
+import { HoloCard } from "./HoloCard.jsx";
 
 const avg3 = (num, den) => (den ? (num / den).toFixed(3).replace(/^0/, "") : "—");
 const rarityColor = { 1: "#8A9A8F", 2: C.amber, 3: C.red };
@@ -78,24 +79,40 @@ export default function PlayerCard({ player, isOwn, onClose, money, league, stat
     ? [["AVG", avg3(s.h, s.ab)], ["HR", s.hr], ["RBI", s.rbi]]
     : [["ERA", s.outsP ? ((s.raP * 27) / s.outsP).toFixed(2) : "—"], ["K", s.kP], ["IP", s.outsP ? `${Math.floor(s.outsP / 3)}.${s.outsP % 3}` : "—"]]);
 
+  const o = ovr(player);
+  const rarity = isStar?.(player) ? "legendary" : o >= league.statBase + 6 ? "epic" : "common";
+  // Card face stats: season line when we track one, top skills otherwise
+  const cardStats = statCols
+    ? statCols.map(([k, v]) => ({ k, v }))
+    : [...keys].sort((a, b) => player[b] - player[a]).slice(0, 3)
+        .map((k) => ({ k: k.toUpperCase().slice(0, 4), v: player[k] }));
+  const cardTypes = [isBat ? "bat" : "pit", player.pos.toLowerCase(), ...(trait ? [trait.id] : [])];
+
   return (
     <Modal onClose={onClose}>
       <div style={{ background: FACE, border: `4px solid ${C.amber}`, borderRadius: 10, padding: "12px 12px 14px", fontFamily: MONO, color: C.cream, boxShadow: "0 12px 40px #000C" }}>
-        {/* Kicker + name */}
+        {/* Kicker */}
         <div style={{ textAlign: "center", fontFamily: PIXEL, fontSize: 8, color: C.creamDim, letterSpacing: 1 }}>
           PENNANT CHASE · PLAYER CARD
         </div>
-        <div style={{ textAlign: "center", fontFamily: PIXEL, fontSize: 16, color: C.amber, margin: "8px 0 2px", lineHeight: 1.4 }}>
-          {player.name.toUpperCase()}
+
+        {/* Holo card face */}
+        <div className="holo-perspective" style={{ display: "flex", justifyContent: "center", margin: "10px 0 4px" }}>
+          <HoloCard
+            name={player.name}
+            rarity={rarity}
+            portrait={portraitUrl(player)}
+            role={`${player.pos} · ${o.toFixed(0)} OVR`}
+            types={cardTypes}
+            statList={cardStats}
+            level={Math.round(o)}
+          />
         </div>
-        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 8, fontSize: 11, color: C.creamDim }}>
-          <span>{player.pos}</span>
-          {isStar?.(player) && <StarIcon size={12} />}
-          <span style={{ fontFamily: PIXEL, fontSize: 12, color: C.cream }}>{ovr(player).toFixed(0)} OVR</span>
-        </div>
-        <div style={{ textAlign: "center", fontSize: 10, color: C.creamDim, marginTop: 3 }}>
+
+        <div style={{ textAlign: "center", fontSize: 10, color: C.creamDim, marginTop: 6 }}>
           SALARY <span style={{ color: C.cream, fontWeight: 600 }}>${fmt(salaryOf(player))}/YR</span>
           {rivals && <span> · #{payRank(player, rivals)} {player.pos}</span>}
+          {isStar?.(player) && <span> · <StarIcon size={11} /></span>}
         </div>
         {trait && (
           <div style={{ textAlign: "center", fontSize: 10, color: C.creamDim, marginTop: 4 }}>
@@ -109,14 +126,6 @@ export default function PlayerCard({ player, isOwn, onClose, money, league, stat
             {trait.sit && <span style={{ color: C.dirt, letterSpacing: 1 }}> · RUNNERS ON</span>}
           </div>
         )}
-
-        {/* Portrait */}
-        <div style={{ display: "flex", justifyContent: "center", margin: "12px 0 2px" }}>
-          <div style={{ border: `3px solid ${C.amber}`, borderRadius: 6, overflow: "hidden", lineHeight: 0 }}>
-            <img src={portraitUrl(player)} alt={`${player.name} portrait`} width={96} height={96}
-              style={{ imageRendering: "pixelated", display: "block" }} />
-          </div>
-        </div>
 
         {/* SKILLS */}
         <div style={pixelPanel}>
@@ -237,25 +246,10 @@ export default function PlayerCard({ player, isOwn, onClose, money, league, stat
           })()}
         </div>
 
-        {/* STATS */}
-        {isOwn && statCols && (
-          <div style={pixelPanel}>
-            <div style={pixelLegend(FACE)}>STATS</div>
-            <span style={{ position: "absolute", top: 8, left: 8 }}><BallIcon size={11} color={C.creamDim} /></span>
-            <span style={{ position: "absolute", top: 8, right: 8 }}><BallIcon size={11} color={C.creamDim} /></span>
-            <div style={{ display: "flex", justifyContent: "space-around", textAlign: "center", padding: "2px 0 2px" }}>
-              {statCols.map(([label, v]) => (
-                <div key={label}>
-                  <div style={{ fontFamily: PIXEL, fontSize: 9, color: C.creamDim, marginBottom: 5 }}>{label}</div>
-                  <div style={{ fontFamily: PIXEL, fontSize: 15, color: C.cream }}>{v}</div>
-                </div>
-              ))}
-            </div>
-            {isBat && player.pull != null && (
-              <div style={{ fontSize: 9, color: C.creamDim, textAlign: "center", marginTop: 6 }}>
-                sprays: {Math.abs(player.pull) < 0.15 ? "everywhere" : player.pull < 0 ? `pulls left (${(Math.abs(player.pull) * 100).toFixed(0)}%)` : `slices right (${(player.pull * 100).toFixed(0)}%)`}
-              </div>
-            )}
+        {/* spray tendency (season stat columns now live on the holo card face) */}
+        {isBat && player.pull != null && (
+          <div style={{ fontSize: 9, color: C.creamDim, textAlign: "center", marginTop: 8 }}>
+            sprays: {Math.abs(player.pull) < 0.15 ? "everywhere" : player.pull < 0 ? `pulls left (${(Math.abs(player.pull) * 100).toFixed(0)}%)` : `slices right (${(player.pull * 100).toFixed(0)}%)`}
           </div>
         )}
 

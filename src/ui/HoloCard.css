@@ -193,6 +193,14 @@
 .c-violet { color: #a88cff; }
 .c-red { color: #ff7b6e; }
 .c-green { color: #7fe08a; }
+.holo-face {
+  width: 84px;
+  height: 84px;
+  border-radius: 8px;
+  image-rendering: pixelated;
+  border: 1px solid #ffffff22;
+  filter: drop-shadow(0 0 12px #66e0e855);
+}
 .role-ic {
   font-size: 8px;
   letter-spacing: 2px;
@@ -222,6 +230,8 @@
 .tt-air { background: #5fd4ec; }
 .tt-splash { background: #f6a94e; }
 .tt-cloak { background: #a06ef2; color: #f4edff; }
+.tt-bat { background: #f6a94e; }
+.tt-pit { background: #5fd4ec; }
 
 .holo-stats {
   position: relative;
