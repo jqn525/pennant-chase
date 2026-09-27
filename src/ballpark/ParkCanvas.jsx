@@ -216,6 +216,19 @@ export default function ParkCanvas({ g, speed, playsRef, teamName }) {
         } else trail = [];
       }
 
+      // ── mitt pop: a cream ring flashes at the plate when strike three buries ──
+      if (active && script.tl.mittPop != null) {
+        const k = (t - script.tl.mittPop) / 240;
+        if (k >= 0 && k < 1) {
+          const [cx, cy] = project(0, -2, 3);
+          const r = 2 + Math.round(k * 3);
+          for (let a = 0; a < 12; a++) {
+            if (k > 0.5 && a % 2) continue;
+            px(ctx, cx + Math.cos((a / 12) * Math.PI * 2) * r, cy + Math.sin((a / 12) * Math.PI * 2) * r * 0.6, PARK.chalk);
+          }
+        }
+      }
+
       // ── fireworks ──
       pendingFw = pendingFw.filter((at) => (now >= at ? (burst(now), false) : true));
       sparks = sparks.filter((p) => now - p.born < p.life);

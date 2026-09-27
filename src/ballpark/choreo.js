@@ -11,7 +11,7 @@ import { BASES, MOUND, POSITIONS, polar, fenceAt } from "./geometry.js";
 
 // Timing per speed mode. 1x ticks every 900 ms, 4x every 220 ms.
 export const MODES = {
-  1: { dur: 860, windup: 210, pitch: 120, full: true },
+  1: { dur: 860, windup: 190, pitch: 150, full: true },
   4: { dur: 205, windup: 0, pitch: 0, full: false },
 };
 
@@ -81,7 +81,14 @@ export function buildPlay(play, mode = 1) {
   out.contact = contact;
   out.pitchAt = 0;
   const plate = [0, 1, 3];
-  if (M.full) out.ball.push({ t0: release, t1: contact, from: [MOUND[0], MOUND[1] - 3, 7], to: plate, apex: 1 });
+  if (M.full) {
+    // The decisive pitch (pitch.js): where it crossed, and how it broke.
+    // Ball four sails on past the catcher; a wild one really travels.
+    const pt = play.pitch;
+    const end = pt ? [pt.px, pt.res === "wild" ? -14 : pt.res === "bb" ? -4 : 1, pt.py] : plate;
+    out.ball.push({ t0: release, t1: contact, from: [MOUND[0], MOUND[1] - 3, 6], to: end, pitch: pt?.kind || "fastball" });
+    if (pt?.res === "k") out.mittPop = contact;
+  }
 
   const type = play.type;
   const inPlay = ["OUT", "DP", "E", "HIT", "HR"].includes(type);
@@ -195,6 +202,14 @@ export function ballAt(segs, t) {
     const x = lerp(s.from[0], s.to[0], u);
     const d = lerp(s.from[1], s.to[1], u);
     let h = lerp(s.from[2], s.to[2], u);
+    if (s.pitch) {
+      // Late break: sliders bend across, curves hump then dive, changeups fade
+      const side = s.to[0] >= 0 ? 1 : -1;
+      const x2 = s.pitch === "slider" ? x - 2.4 * side * (u - u * u * u) : x;
+      if (s.pitch === "curveball") h += 3.2 * (u - u * u * u) + 0.8 * Math.sin(Math.PI * u);
+      else if (s.pitch === "changeup") h += 1.4 * (u - u * u);
+      return [x2, d, Math.max(0, h)];
+    }
     if (s.hops) h += Math.abs(Math.sin(Math.PI * u * s.hops)) * (s.apex || 3) * (1 - u);
     else if (s.apex) h += Math.sin(Math.PI * u) * s.apex;
     return [x, d, Math.max(0, h)];

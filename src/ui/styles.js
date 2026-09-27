@@ -43,7 +43,9 @@ export const tabBtn = (active) => ({
   borderRadius: "6px 6px 0 0", cursor: "pointer",
 });
 
-export const overlay = { position: "fixed", inset: 0, background: "#040B08E8", backdropFilter: "blur(7px)", display: "flex", alignItems: "flex-start", justifyContent: "center", padding: 14, zIndex: 50, overflowY: "auto" };
+// No backdrop-filter here: iOS WebKit mis-clips blurred fixed overlays with
+// inner scroll, leaving unpainted bands. The dim is near-opaque anyway.
+export const overlay = { position: "fixed", inset: 0, background: "#040B08E8", display: "flex", alignItems: "flex-start", justifyContent: "center", padding: 14, zIndex: 50, overflowY: "auto" };
 
 export const globalCss = `
   button:focus-visible { outline: 2px solid ${C.amber}; outline-offset: 2px; }

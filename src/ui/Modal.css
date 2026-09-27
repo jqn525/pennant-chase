@@ -1,11 +1,17 @@
 /* Centered when it fits, scrolls as one whole card when taller than the
    screen (margin:auto pattern). A short pop-up has no overflow, so there is
-   nothing to scroll; the page behind is locked either way. */
+   nothing to scroll; the page behind is locked either way.
+   Explicit dvh height: on iOS, a fixed inset:0 overlay can stop painting
+   short of the real bottom (leaving a bare band over the page) when the
+   body is scroll-locked — size it to the dynamic viewport instead. */
 .game-modal {
+  top: 0 !important;
+  height: 100vh;
+  height: 100dvh;
   overflow-y: auto !important;
   align-items: flex-start !important;
   overscroll-behavior: contain;
-  padding: max(16px, env(safe-area-inset-top)) 14px max(16px, env(safe-area-inset-bottom)) !important;
+  padding: max(16px, env(safe-area-inset-top)) 14px max(40px, calc(env(safe-area-inset-bottom) + 16px)) !important;
 }
 .game-modal__sheet {
   position: relative;

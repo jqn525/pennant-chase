@@ -1,8 +1,23 @@
+import { execSync } from "node:child_process";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 
+// Stamp the build with the commit it was cut from, so Settings can show it.
+// Falls back to "dev" when git isn't available (e.g. building from a zip).
+let commitHash = "dev";
+try {
+  commitHash = execSync("git rev-parse --short HEAD").toString().trim();
+} catch {
+  commitHash = "dev";
+}
+const buildDate = new Date().toISOString().slice(0, 10);
+
 export default defineConfig({
+  define: {
+    __COMMIT_HASH__: JSON.stringify(commitHash),
+    __BUILD_DATE__: JSON.stringify(buildDate),
+  },
   plugins: [
     react(),
     VitePWA({

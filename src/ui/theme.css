@@ -75,6 +75,8 @@ button:focus-visible, input:focus-visible, textarea:focus-visible {
 .page-screen {
   position: fixed;
   inset: 0;
+  height: 100vh;
+  height: 100dvh; /* same iOS fixed-overlay guard as .game-modal */
   z-index: 60;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
