@@ -2,12 +2,12 @@ import { useState } from "react";
 import { LEAGUE } from "../game/constants.js";
 import Panel from "./Panel.jsx";
 import StatTable from "./StatTable.jsx";
-import Field3D from "./Field3D.jsx";
+import ParkCanvas from "../ballpark/ParkCanvas.jsx";
 import "./BallparkTab.css";
 
 const EMPTY_LINE = { ab: 0, h: 0, d: 0, t: 0, hr: 0, bb: 0, k: 0, r: 0, rbi: 0 };
 
-export default function BallparkTab({ g, city, phase, playoffs, gameIndex, standings, rivals, log, speed, roster, onOpenCard, series }) {
+export default function BallparkTab({ g, city, phase, playoffs, gameIndex, standings, rivals, log, speed, roster, onOpenCard, series, playsRef }) {
   const [view, setView] = useState("radio");
   const box = g?.box;
   const team = city.nickname ?? city.name;
@@ -36,7 +36,7 @@ export default function BallparkTab({ g, city, phase, playoffs, gameIndex, stand
             <small>{g && !g.over ? `${g.outs} out${g.outs === 1 ? "" : "s"}` : g?.over ? "Final" : "Ready"}</small>
           </aside>
         </div>
-        <Field3D g={g} speed={speed} />
+        <ParkCanvas g={g} speed={speed} playsRef={playsRef} teamName={team} />
       </div>
 
       <section className="broadcast-sheet">

@@ -1,0 +1,21 @@
+.park-canvas {
+  display: block;
+  width: 100%;
+  aspect-ratio: 180 / 144;
+  max-height: 520px;
+  margin: 0 auto;
+  border-radius: 4px;
+  background: #060f0b;
+  image-rendering: pixelated;
+  box-shadow: inset 0 0 0 2px #06130d;
+}
+.park-legend {
+  display: flex;
+  gap: 14px;
+  margin-top: 7px;
+  color: var(--cream-dim);
+  font-size: 9px;
+  letter-spacing: 1px;
+}
+.park-legend span { display: flex; align-items: center; gap: 4px; }
+.park-legend i { width: 7px; height: 7px; }

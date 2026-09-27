@@ -48,7 +48,7 @@ export function resolveAtBat(batter, pitcher, fielders, fence, base = 5, sit = {
       // Foul territory
       if (launch !== "ground" && Math.random() < 0.22) {
         const f = Math.abs(spray) > 50 ? "into the seats — but the corner man tracks it down" : "popped up in foul ground";
-        return { type: "OUT", text: `lifts one ${deg}° ${side} — ${f}. Out.`, foulOut: true };
+        return { type: "OUT", text: `lifts one ${deg}° ${side} — ${f}. Out.`, foulOut: true, spray, launch };
       }
       continue; // foul ball, swing again
     }
@@ -89,16 +89,16 @@ export function resolveAtBat(batter, pitcher, fielders, fence, base = 5, sit = {
       // Even routine plays get booted now and then — sure hands boot fewer
       const errChance = clamp(0.025 - rel(fDef) * 0.0015, 0.004, 0.07);
       if (Math.random() < errChance) {
-        return { type: "E", text: `hits a ${desc} ${deg}° ${side} — ${fielder.name} (${fielderPos}) boots it! Error, everybody safe.`, spray, dist, launch };
+        return { type: "E", text: `hits a ${desc} ${deg}° ${side} — ${fielder.name} (${fielderPos}) boots it! Error, everybody safe.`, spray, dist, launch, fielderPos };
       }
       // Ground ball, force at second, fewer than two outs: chance to turn two
       if (launch === "ground" && infield && sit.forceOn1 && sit.outs < 2) {
         const dpChance = clamp(0.5 + rel(fDef) * 0.0075, 0.2, 0.8);
         if (Math.random() < dpChance) {
-          return { type: "DP", text: `raps a grounder ${deg}° ${side} — ${fielder.name} (${fielderPos}) starts it, around the horn, TWO!`, spray, dist, launch };
+          return { type: "DP", text: `raps a grounder ${deg}° ${side} — ${fielder.name} (${fielderPos}) starts it, around the horn, TWO!`, spray, dist, launch, fielderPos };
         }
       }
-      return { type: "OUT", text: `hits a ${desc} ${deg}° ${side}, ${dist.toFixed(0)} ft — ${fielder.name} (${fielderPos}) makes the play.`, spray, dist, launch };
+      return { type: "OUT", text: `hits a ${desc} ${deg}° ${side}, ${dist.toFixed(0)} ft — ${fielder.name} (${fielderPos}) makes the play.`, spray, dist, launch, fielderPos };
     }
 
     // It's a hit. Bases from depth + speed.
@@ -109,7 +109,7 @@ export function resolveAtBat(batter, pitcher, fielders, fence, base = 5, sit = {
     if (deep && Math.random() < 0.14 + spd * 0.01) bases = 3;
     else if ((gapper && Math.random() < 0.7) || Math.random() < 0.05 + spd * 0.005) bases = 2;
     const call = bases === 3 ? "it rolls to the wall — TRIPLE!" : bases === 2 ? `past ${fielder.name} — stand-up double.` : `drops in front of ${fielder.name} (${fielderPos}) for a single.`;
-    return { type: "HIT", bases, text: `laces a ${desc} ${deg}° ${side}, ${dist.toFixed(0)} ft — ${call}`, spray, dist, launch };
+    return { type: "HIT", bases, text: `laces a ${desc} ${deg}° ${side}, ${dist.toFixed(0)} ft — ${call}`, spray, dist, launch, fielderPos };
   }
-  return { type: "OUT", text: `fouls off a third straight pitch, then pops out to the catcher.` };
+  return { type: "OUT", text: `fouls off a third straight pitch, then pops out to the catcher.`, foulOut: true, spray: 0, launch: "fly", fielderPos: "C" };
 }

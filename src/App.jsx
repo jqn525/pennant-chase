@@ -187,6 +187,7 @@ export default function App() {
   const gameRef = useRef(SAVED?.liveGame ?? null);
   const ctxRef = useRef(SAVED?.liveContext ?? null);
   const restRef = useRef(0);      // beat between games at watchable speeds
+  const playsRef = useRef([]);    // structured plays for the animated ballpark
 
   // Fresh-state mirror so interval callbacks never read stale closures
   const S = useRef({});
@@ -538,9 +539,14 @@ export default function App() {
     stepAtBat(g, ctxRef.current, ev);
     ev.forEach((e) => {
       pushLog(e.text, e.kind, e.side, e.team);
-      if (e.kind === "hr") play.homer();
-      else if (e.text.includes("boots it")) play.thud();
-      else if (/laces|stand-up double|TRIPLE|drops in front/.test(e.text)) play.crack();
+      const t = e.play?.type;
+      if (e.play) {
+        playsRef.current.push(e.play);
+        if (playsRef.current.length > 4) playsRef.current.shift();
+      }
+      if (t === "HR" || e.kind === "hr") play.homer();
+      else if (t === "E") play.thud();
+      else if (t === "HIT") play.crack();
     });
     flushStats(g);
     if (g.over) settle(g);
@@ -884,7 +890,7 @@ export default function App() {
             g={g} city={city} year={year} phase={phase} playoffs={playoffs}
             gameIndex={gameIndex} standings={standings} rivals={rivals}
             log={log} speed={speed} roster={roster}
-            onOpenCard={openCard} series={series}
+            onOpenCard={openCard} series={series} playsRef={playsRef}
           />
         )}
 

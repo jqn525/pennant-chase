@@ -24,7 +24,7 @@ export const newGame = (opp, home, oppIdx) => ({
 // ctx is built once per game: { batters, sp, rp, opp, fence, statBase, innings, cityName }
 export function stepAtBat(g, ctx, events) {
   if (g.over) return;
-  const emit = (text, kind = "play", side = null, team = null) => events.push({ text, kind, side, team });
+  const emit = (text, kind = "play", side = null, team = null, play = null) => events.push({ text, kind, side, team, play });
 
   // Visitors bat the top. We bat bottom when we're home.
   const weBat = g.half === (g.home ? "bottom" : "top");
@@ -64,6 +64,10 @@ export function stepAtBat(g, ctx, events) {
   // Consumes the moment — the at-bat continues next tick.
   if (g.bases.some(Boolean) && Math.random() < clamp(0.018 - (pitcher.control - ctx.statBase) * 0.001, 0.004, 0.05)) {
     const third = g.bases[2];
+    const wp = {
+      type: "WP", weBat, runs: third ? 1 : 0, batterId: batter.id, on: g.bases.map((r) => r?.id ?? null),
+      moves: g.bases.flatMap((r, i) => (r ? [{ from: i + 1, to: i + 2 }] : [])),
+    };
     if (third) {
       weBat ? g.us++ : g.them++;
       if (track) acc(third.id, "r");
@@ -71,7 +75,7 @@ export function stepAtBat(g, ctx, events) {
       gb(third.id, "r");
     }
     g.bases = [null, g.bases[0], g.bases[1]];
-    emit(`Wild pitch! It skips to the backstop and the runners move up${third ? " — a run scores!" : "."}`, third ? "hr" : "play", side, teamName);
+    emit(`Wild pitch! It skips to the backstop and the runners move up${third ? " — a run scores!" : "."}`, third ? "hr" : "play", side, teamName, wp);
     // a wild pitch can end the game on a walk-off
     if (g.half === "bottom" && g.inning >= ctx.innings && (g.home ? g.us : g.them) > (g.home ? g.them : g.us)) finish(g);
     return;
@@ -83,6 +87,14 @@ export function stepAtBat(g, ctx, events) {
 
   const out = resolveAtBat(batter, pitcher, fielders, ctx.fence, ctx.statBase, { forceOn1: !!g.bases[0], outs: g.outs, runnersOn: g.bases.some(Boolean) });
   const who = `${batter.name} (${batter.pos})`;
+  // Structured play for the animated ballpark: what happened and who moved where
+  const scoreBefore = weBat ? g.us : g.them;
+  const on = g.bases.map(Boolean);
+  const play = {
+    type: out.type, bases: out.bases || 0, weBat, spray: out.spray ?? null, dist: out.dist ?? null,
+    launch: out.launch ?? null, fielderPos: out.fielderPos ?? null, foulOut: !!out.foulOut,
+    moves: playMoves(out, on), runs: 0, batterId: batter.id, on: g.bases.map((r) => r?.id ?? null),
+  };
 
   // Field view: record where the ball landed
   if (out.dist != null && g.balls.length < 100) {
@@ -95,7 +107,7 @@ export function stepAtBat(g, ctx, events) {
     if (trackP) { acc(pitcher.id, "kP"); acc(pitcher.id, "outsP"); }
     gb(batter.id, "ab"); gb(batter.id, "k");
     g.outs++;
-    emit(`${who} ${out.text}`, weBat ? "out" : "play", side, teamName);
+    emit(`${who} ${out.text}`, weBat ? "out" : "play", side, teamName, play);
   } else if (out.type === "BB") {
     if (track) acc(batter.id, "bb");
     if (trackP) acc(pitcher.id, "bbP");
@@ -111,13 +123,13 @@ export function stepAtBat(g, ctx, events) {
     if (g.bases[0] && g.bases[1]) g.bases[2] = g.bases[2] || g.bases[1];
     if (g.bases[0]) g.bases[1] = g.bases[1] || g.bases[0];
     g.bases[0] = batter;
-    emit(`${who} ${out.text}`, "play", side, teamName);
+    emit(`${who} ${out.text}`, "play", side, teamName, play);
   } else if (out.type === "OUT") {
     if (track) acc(batter.id, "ab");
     if (trackP) acc(pitcher.id, "outsP");
     gb(batter.id, "ab");
     g.outs++;
-    emit(`${who} ${out.text}`, weBat ? "out" : "play", side, teamName);
+    emit(`${who} ${out.text}`, weBat ? "out" : "play", side, teamName, play);
   } else if (out.type === "DP") {
     // ground ball double play: batter and the runner on first are both out
     if (track) acc(batter.id, "ab");
@@ -125,7 +137,7 @@ export function stepAtBat(g, ctx, events) {
     gb(batter.id, "ab");
     g.outs += 2;
     g.bases[0] = null;
-    emit(`${who} ${out.text}`, weBat ? "out" : "play", side, teamName);
+    emit(`${who} ${out.text}`, weBat ? "out" : "play", side, teamName, play);
   } else if (out.type === "E") {
     // booted ball: batter safe, everyone moves up a base, no hit awarded
     if (track) acc(batter.id, "ab");
@@ -139,7 +151,7 @@ export function stepAtBat(g, ctx, events) {
       gb(third.id, "r");
     }
     g.bases = [batter, g.bases[0], g.bases[1]];
-    emit(`${who} ${out.text}${third ? " A run scores!" : ""}`, "play", side, teamName);
+    emit(`${who} ${out.text}${third ? " A run scores!" : ""}`, "play", side, teamName, play);
   } else {
     // HR or HIT
     if (track) { acc(batter.id, "ab"); acc(batter.id, "h"); }
@@ -184,9 +196,10 @@ export function stepAtBat(g, ctx, events) {
       weBat ? (g.us += runs) : (g.them += runs);
       if (trackP) acc(pitcher.id, "raP", runs);
     }
-    emit(`${who} ${out.text}${runs ? ` ${runs} run${runs > 1 ? "s" : ""} score${runs > 1 ? "" : "s"}!` : ""}`, out.type === "HR" ? "hr" : "play", side, teamName);
+    emit(`${who} ${out.text}${runs ? ` ${runs} run${runs > 1 ? "s" : ""} score${runs > 1 ? "" : "s"}!` : ""}`, out.type === "HR" ? "hr" : "play", side, teamName, play);
   }
 
+  play.runs = (weBat ? g.us : g.them) - scoreBefore;
   if (weBat) g.usIdx = (idx + 1) % 9; else g.themIdx = (idx + 1) % 9;
 
   const homeScore = g.home ? g.us : g.them;
@@ -215,6 +228,32 @@ export function stepAtBat(g, ctx, events) {
       g.half = "top";
       emit(g.inning > ctx.innings ? `Tied after regulation — extra innings!` : `End ${g.inning - 1}. Heading to the ${g.inning}${["st", "nd", "rd"][g.inning - 1] || "th"}.`, "sys");
     }
+  }
+}
+
+// Runner movement for a resolved at-bat. from/to are base numbers:
+// 0 = batter at home, 1-3 = bases, 4 = scored. `out` marks the runner put out.
+export function playMoves(out, on) {
+  const runners = on.flatMap((o, i) => (o ? [i + 1] : []));
+  switch (out.type) {
+    case "BB": {
+      const m = [{ from: 0, to: 1 }];
+      let force = 1;
+      while (force <= 3 && on[force - 1]) { m.push({ from: force, to: force + 1 }); force++; }
+      return m;
+    }
+    case "OUT":
+      return out.launch === "ground" && !out.foulOut ? [{ from: 0, to: 1, out: true }] : [];
+    case "DP":
+      return [{ from: 0, to: 1, out: true }, { from: 1, to: 2, out: true }];
+    case "E":
+      return [{ from: 0, to: 1 }, ...runners.map((b) => ({ from: b, to: b + 1 }))];
+    case "HR":
+      return [{ from: 0, to: 4 }, ...runners.map((b) => ({ from: b, to: 4 }))];
+    case "HIT":
+      return [{ from: 0, to: out.bases }, ...runners.map((b) => ({ from: b, to: Math.min(4, b + out.bases) }))];
+    default:
+      return [];
   }
 }
 
