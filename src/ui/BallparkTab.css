@@ -50,7 +50,7 @@
 .radio-feed__line--sys { color: var(--cream-dim); font-style: italic; }
 .box-score-stack { color: var(--cream); }
 .league-table { position: relative; z-index: 1; }
-.league-table > div { display: grid; grid-template-columns: 28px 1fr auto; gap: 8px; padding: 9px 6px; border-bottom: 1px solid #3e644c66; align-items: center; }
+.league-table > div { display: grid; grid-template-columns: 28px 1fr auto; gap: 8px; padding: 9px 6px; border-bottom: 1px solid #3e644c66; align-items: center; color: var(--cream); }
 .league-table > div.is-us { color: var(--amber); }
 .league-table b { color: var(--cream-dim); font-family: var(--font-data); }
 .league-table span { overflow: hidden; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }

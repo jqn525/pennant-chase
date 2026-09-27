@@ -238,11 +238,41 @@ export default function Field3D({ g, speed }) {
     trail.count = 0;
     scene.add(trail);
 
+    // The pitch: a smaller ball on the short mound-to-plate trip, plus a
+    // cream ring that pops at the plate when one buries into the mitt
+    const pitchBall = new THREE.Mesh(
+      new THREE.SphereGeometry(2.1, 10, 8),
+      new THREE.MeshBasicMaterial({ color: 0xf5edda, transparent: true, opacity: 1 }),
+    );
+    pitchBall.visible = false;
+    scene.add(pitchBall);
+    // The pitch draws its path — that's how a bender's break reads from the stands
+    const PTRAIL = 12;
+    const pitchTrail = new THREE.InstancedMesh(
+      new THREE.SphereGeometry(0.95, 6, 5),
+      new THREE.MeshBasicMaterial({ color: 0xf5edda, transparent: true, opacity: 0.45 }),
+      PTRAIL,
+    );
+    pitchTrail.count = 0;
+    scene.add(pitchTrail);
+    const mittPop = new THREE.Mesh(
+      new THREE.RingGeometry(1.2, 2.2, 20),
+      new THREE.MeshBasicMaterial({ color: 0xf5edda, transparent: true, opacity: 0, side: THREE.DoubleSide }),
+    );
+    mittPop.position.set(0, 2.5, 2);
+    scene.add(mittPop);
+    const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+
     const M = new THREE.Matrix4();
     const CLR = new THREE.Color();
     let flight = null; // {x, z, apex, color, start, dur}
-    let seenG = null, seenBalls = 0;
+    let pitchF = null; // {kind, px, py, res, side, start, dur}
+    let pop = null; // mitt-pop flash start time
+    let seenG = null, seenBalls = 0, seenPitch = 0;
     let raf;
+
+    // Pitch flight time at 1×: heat gets on you, benders take the long way
+    const PITCH_DUR = { fastball: 300, slider: 360, changeup: 430, curveball: 460 };
 
     const resize = () => {
       const w = mount.clientWidth;
@@ -264,9 +294,15 @@ export default function Field3D({ g, speed }) {
       if (game !== seenG) {
         seenG = game;
         seenBalls = game?.balls?.length ?? 0;
+        seenPitch = game?.pitch?.n ?? 0;
         flight = null;
+        pitchF = null;
+        pop = null;
         ball.visible = false;
+        pitchBall.visible = false;
+        mittPop.material.opacity = 0;
         trail.count = 0;
+        pitchTrail.count = 0;
       }
 
       const balls = game?.balls ?? [];
@@ -283,7 +319,21 @@ export default function Field3D({ g, speed }) {
       dots.instanceMatrix.needsUpdate = true;
       if (dots.instanceColor) dots.instanceColor.needsUpdate = true;
 
-      // Launch a flight for each newly recorded ball
+      // A new pitch leaves the hand (1× only — at 4× the eye can't follow it,
+      // and reduced-motion users get the outcome without the theater)
+      const pitch = game?.pitch;
+      if (pitch && pitch.n !== seenPitch) {
+        seenPitch = pitch.n;
+        if (speedRef.current !== 4 && !reducedMotion) {
+          const dur = PITCH_DUR[pitch.kind] * (pitch.res === "play" ? 0.8 : 1) * (pitch.res === "wild" ? 1.15 : 1);
+          pitchF = { ...pitch, side: pitch.px >= 0 ? 1 : -1, start: now, dur };
+          pop = null;
+          pitchTrail.count = 0;
+        }
+      }
+
+      // Launch a flight for each newly recorded ball; if the pitch is still
+      // on its way in, the swing waits for it to arrive
       if (balls.length > seenBalls) {
         const b = balls[balls.length - 1];
         const [x, z] = spot(b.spray, b.dist);
@@ -291,15 +341,66 @@ export default function Field3D({ g, speed }) {
         flight = {
           x, z, apex,
           color: BALL_COLORS[b.t] ?? BALL_COLORS.out,
-          start: now,
-          dur: speedRef.current === 4 ? 210 : b.launch === "ground" ? 460 : 700,
+          start: pitchF && pitchF.res === "play" ? pitchF.start + pitchF.dur : now,
+          dur: speedRef.current === 4 ? 210 : b.launch === "ground" ? 380 : b.launch === "liner" ? 420 : 550,
         };
         seenBalls = balls.length;
         trail.count = 0;
       }
 
+      // Animate the pitch: mound to plate, break arriving late
+      if (pitchF) {
+        const t = Math.min(1, (now - pitchF.start) / pitchF.dur);
+        const { kind, px, py, res, side } = pitchF;
+        // A ball four sails on past the catcher; a wild one really travels
+        const zEnd = res === "wild" ? 6 : res === "bb" ? 3 : 0.5;
+        const pz = -60.5 + (60.5 + zEnd) * t;
+        let x, y;
+        if (kind === "slider") {
+          const B = 2.4 * side; // starts off the corner, bends back across
+          x = (px - B) * t + B * t * t * t;
+          y = 5.4 + (py - 5.4) * t;
+        } else if (kind === "curveball") {
+          x = px * t;
+          y = 6.2 + (py + 3.2 - 6.2) * t - 3.2 * t * t * t + 0.8 * Math.sin(Math.PI * t);
+        } else if (kind === "changeup") {
+          x = px * t;
+          y = 5.5 + (py + 1.4 - 5.5) * t - 1.4 * t * t;
+        } else {
+          x = px * t; // fastball: what you see is what beats you
+          y = 5.5 + (py - 5.5) * t;
+        }
+        pitchBall.position.set(x, Math.max(0.8, y), pz);
+        pitchBall.material.opacity = res !== "play" && t > 0.85 ? (1 - t) / 0.15 : 1;
+        pitchBall.visible = true;
+        const slot = Math.min(PTRAIL - 1, (t * PTRAIL) | 0);
+        if (slot >= pitchTrail.count) {
+          M.makeTranslation(x, Math.max(0.8, y), pz);
+          pitchTrail.setMatrixAt(slot, M);
+          pitchTrail.count = slot + 1;
+          pitchTrail.instanceMatrix.needsUpdate = true;
+        }
+        if (t >= 1) {
+          if (res === "k") pop = now; // buried in the mitt
+          pitchF = null;
+          pitchBall.visible = false;
+          pitchTrail.count = 0;
+        }
+      }
+
+      // Mitt pop: a cream ring flashes at the plate on a called third strike
+      if (pop != null) {
+        const k = (now - pop) / 240;
+        if (k >= 1) { pop = null; mittPop.material.opacity = 0; }
+        else {
+          mittPop.material.opacity = 0.75 * (1 - k);
+          mittPop.scale.setScalar(1 + k * 1.6);
+          mittPop.lookAt(camera.position);
+        }
+      }
+
       // Animate the flight: ballistic arc from the plate to the landing spot
-      if (flight) {
+      if (flight && now >= flight.start) {
         const t = Math.min(1, (now - flight.start) / flight.dur);
         const px = flight.x * t;
         const pz = flight.z * t;

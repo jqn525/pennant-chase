@@ -84,61 +84,71 @@ export const LEAGUE = {
   playoffTeams: 4,
   fenceCorner: 330,
   fenceCenter: 410,
-  payWin: 60,    // legacy anchor: gear prices key off this
-  fansPerWin: 8, // + 2 per HR, streaks multiply it
+  fansPerWin: 40, // flat gain per win; streaks multiply it
+  fansPerHR: 15,  // extra flat gain per homer hit
 };
 
 export const ECON = {
-  startMoney: 750,
-  startFans: 25,
+  startMoney: 3000,
+  startFans: 1250,
   // Ticket sales: attendance = fans × (30% cold … 60% hot, by last-10 form),
   // capped; playoff games sell out. Gate = base + attendance × ticketPrice.
-  ticketPrice: 0.11,
-  gateWinBase: 45,   // winners sell concessions
-  gateLossBase: 15,  // the diehards' floor
-  attCap: 2500,      // biggest crowd the old yard can hold
+  // At watchable speeds the ticket gate drips in half-inning by half-inning.
+  ticketPrice: 0.30,
+  gateWinBase: 150,  // winners sell concessions
+  gateLossBase: 50,  // the diehards' floor
+  attCap: 8000,      // biggest crowd the old yard can hold
   // Hot streaks: 3+ straight wins draw bandwagon fans, up to double growth
   streakStep: 0.15,
   streakMax: 2,
-  playoffWinPay: 500,     // per playoff game won
-  semisSeriesPay: 1500,   // winning a semifinal series
-  cupPay: 10000,          // winning the Pennant Cup
-  cupFans: 500,
-  playoffFans: 150,       // made the playoffs (missed = -5% fans)
+  fanWinPct: 0.01,        // every win also grows the base by 1% — empires compound
+  playoffWinPay: 2000,    // per playoff game won
+  semisSeriesPay: 6000,   // winning a semifinal series
+  cupPay: 40000,          // winning the Pennant Cup
+  cupFansPct: 0.25,       // a Cup swells the fan base by a quarter
+  playoffFansPct: 0.10,   // made the playoffs (missed = -5% fans)
   offlineRate: 1.0,       // tunable damper on away income
   trainBase: 6,           // training: cost per +1 = trainBase × 1.5^((stat−41)/4)
+  eliteAt: 78,            // above this, every point also pays the surcharge…
+  eliteRamp: 1.15,        // …× eliteRamp^(stat − eliteAt). Greatness is expensive.
 };
 
-// Stadium upgrades: four tracks, three tiers each, gated by money + fan milestones.
+// Franchise players: only tagged players train past the development cap.
+// You start with `slots` tags; every Pennant Cup adds one slot and lifts the
+// cap by devPerCup. A tag stays on the man until he leaves the roster.
+export const FRANCHISE = { slots: 2, devCap: 76, devPerCup: 2 };
+
+// Stadium upgrades: four tracks, tiered, gated by money + fan milestones.
 // value semantics — parking: attendance-rate bonus; seats: new attendance cap;
 // conc: gate multiplier bonus; lights: win fan-growth multiplier.
 export const STADIUM = [
   {
     id: "parking", title: "PARKING", tiers: [
-      { name: "Gravel Lot", cost: 1500, fans: 300, label: "+5% attendance", value: 0.05 },
-      { name: "Paved Lot", cost: 4000, fans: 1000, label: "+10% attendance", value: 0.10 },
-      { name: "Parking Garage", cost: 10000, fans: 2500, label: "+15% attendance", value: 0.15 },
+      { name: "Gravel Lot", cost: 2500, fans: 2500, label: "+5% attendance", value: 0.05 },
+      { name: "Paved Lot", cost: 10000, fans: 12000, label: "+10% attendance", value: 0.10 },
+      { name: "Parking Garage", cost: 30000, fans: 50000, label: "+15% attendance", value: 0.15 },
     ],
   },
   {
     id: "seats", title: "SEATS", tiers: [
-      { name: "Bleachers", cost: 3000, fans: 2000, label: "holds 4,000", value: 4000 },
-      { name: "Grandstand", cost: 8000, fans: 3500, label: "holds 6,500", value: 6500 },
-      { name: "Upper Deck", cost: 20000, fans: 6000, label: "holds 10,000", value: 10000 },
+      { name: "Bleachers", cost: 4000, fans: 10000, label: "holds 15,000", value: 15000 },
+      { name: "Grandstand", cost: 12000, fans: 30000, label: "holds 25,000", value: 25000 },
+      { name: "Upper Deck", cost: 35000, fans: 75000, label: "holds 40,000", value: 40000 },
+      { name: "Second Deck", cost: 100000, fans: 150000, label: "holds 60,000", value: 60000 },
     ],
   },
   {
     id: "conc", title: "CONCESSIONS", tiers: [
-      { name: "Hot Dog Cart", cost: 1200, fans: 200, label: "+15% gate", value: 0.15 },
-      { name: "Food Court", cost: 3500, fans: 800, label: "+30% gate", value: 0.30 },
-      { name: "Restaurant Row", cost: 9000, fans: 2000, label: "+45% gate", value: 0.45 },
+      { name: "Hot Dog Cart", cost: 2000, fans: 2000, label: "+15% gate", value: 0.15 },
+      { name: "Food Court", cost: 6000, fans: 8000, label: "+30% gate", value: 0.30 },
+      { name: "Restaurant Row", cost: 18000, fans: 25000, label: "+45% gate", value: 0.45 },
     ],
   },
   {
     id: "lights", title: "LIGHTS", tiers: [
-      { name: "Floodlights", cost: 1000, fans: 150, label: "+10% fan growth", value: 0.10 },
-      { name: "Full Rig", cost: 3000, fans: 600, label: "+25% fan growth", value: 0.25 },
-      { name: "Prime Time", cost: 8000, fans: 1500, label: "+50% fan growth", value: 0.50 },
+      { name: "Floodlights", cost: 1500, fans: 1500, label: "+10% fan growth", value: 0.10 },
+      { name: "Full Rig", cost: 5000, fans: 6000, label: "+25% fan growth", value: 0.25 },
+      { name: "Prime Time", cost: 14000, fans: 20000, label: "+50% fan growth", value: 0.50 },
     ],
   },
 ];
@@ -149,16 +159,16 @@ export const STADIUM = [
 export const REVENUE = [
   {
     id: "merch", title: "MERCH", tiers: [
-      { name: "Merch Stand", cost: 150, fans: 200, label: "jersey sales · away 8h", value: 1, offline: 8 },
-      { name: "Team Store", cost: 1500, fans: 1000, label: "sales +75% · away 12h", value: 1.75, offline: 12 },
-      { name: "Flagship Store", cost: 6000, fans: 3000, label: "sales +150% · away 24h", value: 2.5, offline: 24 },
+      { name: "Merch Stand", cost: 250, fans: 1500, label: "jersey sales · away 8h", value: 1, offline: 8 },
+      { name: "Team Store", cost: 2500, fans: 8000, label: "sales +75% · away 12h", value: 1.75, offline: 12 },
+      { name: "Flagship Store", cost: 10000, fans: 30000, label: "sales +150% · away 24h", value: 2.5, offline: 24 },
     ],
   },
   {
     id: "tv", title: "MEDIA", tiers: [
-      { name: "Regional TV", cost: 2500, fans: 2500, label: "sales ×2", value: 2 },
-      { name: "National TV", cost: 8000, fans: 5000, label: "sales ×3", value: 3 },
-      { name: "Coast-to-Coast", cost: 20000, fans: 8000, label: "sales ×4", value: 4 },
+      { name: "Regional TV", cost: 4000, fans: 6000, label: "sales ×2", value: 2 },
+      { name: "National TV", cost: 14000, fans: 20000, label: "sales ×3", value: 3 },
+      { name: "Coast-to-Coast", cost: 40000, fans: 60000, label: "sales ×4", value: 4 },
     ],
   },
 ];
@@ -188,7 +198,7 @@ export const stadiumFx = (levels = {}) => {
 // +CREEP.cellarBonus extra for the last-place club. Standing still = falling behind.
 // Rubber band: rivals trailing the PLAYER's rating gain up to rubberCap extra
 // points (rubber × rating gap), so a dynasty gets hunted down within a few years.
-export const CREEP = { base: 8, cellarBonus: 4, rubber: 2, rubberCap: 30, bump: 4 };
+export const CREEP = { base: 12, cellarBonus: 6, rubber: 2, rubberCap: 40, bump: 4 };
 
 // One per player — a defined percentage shift on his ratings, like gear.
 // `mods` bake into effective stats everywhere; `sit` applies with runners on.
@@ -208,9 +218,9 @@ export const PLAYER_TRAITS = [
 
 // Gear rarities: shipment weights and price anchors
 export const RARITY = {
-  1: { name: "COMMON", weight: 65, cost: 300, pct: 5 },
-  2: { name: "RARE", weight: 28, cost: 900, pct: 10 },
-  3: { name: "LEGENDARY", weight: 7, cost: 2100, pct: 15 },
+  1: { name: "COMMON", weight: 65, cost: 500, pct: 5 },
+  2: { name: "RARE", weight: 28, cost: 1500, pct: 10 },
+  3: { name: "LEGENDARY", weight: 7, cost: 3500, pct: 15 },
 };
 
 // Salaries: pay grows steeply with effective OVR (×growth10 per 10 points
@@ -218,18 +228,18 @@ export const RARITY = {
 // Payroll drips out per regular-season game; the winter luxury tax bills the
 // overage above the cap, escalating for consecutive years over.
 export const SALARY = {
-  base: 200,        // $/season at league-average OVR — a fresh club breaks even
+  base: 400,        // $/season at league-average OVR — a fresh club breaks even
   growth10: 3,      // salary multiplies by this per +10 OVR
-  cap: 20000,       // team payroll line — starts to bite around an all-85 roster
+  cap: 40000,       // team payroll line — starts to bite around an all-85 roster
   taxStep: 0.5,     // +50% tax rate per consecutive year over
   posMult: { SP: 1.5, RP: 0.7, SS: 1.15, CF: 1.15, C: 0.85 },
 };
 
 // Trades: deterministic pricing — rivals charge a premium and buy at a discount
-export const TRADE = { fee: 200, buyPremium: 1.6, sellDiscount: 0.5, valuePerOvr: 225 };
+export const TRADE = { fee: 300, buyPremium: 1.6, sellDiscount: 0.5, valuePerOvr: 400 };
 
 // Rookie draft: class size and signing-bonus scaling
-export const DRAFT = { classSize: 5, signBase: 400, signPerPot: 38 };
+export const DRAFT = { classSize: 5, signBase: 700, signPerPot: 65 };
 
 export const POSITIONS = ["C", "1B", "2B", "3B", "SS", "LF", "CF", "RF", "DH"];
 export const BAT_STATS = ["contact", "power", "eye", "speed", "defense"];

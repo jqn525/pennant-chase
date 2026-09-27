@@ -8,7 +8,16 @@ import StatTable from "./StatTable.jsx";
 import { ovr, eff } from "../game/gear.js";
 import { portraitUrl } from "./portrait.js";
 import { teamPayroll, salaryOf } from "../game/salary.js";
+import { CARD_TIERS, printedTier, nextPrint } from "../game/cards.js";
+import { LOADOUTS } from "../game/lineup.js";
 import { fmt } from "../game/utils.js";
+
+// Ink for the little rarity chip on a roster row
+const CHIP = {
+  uncommon: { color: C.grass, border: `1px solid ${C.grass}88` },
+  rare: { color: "#9fd0ff", border: "1px solid #9fd0ff99" },
+  unique: { color: "#f5d27a", border: "1px solid #f5d27a" },
+};
 
 const STAT_ABBR = { contact: "CON", power: "POW", eye: "EYE", speed: "SPD", defense: "DEF", stuff: "STU", control: "CTL", stamina: "STA" };
 
@@ -61,7 +70,7 @@ const ops = (s) => (s.ab ? ((s.h + s.bb) / (s.ab + s.bb) + (s.h + s.d + 2 * s.t 
 const ip = (s) => (s.outsP ? `${Math.floor(s.outsP / 3)}.${s.outsP % 3}` : "—");
 const era = (s) => (s.outsP ? ((s.raP * 27) / s.outsP).toFixed(2) : "—");
 
-export default function RosterTab({ roster, stat, isStar, onMoveBatter, onAutoLineup, onOpenCard }) {
+export default function RosterTab({ roster, stat, isStar, onMoveBatter, loadout, onChooseLoadout, onOpenCard }) {
   const arrowBtn = {
     flex: 1, width: 34, background: "transparent", border: `1px solid ${C.greenLine}`,
     borderRadius: 4, color: C.creamDim, fontSize: 10, cursor: "pointer", padding: 0,
@@ -80,6 +89,13 @@ export default function RosterTab({ roster, stat, isStar, onMoveBatter, onAutoLi
             <span style={{ width: 26, color: C.creamDim }}>{p.pos}</span>
             <span style={{ fontWeight: 600, flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {p.name}{isStar(p) && <StarIcon />}
+              {p.franchise && <span style={{ fontSize: 8, color: C.amber, border: `1px solid ${C.amber}`, borderRadius: 3, padding: "0 3px", marginLeft: 4, verticalAlign: "middle", letterSpacing: 1 }}>F</span>}
+              {printedTier(p) > 0 && (
+                <span style={{ fontSize: 8, marginLeft: 4, verticalAlign: "middle", letterSpacing: 1, borderRadius: 3, padding: "0 3px", ...CHIP[CARD_TIERS[printedTier(p)].key] }}>
+                  {CARD_TIERS[printedTier(p)].key === "unique" ? "1/1" : CARD_TIERS[printedTier(p)].name[0]}
+                </span>
+              )}
+              {nextPrint(p) && <span title="A better card is ready to print" style={{ marginLeft: 4, color: C.amber, fontSize: 12, verticalAlign: "middle" }}>•</span>}
             </span>
             {trait && <span style={{ fontSize: 8, letterSpacing: 1, color: C.amber, border: `1px solid ${C.amber}44`, borderRadius: 3, padding: "1px 4px", whiteSpace: "nowrap" }}>{trait.label.toUpperCase()}</span>}
             <span style={{ fontSize: 10, color: C.amber }}>OVR {ovr(p).toFixed(0)}</span>
@@ -105,12 +121,24 @@ export default function RosterTab({ roster, stat, isStar, onMoveBatter, onAutoLi
     <div>
       <TeamRatings roster={roster} />
       <Panel title="BATTING ORDER">
-        <div style={{ display: "flex", alignItems: "center", marginBottom: 8, gap: 8 }}>
-          <span style={{ flex: 1 }} />
-          <button onClick={onAutoLineup}
-            style={{ ...btn(true), marginLeft: "auto", fontSize: 10, letterSpacing: 1, padding: "5px 8px" }}>
-            AUTO-SET ORDER
-          </button>
+        {/* Loadouts: tap a philosophy and the skipper fills the card */}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 4 }}>
+          {LOADOUTS.map((l) => {
+            const on = loadout === l.id;
+            return (
+              <button key={l.id} onClick={() => onChooseLoadout(l.id)}
+                style={{
+                  fontFamily: PIXEL, fontSize: 7, letterSpacing: 1, padding: "6px 7px", cursor: "pointer",
+                  borderRadius: 4, border: `1px solid ${on ? C.amber : C.greenLine}`,
+                  background: on ? "#3A2E10" : "transparent", color: on ? C.amber : C.creamDim,
+                }}>
+                {l.name}
+              </button>
+            );
+          })}
+        </div>
+        <div style={{ fontSize: 10, color: C.creamDim, marginBottom: 8 }}>
+          {loadout ? LOADOUTS.find((l) => l.id === loadout)?.blurb : "Custom order — set with the arrows, or pick a philosophy."}
         </div>
         {roster.batters.map((p, i) => row(p, i + 1))}
         {[roster.sp, roster.rp].map((p) => row(p, null))}

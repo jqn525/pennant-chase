@@ -1,3 +1,4 @@
+/* global __COMMIT_HASH__, __BUILD_DATE__ */
 import { useState } from "react";
 import { LEAGUE } from "../game/constants.js";
 import { fmt } from "../game/utils.js";
@@ -111,6 +112,13 @@ export default function Settings({ allTime: at, trophies, history, phase, sound,
 
             <div className="settings-note">
               Auto-saves on this device. Keep a backup code somewhere safe — pasting it back brings the whole franchise back.
+            </div>
+            <div className="settings-version">
+              {__COMMIT_HASH__ === "dev"
+                ? <span>Version dev · {__BUILD_DATE__}</span>
+                : <a href={`https://github.com/jqn525/pennant-chase/commit/${__COMMIT_HASH__}`} target="_blank" rel="noreferrer">
+                    Version {__COMMIT_HASH__} · {__BUILD_DATE__}
+                  </a>}
             </div>
           </div>
         ) : (
