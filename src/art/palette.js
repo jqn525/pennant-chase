@@ -34,6 +34,17 @@ export const PAL = {
   G: "#132b1f",
   L: "#2c5540",
   l: "#e9a431",
+  // card photo scenes (day game)
+  q: "#8fc2dc", // sky
+  Q: "#b9dbe6", // sky haze
+  v: "#4c9a4c", // grass
+  V: "#3e8741", // grass stripe
+  d: "#b9814e", // dirt
+  D: "#9a673b", // dirt shade
+  o: "#1d3c2c", // outfield wall
+  z: "#2c3a33", // stands
+  u: "#f5edda", // chalk / bases (never swapped)
+  i: "#6f8ea8", // crowd blue
   // gear accents
   x: "#b9b49f",
   X: "#7d7a6a",

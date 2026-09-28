@@ -88,15 +88,15 @@
     linear-gradient(180deg, #eef3f7 0 56%, #cfe3c4 56% 78%, #e6cfae 78%);
 }
 /* The sprite IS the photograph — crisp and full-bleed, the way a card's
-   picture fills its window. (Portraits ship on an opaque field, so blending
-   them into the scene below only muddies them.) */
+   picture fills its window: a full-body action pose for his position,
+   shot on its own little ballpark scene (art/sprites/poses.js). */
 .tcard__player {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: center 42%;
+  object-position: center 60%;
   image-rendering: pixelated;
   filter: saturate(1.08) contrast(1.04);
 }

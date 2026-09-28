@@ -8,7 +8,8 @@ import { useEffect, useRef, useState } from "react";
 import { CARD_TIERS, printedTier, cardNumber, batsOf, throwsOf, nextPrint } from "../game/cards.js";
 import { ovr } from "../game/gear.js";
 import { fmt } from "../game/utils.js";
-import PixelPortrait from "./PixelPortrait.jsx";
+import { poseUrl } from "./portrait.js";
+import { uniformColors } from "../game/identity.js";
 import "./CardFace.css";
 
 const avg3 = (num, den) => (den ? (num / den).toFixed(3).replace(/^0/, "") : ".000");
@@ -113,7 +114,7 @@ export default function CardFace({ player, city, year, stat, money, onPrint, isO
           </div>
 
           <div className="tcard__photo">
-            <PixelPortrait className="tcard__player" p={player} alt={player.name} />
+            <img className="tcard__player" src={poseUrl(player, uniformColors(city))} alt={`${player.name}, ${player.pos}`} />
             {/* Colour treatment of the print — swap this layer for real art later */}
             <span className="tcard__wash" aria-hidden="true" />
             <span className="tcard__ovr">{ovr(player).toFixed(0)}</span>
