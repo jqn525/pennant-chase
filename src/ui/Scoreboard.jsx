@@ -24,7 +24,7 @@ export default function Scoreboard({ city, year, record, money, fans, trophies, 
       <button className="franchise-hud__settings" onClick={onHelp} aria-label="Open settings"><GearIcon size={17} /></button>
       <div className="franchise-hud__stats">
         <div><span>Year</span><strong><FlipNumber value={year} /></strong></div>
-        <div><span>Record</span><strong><FlipNumber value={record.w} />–<FlipNumber value={record.l} /></strong></div>
+        <div><span>W–L</span><strong><FlipNumber value={record.w} />–<FlipNumber value={record.l} /></strong></div>
         <div className="franchise-hud__cash"><span>Cash</span><strong>${fmt(money)}</strong><CashPops money={money} /></div>
         <div><span>Fans</span><strong><FlipNumber value={fmt(fans)} /></strong></div>
         <div className="franchise-hud__cups"><span><TrophyIcon size={10} /> Cups</span><strong><FlipNumber value={trophies} /></strong></div>

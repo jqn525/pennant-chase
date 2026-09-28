@@ -10,7 +10,7 @@ import { fmt } from "./game/utils.js";
 import { genRoster, seedUid, genDraftClass, vetPot, rollPot, pickTrait, freshName, seedNames, creepRival, seedRivalStars } from "./game/generators.js";
 import { newGame, stepAtBat, playGameInstant, settleGame, ticketGate } from "./game/engine.js";
 import { makeRivals, makeSchedule, teamRating, quickSim, simSeries, seedOrder, runOffseason, ageRoster, seriesInfo } from "./game/season.js";
-import { eff, isStar, talentGrade, genShipment, genItem, playerValue, GEAR, dealerTier, shipmentWeights, TIER_INFO, devCapFor } from "./game/gear.js";
+import { eff, isStar, genShipment, genItem, playerValue, GEAR, dealerTier, shipmentWeights, TIER_INFO, devCapFor } from "./game/gear.js";
 import { nextPrint, cardDraw } from "./game/cards.js";
 import { LOADOUTS, loadoutById, applyLoadout, sortRival } from "./game/lineup.js";
 import { sfx, play } from "./game/sfx.js";
@@ -957,12 +957,7 @@ export default function App() {
         {/* Header */}
         <Scoreboard
           city={city} year={year} record={standings[0]} money={money} fans={fans}
-          talent={roster ? talentGrade(roster) : "—"} trophies={trophies} form={form}
-          phase={phase} playoffs={playoffs} gameIndex={gameIndex} series={series}
-          speed={speed} paused={paused} sound={sound}
-          onSetSpeed={(sp) => { setSpeed(sp); setPaused(false); }}
-          onTogglePause={() => setPaused((p) => !p)}
-          onToggleSound={() => setSound((v) => !v)}
+          trophies={trophies} phase={phase} playoffs={playoffs} gameIndex={gameIndex} series={series}
           onHelp={() => setMenu("settings")}
         />
 
@@ -971,6 +966,11 @@ export default function App() {
           initial={{ opacity: 0, x: 18 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -12 }}
           transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}>
 
+        {/* the draft sheet sits under the player sheet it can open */}
+        {tab === "game" && phase === "draft" && draftClass && (
+          <DraftBoard draftClass={draftClass} roster={roster} money={money} year={year}
+            onSign={signRookie} onClose={closeDraft} onView={openCard} />
+        )}
         {cardView && (
           <PlayerCard
             player={cardView.player} isOwn={cardView.isOwn} onClose={() => setCardId(null)}
@@ -984,10 +984,6 @@ export default function App() {
         {/* after the player sheet, so a tip it triggers sits on top of it */}
         {activeTip && <TipModal tipId={activeTip} onClose={closeTip} />}
 
-        {tab === "game" && phase === "draft" && draftClass && (
-          <DraftBoard draftClass={draftClass} roster={roster} money={money} year={year}
-            onSign={signRookie} onClose={closeDraft} onView={openCard} />
-        )}
 
         {tab === "game" && (
           <BallparkTab

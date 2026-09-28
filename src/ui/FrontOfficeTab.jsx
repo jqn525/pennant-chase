@@ -1,39 +1,50 @@
-// ── Front Office tab: stadium and revenue upgrades, trophy case, season history ──
+// ── Front Office tab: stadium and revenue upgrades, the club, trophy case ──
+// (Season-by-season history lives in Settings › Lifetime.)
 
-import { C, STADIUM, REVENUE } from "../game/constants.js";
+import { STADIUM, REVENUE } from "../game/constants.js";
 import { fmt } from "../game/utils.js";
-import { btn } from "./styles.js";
 import Panel from "./Panel.jsx";
 import { FansIcon, TrophyIcon, CarIcon, SeatsIcon, ConcessionIcon, LightsIcon, ShirtIcon, TvIcon } from "./Icons.jsx";
+import { Button, Chip } from "./kit.jsx";
+import "./FrontOfficeTab.css";
 
 const TRACK_ICONS = { parking: CarIcon, seats: SeatsIcon, conc: ConcessionIcon, lights: LightsIcon, merch: ShirtIcon, tv: TvIcon };
 
-function UpgradeTrack({ track, level, money, fans, onBuy, locked }) {
+function UpgradeTrack({ track, level, money, fans, onBuy, lockedNote }) {
   const Icon = TRACK_ICONS[track.id];
   const cur = level > 0 ? track.tiers[level - 1] : null;
   const next = track.tiers[level];
-  const can = !locked && next && money >= next.cost && fans >= next.fans;
+  // Say exactly what's missing, most blocking first
+  const why = !next ? null
+    : lockedNote ? lockedNote
+      : fans < next.fans ? `Need ${fmt(next.fans)} fans (have ${fmt(fans)})`
+        : money < next.cost ? `Need $${fmt(next.cost - money)} more` : null;
   return (
-    <button onClick={() => onBuy(track.id)} style={{ ...btn(!!can), width: "100%", marginBottom: 6, textAlign: "left" }}>
-      <span style={{ fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
-        <Icon size={13} color={can ? C.amber : C.creamDim} /> {track.title}
-        <span style={{ marginLeft: "auto", fontSize: 10, color: C.dirt, letterSpacing: 1 }}>
-          {cur ? cur.name.toUpperCase() : ""}{!next ? " · MAX" : ""}
+    <div className="upgrade">
+      <div className="upgrade__head">
+        <Icon size={18} color="var(--amber)" />
+        <span className="upgrade__title">{track.title}</span>
+        <span className="upgrade__tiers" aria-label={`Level ${level} of ${track.tiers.length}`}>
+          {track.tiers.map((_, i) => <i key={i} className={i < level ? "is-on" : ""} />)}
         </span>
-      </span>
-      {next && (
-        <div style={{ fontSize: 10, color: C.creamDim, marginTop: 2 }}>
-          {next.name} · {next.label} · ${fmt(next.cost)}{fans < next.fans ? ` · ${fmt(next.fans)} fans` : ""}
-        </div>
+      </div>
+      <div className="upgrade__now">{cur ? <>Now: <b>{cur.name}</b> — {cur.label}</> : "Not built yet"}</div>
+      {next ? (
+        <Button block variant={why ? "secondary" : "primary"} disabled={!!why} reason={why}
+          sub={`${next.label} · $${fmt(next.cost)}`} onClick={() => onBuy(track.id)}>
+          Build {next.name}
+        </Button>
+      ) : (
+        <Chip tone="amber">Fully built</Chip>
       )}
-    </button>
+    </div>
   );
 }
 
-export default function FrontOfficeTab({ roster, city, fans, money, merch, tv, isStar, history, trophies, stadium, onBuyUpgrade, onBuyRevenue }) {
+export default function FrontOfficeTab({ city, fans, money, merch, tv, trophies, stadium, onBuyUpgrade, onBuyRevenue }) {
   return (
-    <div style={{ display: "flex", flexWrap: "wrap", gap: 14, marginTop: 2 }}>
-      <div style={{ flex: "1 1 300px", minWidth: 280 }}>
+    <div className="office">
+      <div className="office__col">
         <Panel title="STADIUM">
           {STADIUM.map((track) => (
             <UpgradeTrack key={track.id} track={track} level={stadium?.[track.id] || 0}
@@ -43,48 +54,29 @@ export default function FrontOfficeTab({ roster, city, fans, money, merch, tv, i
         <Panel title="REVENUE">
           {REVENUE.map((track) => (
             <UpgradeTrack key={track.id} track={track} level={track.id === "merch" ? merch : tv}
-              money={money} fans={fans} onBuy={onBuyRevenue} locked={track.id === "tv" && merch < 1} />
+              money={money} fans={fans} onBuy={onBuyRevenue}
+              lockedNote={track.id === "tv" && merch < 1 ? "Open the merch stand first" : null} />
           ))}
-        </Panel>
-        <Panel title="THE CLUB" style={{ fontSize: 12, lineHeight: 1.8 }}>
-          <span style={{ display: "flex", alignItems: "center", gap: 6 }}><FansIcon /> {fmt(fans)} fans in {city.name}</span>
-          City edge: {city.label}
         </Panel>
       </div>
 
-      <div style={{ flex: "1 1 300px", minWidth: 280 }}>
-        <Panel title="TROPHY CASE" titleRight={`${trophies} CUP${trophies === 1 ? "" : "S"}`}>
-          <div style={{ display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap", marginBottom: trophies ? 8 : 0 }}>
-            {Array.from({ length: Math.min(trophies, 12) }, (_, i) => <TrophyIcon key={i} size={15} />)}
+      <div className="office__col">
+        <Panel title="THE CLUB">
+          <div className="office-club">
+            <span><FansIcon size={16} /> <b>{fmt(fans)}</b> fans in {city.name}</span>
+            <span>Club edge: <b>{city.label}</b></span>
           </div>
-          {history.length === 0 ? (
-            <div style={{ fontSize: 11, color: C.creamDim }}>No completed seasons yet. History is written every winter.</div>
-          ) : (
-            <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch", maxHeight: 300, overflowY: "auto" }}>
-              <table style={{ borderCollapse: "collapse", fontSize: 11, width: "100%" }}>
-                <thead>
-                  <tr style={{ borderBottom: `1px solid ${C.greenLine}` }}>
-                    {["YEAR", "CHAMPION", "YOUR RECORD", "FINISH"].map((h) => (
-                      <th key={h} style={{ textAlign: h === "YEAR" ? "left" : "right", padding: "3px 6px", color: C.creamDim, fontWeight: 400, letterSpacing: 1 }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {[...history].reverse().map((h) => (
-                    <tr key={h.year} style={{ color: h.cup ? C.amber : C.cream, fontWeight: h.cup ? 600 : 400, borderBottom: `1px solid ${C.greenLine}33` }}>
-                      <td style={{ padding: "4px 6px" }}>{h.year}</td>
-                      <td style={{ padding: "4px 6px", textAlign: "right", whiteSpace: "nowrap" }}>{h.champion}{h.cup && <TrophyIcon size={11} />}</td>
-                      <td style={{ padding: "4px 6px", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{h.playerRecord}</td>
-                      <td style={{ padding: "4px 6px", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{h.finish}{["st", "nd", "rd"][h.finish - 1] || "th"}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+        </Panel>
+        <Panel title="TROPHY CASE" titleRight={`${trophies} cup${trophies === 1 ? "" : "s"}`}>
+          {trophies > 0 ? (
+            <div className="office-trophies">
+              {Array.from({ length: Math.min(trophies, 12) }, (_, i) => <TrophyIcon key={i} size={28} />)}
             </div>
+          ) : (
+            <p className="ui-note" style={{ margin: 0 }}>No Pennant Cups yet. Past seasons are in Settings › Lifetime.</p>
           )}
         </Panel>
       </div>
-
     </div>
   );
 }

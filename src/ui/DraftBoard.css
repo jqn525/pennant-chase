@@ -1,0 +1,14 @@
+.rookie { margin-top: 10px; padding: 10px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--well); }
+.rookie__who { display: flex; align-items: center; gap: 10px; width: 100%; padding: 0; border: 0; background: transparent; color: var(--cream); font: inherit; text-align: left; cursor: pointer; }
+.rookie__id { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.rookie__name { overflow: hidden; font-size: var(--fs-lg); font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+.rookie__name b { color: var(--cream-dim); font-size: var(--fs-md); margin-right: 4px; }
+.rookie__meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; color: var(--cream-dim); font-size: var(--fs-sm); font-weight: 600; }
+.rookie__stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(58px, 1fr)); gap: 4px; margin: 10px 0; }
+.rookie__stats span { display: flex; flex-direction: column; align-items: center; padding: 5px 2px; border: 1px solid var(--line); border-radius: var(--r-sm); }
+.rookie__stats small { color: var(--cream-dim); font-size: var(--fs-xs); font-weight: 700; letter-spacing: 1px; }
+.rookie__stats b { color: var(--cream); font-family: var(--font-pixel); font-size: 12px; font-weight: 400; margin-top: 2px; }
+.rookie__stats i { color: var(--grass); font-size: var(--fs-sm); font-style: normal; font-weight: 700; }
+.rookie__foot { display: flex; align-items: center; gap: 10px; }
+.rookie__out { flex: 1; color: var(--cream-dim); font-size: var(--fs-sm); font-weight: 600; }
+.rookie__out b { color: var(--cream); }

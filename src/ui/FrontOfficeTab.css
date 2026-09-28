@@ -1,0 +1,16 @@
+.office { display: flex; flex-wrap: wrap; gap: 0 14px; }
+.office__col { flex: 1 1 300px; min-width: 0; }
+.upgrade { padding: 10px 0 12px; border-bottom: 1px solid #2c554055; font-family: var(--font-ui); }
+.upgrade:first-child { padding-top: 2px; }
+.upgrade:last-child { border-bottom: 0; padding-bottom: 2px; }
+.upgrade__head { display: flex; align-items: center; gap: 8px; }
+.upgrade__title { flex: 1; color: var(--cream); font-size: var(--fs-lg); font-weight: 700; letter-spacing: 1px; }
+.upgrade__tiers { display: flex; gap: 3px; }
+.upgrade__tiers i { width: 12px; height: 8px; border: 1px solid var(--brass); background: var(--well); }
+.upgrade__tiers i.is-on { background: var(--amber); border-color: var(--amber); }
+.upgrade__now { margin: 4px 0 8px; color: var(--cream-dim); font-size: var(--fs-sm); font-weight: 600; }
+.upgrade__now b { color: var(--cream); }
+.office-club { display: flex; flex-direction: column; gap: 6px; font-family: var(--font-ui); font-size: var(--fs-md); font-weight: 600; color: var(--cream-dim); }
+.office-club span { display: flex; align-items: center; gap: 6px; }
+.office-club b { color: var(--cream); }
+.office-trophies { display: flex; flex-wrap: wrap; gap: 8px; }

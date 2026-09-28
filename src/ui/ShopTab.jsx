@@ -1,106 +1,83 @@
 // ── Pro Shop tab: a rotating shipment of procedurally generated gear ──
-// New assortment every series; unbought stock vanishes. Rarities: COMMON,
-// RARE, LEGENDARY. Items boost their slot's stat and may carry a side-effect.
+// New assortment every series; unbought stock vanishes. Tap an item, then
+// pick who wears it.
 
 import { useState } from "react";
-import { C, RARITY } from "../game/constants.js";
+import { RARITY } from "../game/constants.js";
 import { fmt } from "../game/utils.js";
-import { panel, btn } from "./styles.js";
 import Panel from "./Panel.jsx";
 import { ClockIcon } from "./Icons.jsx";
 import { GEAR, GEAR_ART, gearArtUrl } from "../game/gear.js";
+import { portraitUrl } from "./portrait.js";
+import { Button, Chip } from "./kit.jsx";
+import "./ShopTab.css";
 
-const rarityStyle = {
-  1: { color: C.creamDim, glow: "none" },
-  2: { color: C.amber, glow: "none" },
-  3: { color: C.red, glow: `0 0 8px ${C.red}66` },
-};
+const TONE = { 1: "dim", 2: "amber", 3: "red" };
 
 const Boosts = ({ boosts }) => (
-  <span>
-    {Object.entries(boosts).map(([s, n], i) => (
-      <span key={s} style={{ color: n > 0 ? C.grass : C.red, fontWeight: 600 }}>
-        {i > 0 && <span style={{ color: C.creamDim }}> · </span>}
-        {n > 0 ? "+" : ""}{n}% {s.toUpperCase()}
-      </span>
+  <>
+    {Object.entries(boosts).map(([s, n]) => (
+      <span key={s} className={n > 0 ? "pos-plus" : "pos-minus"}>{n > 0 ? "+" : "−"}{Math.abs(n)}% {s}</span>
     ))}
-  </span>
+  </>
 );
 
 export default function ShopTab({ roster, money, shopItems, onBuy, restockNote, tierInfo }) {
-  const [pickId, setPickId] = useState(null); // armed item awaiting a player
+  const [pickId, setPickId] = useState(null); // item awaiting a player
 
   return (
-    <div style={{ marginTop: 2 }}>
-      <Panel title="THE PRO SHOP" titleRight="THIS SHIPMENT ONLY" style={{ marginBottom: 12 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: C.amber, letterSpacing: 1 }}>
-          <ClockIcon size={12} /> {restockNote}
-        </div>
-        {tierInfo && (
-          <div style={{ fontSize: 10, color: C.creamDim, marginTop: 6 }}>
-            <span style={{ color: C.dirt, letterSpacing: 1 }}>{tierInfo.label}</span> — {tierInfo.hint}
-          </div>
-        )}
+    <div>
+      <Panel title="THE PRO SHOP" titleRight="This shipment only">
+        <div className="shop-note"><ClockIcon size={14} /> {restockNote}</div>
+        {tierInfo && <p className="ui-note"><b className="shop-tier">{tierInfo.label}</b> — {tierInfo.hint}</p>}
       </Panel>
 
       {(!shopItems || shopItems.length === 0) && (
-        <div style={{ ...panel, padding: 14, fontSize: 12, color: C.creamDim }}>
-          The shelves are bare — a new shipment arrives with the next series.
-        </div>
+        <Panel><p className="ui-note" style={{ margin: 0 }}>The shelves are bare — a new shipment arrives with the next series.</p></Panel>
       )}
 
       {(shopItems || []).map((item) => {
         const def = GEAR.find((d) => d.slot === item.slot);
-        const rs = rarityStyle[item.rarity];
-        const armed = pickId === item.id;
+        const open = pickId === item.id;
         const players = def.role === "bat" ? roster.batters : [roster.sp, roster.rp];
         const afford = money >= item.cost;
         return (
-          <div key={item.id} style={{ ...panel, padding: 12, marginBottom: 10, border: `1px solid ${armed ? C.amber : C.greenLine}` }}>
-            <button onClick={() => setPickId(armed ? null : item.id)}
-              style={{ display: "flex", gap: 10, alignItems: "center", width: "100%", background: "transparent", border: "none", padding: 0, cursor: "pointer", textAlign: "left", fontFamily: "inherit", color: C.cream }}>
+          <section key={item.id} className={`shop-item ${open ? "is-open" : ""} shop-item--r${item.rarity}`}>
+            <button type="button" className="shop-item__head" onClick={() => setPickId(open ? null : item.id)} aria-expanded={open}>
               {GEAR_ART.has(item.slot) && (
-                <img src={gearArtUrl(item)} alt={def.label} width={40} height={40} className={item.rarity === 3 ? "gear-legendary" : undefined}
-                  style={{ imageRendering: "pixelated", flexShrink: 0, borderRadius: 5, filter: item.rarity === 3 ? `drop-shadow(0 0 5px ${C.red})` : item.rarity === 2 ? `drop-shadow(0 0 4px ${C.amber}AA)` : "none" }} />
+                <img className={`ui-pixel-img ${item.rarity === 3 ? "gear-legendary" : ""}`} src={gearArtUrl(item)} alt="" width={48} height={48} />
               )}
-              <span style={{ flex: 1, minWidth: 0 }}>
-                <span style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
-                  <span style={{ fontWeight: 700, fontSize: 14, color: rs.color, textShadow: rs.glow }}>{item.name}</span>
-                  <span style={{ fontSize: 9, letterSpacing: 1.5, color: rs.color, border: `1px solid ${rs.color}`, borderRadius: 3, padding: "1px 5px" }}>{RARITY[item.rarity].name}</span>
-                  <span style={{ fontSize: 10, color: C.creamDim }}>{def.label}</span>
-                  <span style={{ marginLeft: "auto", fontSize: 13, color: afford ? C.amber : C.red, fontVariantNumeric: "tabular-nums" }}>${fmt(item.cost)}</span>
+              <span className="shop-item__body">
+                <span className="shop-item__title">{item.name}</span>
+                <span className="shop-item__meta">
+                  <Chip tone={TONE[item.rarity]}>{RARITY[item.rarity].name}</Chip>
+                  <span>{def.label}</span>
                 </span>
-                <span style={{ display: "block", fontSize: 11, marginTop: 4 }}>
-                  <Boosts boosts={item.boosts} />
-                  <span style={{ color: C.creamDim }}> — {def.flavor}</span>
-                </span>
+                <span className="shop-item__boosts"><Boosts boosts={item.boosts} /></span>
+                <span className="shop-item__flavor">{def.flavor}</span>
               </span>
+              <span className={`shop-item__price ${afford ? "" : "pos-minus"}`}>${fmt(item.cost)}</span>
             </button>
 
-            {armed && (
-              <div style={{ marginTop: 8, borderTop: `1px solid ${C.greenLine}`, paddingTop: 8 }}>
-                <div style={{ fontSize: 10, color: C.creamDim, letterSpacing: 2, marginBottom: 6 }}>
-                  WHO GETS IT? {!afford && <span style={{ color: C.red }}>— NOT ENOUGH MONEY</span>}
-                </div>
+            {open && (
+              <div className="shop-item__pick">
+                <div className="shop-item__ask">{afford ? "Who gets it?" : `Need $${fmt(item.cost - money)} more`}</div>
                 {players.map((p) => {
                   const current = p.gear?.[item.slot];
                   return (
-                    <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "3px 0", fontSize: 12 }}>
-                      <span style={{ width: 26, color: C.creamDim }}>{p.pos}</span>
-                      <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontWeight: 600 }}>{p.name}</span>
-                      <span style={{ fontSize: 10, color: C.creamDim, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 130 }}>
-                        {current ? `replaces ${current.name || "old gear"}` : "empty slot"}
-                      </span>
-                      <button onClick={() => afford && onBuy(p.id, item.id)}
-                        style={{ ...btn(afford), width: 60, textAlign: "center", fontSize: 10, padding: "5px 0" }}>
-                        BUY
-                      </button>
+                    <div key={p.id} className="ui-row">
+                      <img className="ui-pixel-img" src={portraitUrl(p)} alt="" width={36} height={36} />
+                      <div className="ui-row__main">
+                        <div className="ui-row__title">{p.pos} · {p.name}</div>
+                        <div className="ui-row__meta">{current ? `Replaces ${current.name || "old gear"}` : "Empty slot"}</div>
+                      </div>
+                      <Button size="sm" variant="primary" disabled={!afford} onClick={() => onBuy(p.id, item.id)}>Buy</Button>
                     </div>
                   );
                 })}
               </div>
             )}
-          </div>
+          </section>
         );
       })}
     </div>

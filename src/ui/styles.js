@@ -1,27 +1,6 @@
-// ── Shared style objects ──
+// ── Shared style objects (the rest of the look lives in ui.css) ──
 
 import { C } from "../game/constants.js";
-
-export const MONO = "'IBM Plex Mono', monospace";
-export const SLAB = "'Alfa Slab One', serif";
-export const PIXEL = "'Press Start 2P', monospace";
-export const CONDENSED = "'Barlow Condensed', sans-serif";
-
-export const panel = {
-  background: "linear-gradient(145deg, #183A28, #0E281B)",
-  border: "1px solid #85602D", borderRadius: 10,
-  boxShadow: "inset 0 1px #FFFFFF12, 0 8px 22px #030A0755",
-};
-
-export const btn = (enabled) => ({
-  minHeight: 40, fontFamily: CONDENSED, fontWeight: 700, letterSpacing: 0.5,
-  textTransform: "uppercase", fontSize: 13, padding: "9px 11px", borderRadius: 7,
-  border: `1px solid ${enabled ? C.amber : C.greenLine}`,
-  background: enabled ? "linear-gradient(180deg, #3F3519, #2C260F)" : "#0A1A12",
-  color: enabled ? C.amber : C.creamDim,
-  boxShadow: enabled ? "inset 0 1px #FFF2, 0 4px 10px #0004" : "none",
-  cursor: enabled ? "pointer" : "default", opacity: enabled ? 1 : 0.55, textAlign: "left",
-});
 
 // No backdrop-filter here: iOS WebKit mis-clips blurred fixed overlays with
 // inner scroll, leaving unpainted bands. The dim is near-opaque anyway.

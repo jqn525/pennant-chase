@@ -1,9 +1,6 @@
 // ── One-time milestone pop-ups: teach each feature the moment it first matters ──
 
-import { C } from "../game/constants.js";
-import { PIXEL, MONO } from "./styles.js";
-import Modal from "./Modal.jsx";
-import Panel from "./Panel.jsx";
+import { Sheet, Button } from "./kit.jsx";
 
 export const TIPS = {
   welcome: {
@@ -15,11 +12,11 @@ export const TIPS = {
     ],
   },
   card: {
-    title: "THE PLAYER CARD",
+    title: "THE PLAYER SCREEN",
     body: [
-      "This is a player's whole life on one card. Tap a skill row to TRAIN it with money — the notch on each bar is where training stops: his natural ceiling, or the LEAGUE CAP. Only a FRANCHISE PLAYER (you hold two tags; each Pennant Cup earns another) trains past the cap toward true stardom.",
-      "The equipment shelf shows what he's wearing; the TRADE DESK swaps him position-for-position with any rival club — gear travels with the player.",
-      "Hit VIEW CARD to flip him over and hold his actual baseball card. Everyone starts as plain COMMON cardboard — train him past 70, 80 and 88 OVR to earn the right to reprint him as UNCOMMON, RARE HOLO, and finally a ONE-OF-ONE.",
+      "Everything about a player lives here, in five tabs. INFO has his ratings, trait and season stats. TRAIN spends money to raise a skill — the tick on each bar is where training stops: his natural ceiling, or the LEAGUE CAP. Only a FRANCHISE PLAYER (you hold two tags; each Pennant Cup earns another) trains past the cap.",
+      "GEAR shows what he's wearing. TRADE swaps him position-for-position with any rival club — gear travels with the player.",
+      "CARD is his actual baseball card. Everyone starts as plain COMMON cardboard — train him past 70, 80 and 88 OVR to earn the right to reprint him as UNCOMMON, RARE HOLO, and finally a ONE-OF-ONE.",
     ],
   },
   shop: {
@@ -61,7 +58,7 @@ export const TIPS = {
     title: "PROTECT THE FRANCHISE",
     body: [
       "One season down. Your club auto-saves on this device — but a backup code makes it immortal.",
-      "In the FRONT OFFICE, tap 'Copy backup code' and paste it somewhere safe (a note, an email). If the phone ever clears the save, or you get a new device, the code brings the whole franchise back.",
+      "Open SETTINGS (the gear up top), tap 'Copy backup code' and paste it somewhere safe (a note, an email). If the phone ever clears the save, or you get a new device, the code brings the whole franchise back.",
     ],
   },
 };
@@ -70,16 +67,9 @@ export default function TipModal({ tipId, onClose }) {
   const tip = TIPS[tipId];
   if (!tip) return null;
   return (
-    <Modal onClose={onClose} maxWidth={380}>
-      <Panel title={tip.title} style={{ background: C.green, boxShadow: "0 12px 40px #000C", marginTop: 10 }} bg={C.green}>
-        {tip.body.map((p, i) => (
-          <p key={i} style={{ fontFamily: MONO, fontSize: 12, lineHeight: 1.65, color: C.cream, margin: "10px 2px" }}>{p}</p>
-        ))}
-        <button onClick={onClose}
-          style={{ width: "100%", fontFamily: PIXEL, fontSize: 10, padding: "12px 0", marginTop: 6, background: "transparent", border: `3px solid ${C.amber}`, borderRadius: 6, color: C.amber, cursor: "pointer", letterSpacing: 1 }}>
-          GOT IT — PLAY BALL
-        </button>
-      </Panel>
-    </Modal>
+    <Sheet title={tip.title} onClose={onClose} maxWidth={400}>
+      {tip.body.map((p, i) => <p key={i} className="tip-p">{p}</p>)}
+      <Button variant="primary" size="lg" block onClick={onClose} style={{ marginTop: 8 }}>Got it — play ball</Button>
+    </Sheet>
   );
 }

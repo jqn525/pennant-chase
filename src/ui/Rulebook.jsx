@@ -29,6 +29,7 @@ const SECTIONS = [
 
 export default function Rulebook({ onClose }) {
   useLockBody();
+  const jump = (t) => document.getElementById(`rule-${t}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
   return (
     <div className="page-screen" role="dialog" aria-label="Rulebook">
       <header className="page-screen__bar">
@@ -36,10 +37,13 @@ export default function Rulebook({ onClose }) {
         <button onClick={onClose}>Close</button>
       </header>
       <div className="page-screen__body">
+        <nav className="page-toc" aria-label="Rulebook sections">
+          {SECTIONS.map(([t]) => <button key={t} type="button" onClick={() => jump(t)}>{t}</button>)}
+        </nav>
         {SECTIONS.map(([t, ps]) => (
           <div key={t}>
-            <div className="page-screen__section">{t}</div>
-            {ps.map((p, i) => <p key={i} style={{ fontSize: 12, lineHeight: 1.65, margin: "6px 2px" }}>{p}</p>)}
+            <div className="page-screen__section" id={`rule-${t}`} style={{ scrollMarginTop: "var(--bar-h)" }}>{t}</div>
+            {ps.map((p, i) => <p key={i} className="page-screen__p">{p}</p>)}
           </div>
         ))}
       </div>

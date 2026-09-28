@@ -7,6 +7,7 @@ const rate2 = (num, den) => (den ? (num / den).toFixed(2) : "—");
 export const avg = (s) => rate3(s.h, s.ab);
 export const obp = (s) => rate3(s.h + s.bb, s.ab + s.bb);
 export const slg = (s) => rate3(s.h + s.d + 2 * s.t + 3 * s.hr, s.ab);
+export const ops = (s) => (s.ab ? ((s.h + s.bb) / (s.ab + s.bb) + (s.h + s.d + 2 * s.t + 3 * s.hr) / s.ab).toFixed(3).replace(/^0/, "") : "—");
 export const ip = (s) => (s.outsP ? `${Math.floor(s.outsP / 3)}.${s.outsP % 3}` : "0.0");
 export const era = (s) => rate2(s.raP * 27, s.outsP);
 export const whip = (s) => rate2((s.hP + s.bbP) * 3, s.outsP);

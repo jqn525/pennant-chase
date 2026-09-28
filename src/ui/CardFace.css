@@ -333,12 +333,14 @@
   border-radius: 7px;
   background: #3a2e10;
   color: var(--amber);
-  font-family: var(--font-pixel);
-  font-size: 9px;
+  font-family: var(--font-data);
+  font-size: 16px;
+  font-weight: 700;
   letter-spacing: 1px;
+  text-transform: uppercase;
   cursor: pointer;
 }
-.tcard-print small { color: var(--cream-dim); font-family: var(--font-data); font-size: 9px; letter-spacing: .5px; }
+.tcard-print small { color: var(--cream-dim); font-family: var(--font-data); font-size: 13px; letter-spacing: .5px; text-transform: none; }
 .tcard-print:disabled { border-color: #31543f; background: transparent; color: var(--cream-dim); cursor: default; }
 .tcard-tilt {
   display: grid;
@@ -349,17 +351,20 @@
   border-radius: 6px;
   background: transparent;
   color: var(--cream);
-  font-family: var(--font-pixel);
-  font-size: 8px;
+  font-family: var(--font-data);
+  font-size: 15px;
+  font-weight: 700;
   letter-spacing: 1px;
+  text-transform: uppercase;
   cursor: pointer;
 }
-.tcard-tilt small { color: var(--cream-dim); font-family: var(--font-data); font-size: 9px; letter-spacing: .4px; }
+.tcard-tilt small { color: var(--cream-dim); font-family: var(--font-data); font-size: 13px; letter-spacing: .4px; text-transform: none; }
 .tcard-note {
   width: min(100%, 300px);
   color: var(--cream-dim);
-  font-size: 10px;
-  line-height: 1.5;
+  font-family: var(--font-data);
+  font-size: 14px;
+  line-height: 1.4;
   text-align: center;
 }
 

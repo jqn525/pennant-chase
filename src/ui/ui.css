@@ -197,3 +197,4 @@
 .ui-sheet__subhead { margin-top: 10px; }
 /* Sheets pin to the top so switching tabs doesn't make the header jump */
 .game-modal__sheet:has(> .ui-sheet) { margin-top: 0; }
+.tip-p { margin: 0 0 12px; color: var(--cream); font-size: var(--fs-md); line-height: 1.45; }

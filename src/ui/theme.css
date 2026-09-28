@@ -82,8 +82,12 @@ button:focus-visible, input:focus-visible, textarea:focus-visible {
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
   background: linear-gradient(180deg, #132e20 0, #0a1e14 46%, #07150e 100%);
+  --bar-h: calc(59px + env(safe-area-inset-top)); /* sticky offsets below key off these */
+  --tabs-h: 62px;
 }
 .page-screen__bar {
+  box-sizing: border-box;
+  height: var(--bar-h);
   position: sticky;
   top: 0;
   z-index: 6;
@@ -125,17 +129,32 @@ button:focus-visible, input:focus-visible, textarea:focus-visible {
 }
 .page-screen__section {
   position: sticky;
-  top: calc(58px + env(safe-area-inset-top));
+  top: var(--bar-h);
   z-index: 5;
-  margin: 18px -16px 4px;
-  padding: 7px 16px;
+  margin: 20px -16px 6px;
+  padding: 9px 16px;
   background: #0e2418f2;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   color: var(--dirt, #c89b6c);
   font-family: var(--font-pixel);
-  font-size: 9px;
+  font-size: 11px;
   letter-spacing: 1px;
+}
+.page-screen__p { margin: 8px 2px 12px; color: var(--cream); font-family: var(--font-ui, var(--font-data)); font-size: 16px; font-weight: 500; line-height: 1.5; }
+.page-toc { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 8px; }
+.page-toc button {
+  min-height: 36px;
+  padding: 4px 10px;
+  border: 1px solid var(--line, #2c5540);
+  border-radius: var(--r-sm, 4px);
+  background: #0a1a12;
+  color: var(--cream);
+  font-family: var(--font-data);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: .6px;
+  text-transform: uppercase;
 }
 
 .game-panel {
@@ -167,16 +186,16 @@ button:focus-visible, input:focus-visible, textarea:focus-visible {
   left: 14px;
   transform: translateY(-50%);
   max-width: 70%;
-  padding: 3px 9px;
+  padding: 5px 10px;
   overflow: hidden;
   border: 1px solid #8b6938;
-  border-radius: 999px;
+  border-radius: var(--r-sm, 4px);
   background: #10281b;
   color: var(--amber);
-  font-family: var(--font-data);
+  font-family: var(--font-pixel);
   font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 1.8px;
+  font-weight: 400;
+  letter-spacing: 1px;
   line-height: 1;
   text-overflow: ellipsis;
   text-transform: uppercase;
@@ -188,12 +207,13 @@ button:focus-visible, input:focus-visible, textarea:focus-visible {
   top: 0;
   right: 12px;
   transform: translateY(-50%);
-  padding: 3px 7px;
-  border-radius: 999px;
+  padding: 3px 8px;
+  border-radius: var(--r-sm, 4px);
   background: #10281b;
   color: var(--cream-dim);
   font-family: var(--font-data);
-  font-size: 10px;
+  font-size: 12px;
+  font-weight: 700;
   letter-spacing: 1px;
   text-transform: uppercase;
 }

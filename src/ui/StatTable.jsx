@@ -1,29 +1,25 @@
-// ── Shared compact stat table (roster season stats, in-game box scores) ──
+// ── Shared stat table (roster season stats, in-game box scores) ──
+// The player column stays pinned while the numbers scroll sideways.
 
-import { C } from "../game/constants.js";
 import Panel from "./Panel.jsx";
-
-const th = { padding: "3px 7px", textAlign: "right", color: C.creamDim, fontWeight: 400, letterSpacing: 1 };
-const td = { padding: "3px 7px", textAlign: "right", fontVariantNumeric: "tabular-nums" };
-const tdName = { ...td, textAlign: "left", whiteSpace: "nowrap", fontWeight: 600 };
+import "./StatTable.css";
 
 export default function StatTable({ title, titleRight, cols, rows, style, onRow }) {
   return (
     <Panel title={title} titleRight={titleRight} style={style}>
-      <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
-        <table style={{ borderCollapse: "collapse", fontSize: 11, width: "100%" }}>
+      <div className="stat-table__scroll">
+        <table className="stat-table">
           <thead>
-            <tr style={{ borderBottom: `1px solid ${C.greenLine}` }}>
-              <th style={{ ...th, textAlign: "left" }}>PLAYER</th>
-              {cols.map((c) => <th key={c} style={th}>{c}</th>)}
+            <tr>
+              <th className="stat-table__name">Player</th>
+              {cols.map((c) => <th key={c}>{c}</th>)}
             </tr>
           </thead>
           <tbody>
             {rows.map(({ p, cells, dim }) => (
-              <tr key={p.id} onClick={onRow ? () => onRow(p) : undefined}
-                style={{ borderBottom: `1px solid ${C.greenLine}44`, color: dim ? C.creamDim : C.cream, cursor: onRow ? "pointer" : "default" }}>
-                <td style={tdName}>{p.pos} {p.name}</td>
-                {cells.map((v, i) => <td key={i} style={td}>{v}</td>)}
+              <tr key={p.id} onClick={onRow ? () => onRow(p) : undefined} className={`${dim ? "is-dim" : ""} ${onRow ? "is-link" : ""}`}>
+                <td className="stat-table__name"><span>{p.pos}</span> {p.name}</td>
+                {cells.map((v, i) => <td key={i}>{v}</td>)}
               </tr>
             ))}
           </tbody>

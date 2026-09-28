@@ -14,8 +14,10 @@
   gap: 14px;
   margin-top: 7px;
   color: var(--cream-dim);
-  font-size: 9px;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 700;
   letter-spacing: 1px;
 }
 .park-legend span { display: flex; align-items: center; gap: 4px; }
-.park-legend i { width: 7px; height: 7px; }
+.park-legend i { width: 8px; height: 8px; }
