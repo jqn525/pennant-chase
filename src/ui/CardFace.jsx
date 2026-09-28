@@ -8,11 +8,28 @@ import { useEffect, useRef, useState } from "react";
 import { CARD_TIERS, printedTier, cardNumber, batsOf, throwsOf, nextPrint } from "../game/cards.js";
 import { ovr } from "../game/gear.js";
 import { fmt } from "../game/utils.js";
-import { poseUrl } from "./portrait.js";
-import { uniformColors } from "../game/identity.js";
+import { cardPhotoUrl } from "./portrait.js";
+import { uniformColors, clubLogo, inkOn, luminance } from "../game/identity.js";
 import "./CardFace.css";
 
 const avg3 = (num, den) => (den ? (num / den).toFixed(3).replace(/^0/, "") : ".000");
+
+// The card photo: posed portrait in club colors. Common and uncommon prints
+// are photographs; rare and one-of-one prints are painted, vintage style.
+const letters = (s) => String(s || "").replace(/[^A-Za-z]/g, "");
+function photoFor(player, city, tierKey) {
+  const team = uniformColors(city)[0];
+  const logo = clubLogo(city);
+  const nick = letters(city?.nickname), town = letters(city?.name);
+  const word = nick.length && nick.length <= 8 ? nick : town.length && town.length <= 8 ? town : logo.text;
+  const ink = logo.secondary !== logo.primary && Math.abs(luminance(logo.secondary) - luminance(team)) > 0.3 ? logo.secondary : inkOn(team);
+  const vintage = tierKey === "rare" || tierKey === "unique";
+  return cardPhotoUrl(player, {
+    team, word, initials: logo.text, logoInk: ink,
+    style: vintage ? "vintage" : "photo",
+    backdrop: tierKey === "unique" ? "#e8c25a" : undefined,
+  });
+}
 
 export default function CardFace({ player, city, year, stat, money, onPrint, isOwn }) {
   const tier = CARD_TIERS[printedTier(player)];
@@ -114,7 +131,7 @@ export default function CardFace({ player, city, year, stat, money, onPrint, isO
           </div>
 
           <div className="tcard__photo">
-            <img className="tcard__player" src={poseUrl(player, uniformColors(city))} alt={`${player.name}, ${player.pos}`} />
+            <img className="tcard__player" src={photoFor(player, city, tier.key)} alt={`${player.name}, ${player.pos}`} />
             {/* Colour treatment of the print — swap this layer for real art later */}
             <span className="tcard__wash" aria-hidden="true" />
             <span className="tcard__ovr">{ovr(player).toFixed(0)}</span>

@@ -84,19 +84,19 @@
   z-index: 1;
   mix-blend-mode: multiply;
   pointer-events: none;
-  background:
-    linear-gradient(180deg, #eef3f7 0 56%, #cfe3c4 56% 78%, #e6cfae 78%);
+  /* a flat paper tint: the print, not a filter — the art keeps its colors */
+  background: #f7f0e0;
 }
 /* The sprite IS the photograph — crisp and full-bleed, the way a card's
-   picture fills its window: a full-body action pose for his position,
-   shot on its own little ballpark scene (art/sprites/poses.js). */
+   picture fills its window: a posed, waist-up portrait for his position
+   (art/card/photo.js) — photographed for common prints, painted for rare. */
 .tcard__player {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: center 60%;
+  object-position: center 18%;
   image-rendering: pixelated;
   filter: saturate(1.08) contrast(1.04);
 }
@@ -224,19 +224,12 @@
   filter: drop-shadow(1px 1px 0 #000000cc);
 }
 .tcard--uncommon .tcard__badge { background: linear-gradient(160deg, #6d7f56, #35482c); }
-.tcard--uncommon .tcard__wash {
-  background: linear-gradient(180deg, #dfe9d8 0 56%, #b6d6a8 56% 78%, #dcc39c 78%);
-}
+.tcard--uncommon .tcard__wash { background: #f1ead6; }
 
 /* RARE — rainbow holo washes the whole photo and rides the tilt */
 .tcard--rare { background: linear-gradient(150deg, #cfd8e6, #a9bad2 40%, #dbc9e0); }
-/* A night-game sky for the chase card to shimmer against */
-.tcard--rare .tcard__wash {
-  background:
-    radial-gradient(circle at 24% 20%, #ffffff 0 2px, transparent 3px),
-    radial-gradient(circle at 74% 12%, #ffffff 0 2px, transparent 3px),
-    linear-gradient(180deg, #8fa9d8 0 56%, #93c39a 56% 78%, #d9b98c 78%);
-}
+/* The painted print: a faint cool varnish under the holo */
+.tcard--rare .tcard__wash { background: #eef0f5; }
 /* Light catches the foil in a patch that follows the tilt — the picture
    stays the hero, the rainbow just plays across it. */
 .tcard--rare .tcard__holo {
@@ -266,12 +259,7 @@
 /* ONE-OF-ONE — gold refractor: it never stops moving */
 .tcard--unique { background: linear-gradient(150deg, #f6e3a8, #d0a63f 40%, #fbeec2); }
 .tcard--unique .tcard__border { box-shadow: inset 0 0 0 2px #f5d27a99; }
-.tcard--unique .tcard__wash {
-  background:
-    radial-gradient(circle at 22% 18%, #ffffff 0 2px, transparent 3px),
-    radial-gradient(circle at 78% 14%, #ffffff 0 2px, transparent 3px),
-    linear-gradient(180deg, #d8c089 0 56%, #b7c78c 56% 78%, #d8b47e 78%);
-}
+.tcard--unique .tcard__wash { background: #f6ecd2; }
 .tcard--unique .tcard__holo {
   opacity: .6;
   background: conic-gradient(from calc(var(--mx) * 3.6deg) at 50% 50%,

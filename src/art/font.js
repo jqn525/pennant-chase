@@ -1,7 +1,7 @@
 // ── 3×5 bitmap font for in-canvas text (jumbotron, callouts) ──
 // Each glyph is 5 rows of 3 bits. Unknown chars render as blank.
 
-const G = {
+export const GLYPHS = {
   A: "010101111101101", B: "110101110101110", C: "011100100100011", D: "110101101101110",
   E: "111100110100111", F: "111100110100100", G: "011100101101011", H: "101101111101101",
   I: "111010010010111", J: "001001001101010", K: "101101110101101", L: "100100100100111",
@@ -23,7 +23,7 @@ export function drawText(ctx, s, x, y, color) {
   ctx.fillStyle = color;
   const str = String(s).toUpperCase();
   for (let i = 0; i < str.length; i++) {
-    const g = G[str[i]];
+    const g = GLYPHS[str[i]];
     if (!g) continue;
     for (let b = 0; b < 15; b++) if (g[b] === "1") ctx.fillRect(x + i * 4 + (b % 3), y + Math.floor(b / 3), 1, 1);
   }
