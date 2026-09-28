@@ -65,15 +65,7 @@
   white-space: nowrap;
   text-shadow: 1px 1px 0 #00000099;
 }
-.tcard__mono {
-  padding: 2px 5px;
-  border-radius: 3px;
-  background: var(--amber);
-  color: #12301f;
-  font-family: var(--font-pixel);
-  font-size: 10px;
-  letter-spacing: .5px;
-}
+.tcard__mono { flex: none; display: block; }
 
 /* Photo window: CSS ballpark behind, pixel player in front */
 .tcard__photo {

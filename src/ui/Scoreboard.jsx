@@ -2,9 +2,8 @@ import { LEAGUE } from "../game/constants.js";
 import { fmt } from "../game/utils.js";
 import { GearIcon, TrophyIcon } from "./Icons.jsx";
 import { FlipNumber, CashPops } from "./fx.jsx";
+import TeamLogo from "./TeamLogo.jsx";
 import "./Scoreboard.css";
-
-const initial = (city) => (city.nickname ?? city.name ?? "P").trim().slice(0, 1).toUpperCase();
 
 export default function Scoreboard({ city, year, record, money, fans, trophies, phase, playoffs, gameIndex, series, onHelp }) {
   const team = `${city.name} ${city.nickname ?? "Baseball"}`;
@@ -16,7 +15,7 @@ export default function Scoreboard({ city, year, record, money, fans, trophies, 
 
   return (
     <header className="franchise-hud">
-      <div className="franchise-hud__mark" aria-hidden="true">{initial(city)}</div>
+      <div className="franchise-hud__mark" aria-hidden="true"><TeamLogo city={city} size={50} /></div>
       <div className="franchise-hud__identity">
         <div className="franchise-hud__team">{team}</div>
         <div className="franchise-hud__status">{status}</div>

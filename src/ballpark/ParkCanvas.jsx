@@ -18,10 +18,10 @@ const UMP_SWAP = { W: "#3a4a42" };
 const FW_COLORS = [PARK.lamp, "#e9a431", "#c6503f", "#f5edda", "#4f78a8"];
 const abbr = (s = "") => s.replace(/[^A-Za-z ]/g, "").slice(0, 3).toUpperCase() || "---";
 
-export default function ParkCanvas({ g, speed, playsRef, teamName }) {
+export default function ParkCanvas({ g, speed, playsRef, teamName, usColors }) {
   const canvasRef = useRef(null);
   const live = useRef({});
-  live.current = { g, speed, teamName };
+  live.current = { g, speed, teamName, usColors };
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -74,7 +74,7 @@ export default function ParkCanvas({ g, speed, playsRef, teamName }) {
       raf = requestAnimationFrame(tick);
       const dt = Math.min(64, now - last);
       last = now;
-      const { g: game, speed: spd, teamName: tn } = live.current;
+      const { g: game, speed: spd, teamName: tn, usColors: usTeam = US_TEAM } = live.current;
 
       if (game !== seenG) { seenG = game; script = null; trail = []; }
 
@@ -143,8 +143,8 @@ export default function ParkCanvas({ g, speed, playsRef, teamName }) {
       if (game) {
         const weBat = active ? script.play.weBat : game.half === (game.home ? "bottom" : "top");
         const oppTeam = teamColors(game.opp?.name);
-        const fieldTeam = weBat ? oppTeam : US_TEAM;
-        const batTeam = weBat ? US_TEAM : oppTeam;
+        const fieldTeam = weBat ? oppTeam : usTeam;
+        const batTeam = weBat ? usTeam : oppTeam;
         const fieldHome = weBat ? !game.home : game.home;
         const fieldName = weBat ? game.opp?.name : tn;
         const tl = active ? script.tl : null;

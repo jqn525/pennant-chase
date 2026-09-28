@@ -3,6 +3,7 @@
 // man in the league has a card without a single bespoke asset. The scene layer
 // is deliberately isolated (.tcard__scene) — drop real art in there later.
 
+import TeamLogo from "./TeamLogo.jsx";
 import { useEffect, useRef, useState } from "react";
 import { CARD_TIERS, printedTier, cardNumber, batsOf, throwsOf, nextPrint } from "../game/cards.js";
 import { ovr } from "../game/gear.js";
@@ -11,10 +12,6 @@ import PixelPortrait from "./PixelPortrait.jsx";
 import "./CardFace.css";
 
 const avg3 = (num, den) => (den ? (num / den).toFixed(3).replace(/^0/, "") : ".000");
-const monogram = (city) => {
-  const words = `${city?.name ?? ""} ${city?.nickname ?? ""}`.trim().split(/\s+/);
-  return ((words[0]?.[0] ?? "") + (words[words.length - 1]?.[0] ?? "")).toUpperCase();
-};
 
 export default function CardFace({ player, city, year, stat, money, onPrint, isOwn }) {
   const tier = CARD_TIERS[printedTier(player)];
@@ -112,7 +109,7 @@ export default function CardFace({ player, city, year, stat, money, onPrint, isO
           <div className="tcard__head">
             <span className="tcard__brand">PENNANT<br />CHASE</span>
             <span className="tcard__team">{city?.name} {city?.nickname}</span>
-            <span className="tcard__mono">{monogram(city)}</span>
+            <TeamLogo className="tcard__mono" city={city} size={26} />
           </div>
 
           <div className="tcard__photo">

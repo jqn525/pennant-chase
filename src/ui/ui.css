@@ -198,3 +198,5 @@
 /* Sheets pin to the top so switching tabs doesn't make the header jump */
 .game-modal__sheet:has(> .ui-sheet) { margin-top: 0; }
 .tip-p { margin: 0 0 12px; color: var(--cream); font-size: var(--fs-md); line-height: 1.45; }
+/* inherited text-shadow (e.g. the HUD mark) would ghost the SVG letters */
+.team-logo, .team-logo text { text-shadow: none; }

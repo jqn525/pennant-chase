@@ -3,6 +3,7 @@ import { useState } from "react";
 import { LEAGUE } from "../game/constants.js";
 import { fmt } from "../game/utils.js";
 import { SoundOnIcon, SoundOffIcon, RulebookIcon, TrophyIcon, SaveIcon, ImportIcon, RestartIcon } from "./Icons.jsx";
+import TeamLogo from "./TeamLogo.jsx";
 import useLockBody from "./useLockBody.js";
 import "./Settings.css";
 
@@ -23,7 +24,7 @@ function StatGroup({ title, rows }) {
   );
 }
 
-export default function Settings({ allTime: at, trophies, history, phase, sound, onToggleSound, onRules, onClose, getBackupCode, onRestore, onNewFranchise }) {
+export default function Settings({ onIdentity, city, allTime: at, trophies, history, phase, sound, onToggleSound, onRules, onClose, getBackupCode, onRestore, onNewFranchise }) {
   useLockBody();
   const [view, setView] = useState("settings");
   const [copied, setCopied] = useState(false);
@@ -63,6 +64,13 @@ export default function Settings({ allTime: at, trophies, history, phase, sound,
 
         {view === "settings" ? (
           <div className="settings-menu">
+            {onIdentity && (
+              <button className="settings-menu__row" onClick={onIdentity}>
+                <span className="settings-menu__icon settings-menu__icon--logo"><TeamLogo city={city} size={34} /></span>
+                <span><strong>Club identity</strong><small>Rename the club, restyle the logo and colors</small></span>
+                <b aria-hidden="true">›</b>
+              </button>
+            )}
             <button className="settings-menu__row" onClick={onToggleSound}>
               <span className="settings-menu__icon">{sound ? <SoundOnIcon size={18} /> : <SoundOffIcon size={18} />}</span>
               <span><strong>Game audio</strong><small>Sound effects and stadium reactions</small></span>

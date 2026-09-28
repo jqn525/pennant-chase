@@ -98,3 +98,4 @@
 @media (min-width: 620px) {
   .lifetime-group__grid { grid-template-columns: repeat(3, 1fr); }
 }
+.settings-menu__icon--logo { border: 0; background: transparent; }

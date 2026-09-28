@@ -25,6 +25,7 @@ import Scoreboard from "./ui/Scoreboard.jsx";
 import CitySelect from "./ui/CitySelect.jsx";
 import Rulebook from "./ui/Rulebook.jsx";
 import BallparkTab from "./ui/BallparkTab.jsx";
+import ClubIdentity from "./ui/ClubIdentity.jsx";
 import RosterTab from "./ui/RosterTab.jsx";
 import ShopTab from "./ui/ShopTab.jsx";
 import FrontOfficeTab from "./ui/FrontOfficeTab.jsx";
@@ -945,6 +946,7 @@ export default function App() {
 
       {menu === "settings" && (
         <Settings
+          onIdentity={() => setMenu("identity")} city={city}
           allTime={allTime} trophies={trophies} history={history} phase={phase}
           sound={sound} onToggleSound={() => setSound((v) => !v)}
           onRules={() => setMenu("rules")} onClose={() => setMenu(null)}
@@ -952,6 +954,10 @@ export default function App() {
         />
       )}
       {menu === "rules" && <Rulebook onClose={() => setMenu("settings")} />}
+      {menu === "identity" && (
+        <ClubIdentity city={city} onClose={() => setMenu("settings")}
+          onSave={(patch) => setCity((c) => ({ ...c, ...patch }))} />
+      )}
 
       <div className="game-content">
         {/* Header */}

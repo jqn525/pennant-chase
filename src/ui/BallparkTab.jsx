@@ -5,6 +5,7 @@ import { LEAGUE } from "../game/constants.js";
 import Panel from "./Panel.jsx";
 import StatTable from "./StatTable.jsx";
 import ParkCanvas from "../ballpark/ParkCanvas.jsx";
+import { uniformColors } from "../game/identity.js";
 import "./BallparkTab.css";
 
 const EMPTY_LINE = { ab: 0, h: 0, d: 0, t: 0, hr: 0, bb: 0, k: 0, r: 0, rbi: 0 };
@@ -39,7 +40,7 @@ export default function BallparkTab({ g, city, phase, playoffs, gameIndex, stand
           </aside>
         </div>
         <div className="ballpark-field__stage">
-          <ParkCanvas g={g} speed={speed} playsRef={playsRef} teamName={team} />
+          <ParkCanvas g={g} speed={speed} playsRef={playsRef} teamName={team} usColors={uniformColors(city)} />
           <GameBanner banner={banner} />
         </div>
       </div>

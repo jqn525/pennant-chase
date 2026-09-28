@@ -4,27 +4,15 @@ import { useState } from "react";
 import { EDGES, CITY_POOL, NICKNAME_POOL } from "../game/constants.js";
 import { globalCss } from "./styles.js";
 import Panel from "./Panel.jsx";
-import { DiceIcon } from "./Icons.jsx";
+import IdentityEditor from "./IdentityEditor.jsx";
 import { Button } from "./kit.jsx";
 import "./CitySelect.css";
 
 const roll = (pool) => pool[(Math.random() * pool.length) | 0];
 
-function NameField({ label, value, onChange, onRoll, rollLabel }) {
-  return (
-    <label className="fc-field">
-      <span>{label}</span>
-      <span className="fc-field__row">
-        <input value={value} maxLength={16} onChange={(e) => onChange(e.target.value)} />
-        <button type="button" className="fc-dice" aria-label={rollLabel} onClick={onRoll}><DiceIcon size={20} /></button>
-      </span>
-    </label>
-  );
-}
-
 export default function CitySelect({ onPick, onRestore }) {
-  const [tCity, setTCity] = useState(() => roll(CITY_POOL));
-  const [nick, setNick] = useState(() => roll(NICKNAME_POOL));
+  const [club, setClub] = useState(() => ({ name: roll(CITY_POOL), nickname: roll(NICKNAME_POOL), logo: {} }));
+  const tCity = club.name, nick = club.nickname;
   const [edge, setEdge] = useState(null);
   const [open, setOpen] = useState(false);
   const [pasted, setPasted] = useState("");
@@ -35,7 +23,7 @@ export default function CitySelect({ onPick, onRestore }) {
   const start = () => {
     if (!ready) return;
     const e = EDGES[edge];
-    onPick({ name: tCity.trim(), nickname: nick.trim(), bonus: e.bonus, label: `${e.title}: ${e.label}` });
+    onPick({ name: tCity.trim(), nickname: nick.trim(), logo: club.logo, bonus: e.bonus, label: `${e.title}: ${e.label}` });
   };
 
   return (
@@ -46,11 +34,7 @@ export default function CitySelect({ onPick, onRestore }) {
         <h1 className="fc-title">PENNANT<span> CHASE</span></h1>
         <div className="fc-kicker">Found your franchise</div>
 
-        <Panel title="YOUR CLUB">
-          <NameField label="City" value={tCity} onChange={setTCity} onRoll={() => setTCity(roll(CITY_POOL))} rollLabel="random city" />
-          <NameField label="Team name" value={nick} onChange={setNick} onRoll={() => setNick(roll(NICKNAME_POOL))} rollLabel="random team name" />
-          <div className="fc-preview">{`${tCity.trim()} ${nick.trim()}`.toUpperCase()}</div>
-        </Panel>
+        <IdentityEditor value={club} onChange={setClub} />
 
         <Panel title="YOUR EDGE">
           <div className="fc-edges" role="radiogroup" aria-label="Club edge">
