@@ -62,3 +62,5 @@
   .ballpark-field { grid-column: 1; }
   .broadcast-sheet { grid-column: 2; grid-row: 2 / 3; margin-top: 0; min-height: 470px; }
 }
+
+.ballpark-field__stage { position: relative; }

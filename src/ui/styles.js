@@ -50,7 +50,6 @@ export const overlay = { position: "fixed", inset: 0, background: "#040B08E8", d
 export const globalCss = `
   button:focus-visible { outline: 2px solid ${C.amber}; outline-offset: 2px; }
   @keyframes statPop { 0% { transform: scale(1.7); color: ${C.grass}; } 100% { transform: scale(1); } }
-  @keyframes sheetUp { 0% { transform: translateY(36px); opacity: 0; } 100% { transform: translateY(0); opacity: 1; } }
-  @keyframes screenIn { 0% { transform: translateY(12px); opacity: 0; } 100% { transform: translateY(0); opacity: 1; } }
-  button:active { transform: scale(0.96); }
+  button { transition: transform 60ms steps(2), filter 60ms steps(2); }
+  button:active { transform: translateY(2px) scale(0.98); filter: brightness(0.88); }
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }`;

@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
+import { FlipNumber, GameBanner } from "./fx.jsx";
 import { LEAGUE } from "../game/constants.js";
 import Panel from "./Panel.jsx";
 import StatTable from "./StatTable.jsx";
@@ -7,7 +9,7 @@ import "./BallparkTab.css";
 
 const EMPTY_LINE = { ab: 0, h: 0, d: 0, t: 0, hr: 0, bb: 0, k: 0, r: 0, rbi: 0 };
 
-export default function BallparkTab({ g, city, phase, playoffs, gameIndex, standings, rivals, log, speed, roster, onOpenCard, series, playsRef }) {
+export default function BallparkTab({ g, city, phase, playoffs, gameIndex, standings, rivals, log, speed, roster, onOpenCard, series, playsRef, banner }) {
   const [view, setView] = useState("radio");
   const box = g?.box;
   const team = city.nickname ?? city.name;
@@ -29,21 +31,32 @@ export default function BallparkTab({ g, city, phase, playoffs, gameIndex, stand
       <div className="ballpark-screen__context">{context}</div>
       <div className="ballpark-field">
         <div className="field-score-strip">
-          <div><span>{team}</span><strong>{g?.us ?? 0}</strong></div>
-          <div><span>{g?.opp?.name ?? "Visitors"}</span><strong>{g?.them ?? 0}</strong></div>
+          <div><span>{team}</span><strong><FlipNumber value={g?.us ?? 0} /></strong></div>
+          <div><span>{g?.opp?.name ?? "Visitors"}</span><strong><FlipNumber value={g?.them ?? 0} /></strong></div>
           <aside>
             <b>{g ? `${g.half === "top" ? "Top" : "Bot"} ${g.inning}` : "Next"}</b>
             <small>{g && !g.over ? `${g.outs} out${g.outs === 1 ? "" : "s"}` : g?.over ? "Final" : "Ready"}</small>
           </aside>
         </div>
-        <ParkCanvas g={g} speed={speed} playsRef={playsRef} teamName={team} />
+        <div className="ballpark-field__stage">
+          <ParkCanvas g={g} speed={speed} playsRef={playsRef} teamName={team} />
+          <GameBanner banner={banner} />
+        </div>
       </div>
 
       <section className="broadcast-sheet">
         <div className="broadcast-sheet__handle" />
         <div className="broadcast-sheet__eyebrow">Live from the ballpark</div>
         <h2>Radio Call</h2>
-        <p>{latest}</p>
+        <p>
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.span key={log[0]?.id ?? "idle"} className="radio-call-line"
+              initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: speed === 4 ? 0.08 : 0.18 }}>
+              {latest}
+            </motion.span>
+          </AnimatePresence>
+        </p>
         <div className="broadcast-tabs" role="tablist">
           {[['radio', 'Play-by-play'], ['box', 'Box score'], ['standings', 'Standings']].map(([id, label]) => (
             <button key={id} className={view === id ? "is-active" : ""} onClick={() => setView(id)} role="tab" aria-selected={view === id}>{label}</button>
@@ -52,7 +65,15 @@ export default function BallparkTab({ g, city, phase, playoffs, gameIndex, stand
 
         {view === "radio" && (
           <div className="radio-feed">
-            {log.slice(0, 10).map((line) => <div key={line.id} className={`radio-feed__line radio-feed__line--${line.kind}`}>{line.text}</div>)}
+            <AnimatePresence initial={false}>
+              {log.slice(0, 10).map((line) => (
+                <motion.div key={line.id} layout="position" className={`radio-feed__line radio-feed__line--${line.kind}`}
+                  initial={{ opacity: 0, x: -14 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}
+                  transition={{ duration: 0.2 }}>
+                  {line.text}
+                </motion.div>
+              ))}
+            </AnimatePresence>
           </div>
         )}
         {view === "box" && box && roster && (

@@ -4,7 +4,7 @@
 // the pure simulation lives in src/game/ and the screens in src/ui/.
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, MotionConfig, motion } from "motion/react";
 import { C, LEAGUE, ECON, TRADE, BAT_STATS, PIT_STATS, STADIUM, stadiumFx, REVENUE, revenueFx, SALARY, FRANCHISE } from "./game/constants.js";
 import { fmt } from "./game/utils.js";
 import { genRoster, seedUid, genDraftClass, vetPot, rollPot, pickTrait, freshName, seedNames, creepRival, seedRivalStars } from "./game/generators.js";
@@ -224,6 +224,13 @@ export default function App() {
   const ctxRef = useRef(SAVED?.liveContext ?? null);
   const restRef = useRef(0);      // beat between games at watchable speeds
   const playsRef = useRef([]);    // structured plays for the animated ballpark
+  const [banner, setBanner] = useState(null); // end-of-game banner over the field
+  const bannerTimer = useRef(null);
+  const showBanner = (b, ms = 2600) => {
+    clearTimeout(bannerTimer.current);
+    setBanner({ id: Date.now(), ...b });
+    bannerTimer.current = setTimeout(() => setBanner(null), ms);
+  };
 
   // Fresh-state mirror so interval callbacks never read stale closures
   const S = useRef({});
@@ -386,6 +393,13 @@ export default function App() {
     addAT({ g: 1, [res.won ? "w" : "l"]: 1, tickets: res.attendance, earned: res.moneyDelta, ...(wage ? { spent: wage } : {}) });
     if (res.fansDelta) setFans((f) => f + res.fansDelta);
     if (res.won && s.speed !== "max") play.cash();
+    if (s.speed !== "max") {
+      showBanner({
+        kind: res.won ? "win" : "loss",
+        title: res.won ? (g.us - g.them >= 5 ? "ROUT!" : "WIN!") : "FINAL",
+        sub: `${tn(s.city)} ${g.us} · ${g.opp.name} ${g.them}`,
+      }, s.speed === 4 ? 1400 : 2600);
+    }
     pushLog(res.text, res.kind);
     flushStats(g);
     setForm((f) => [...f, res.won ? "W" : "L"].slice(-10));
@@ -530,7 +544,10 @@ export default function App() {
       record: { w: s.standings[0].w, l: s.standings[0].l },
       fans: s.fans, history: s.history, trophies: s.trophies,
     });
-    if (playerCup) { setMoney((m) => m + ECON.cupPay); addAT({ earned: ECON.cupPay }); }
+    if (playerCup) {
+      setMoney((m) => m + ECON.cupPay); addAT({ earned: ECON.cupPay });
+      showBanner({ kind: "cup", title: "CHAMPIONS", sub: `${tn(S.current.city)} win the Pennant Cup` }, 4200);
+    }
 
     // The luxury tax: the winter bill for a payroll above the cap,
     // escalating for every consecutive year the club stays over.
@@ -921,6 +938,7 @@ export default function App() {
   );
 
   return (
+    <MotionConfig reducedMotion="user">
     <div className="game-shell">
       <style>{globalCss}</style>
       {saveError && <div role="alert" className="save-alert">{saveError}</div>}
@@ -975,7 +993,7 @@ export default function App() {
             g={g} city={city} year={year} phase={phase} playoffs={playoffs}
             gameIndex={gameIndex} standings={standings} rivals={rivals}
             log={log} speed={speed} roster={roster}
-            onOpenCard={openCard} series={series} playsRef={playsRef}
+            onOpenCard={openCard} series={series} playsRef={playsRef} banner={banner}
           />
         )}
 
@@ -1005,5 +1023,6 @@ export default function App() {
         onTogglePause={() => setPaused((p) => !p)}
         onTab={(id) => { setTab(id); play.click(); if (id === "shop") showTip("shop"); if (id === "club") showTip("stadium"); }} />
     </div>
+    </MotionConfig>
   );
 }

@@ -1,6 +1,7 @@
 import { LEAGUE } from "../game/constants.js";
 import { fmt } from "../game/utils.js";
 import { GearIcon, TrophyIcon } from "./Icons.jsx";
+import { FlipNumber, CashPops } from "./fx.jsx";
 import "./Scoreboard.css";
 
 const initial = (city) => (city.nickname ?? city.name ?? "P").trim().slice(0, 1).toUpperCase();
@@ -22,11 +23,11 @@ export default function Scoreboard({ city, year, record, money, fans, trophies, 
       </div>
       <button className="franchise-hud__settings" onClick={onHelp} aria-label="Open settings"><GearIcon size={17} /></button>
       <div className="franchise-hud__stats">
-        <div><span>Year</span><strong>{year}</strong></div>
-        <div><span>Record</span><strong>{record.w}–{record.l}</strong></div>
-        <div><span>Cash</span><strong>${fmt(money)}</strong></div>
-        <div><span>Fans</span><strong>{fmt(fans)}</strong></div>
-        <div className="franchise-hud__cups"><span><TrophyIcon size={10} /> Cups</span><strong>{trophies}</strong></div>
+        <div><span>Year</span><strong><FlipNumber value={year} /></strong></div>
+        <div><span>Record</span><strong><FlipNumber value={record.w} />–<FlipNumber value={record.l} /></strong></div>
+        <div className="franchise-hud__cash"><span>Cash</span><strong>${fmt(money)}</strong><CashPops money={money} /></div>
+        <div><span>Fans</span><strong><FlipNumber value={fmt(fans)} /></strong></div>
+        <div className="franchise-hud__cups"><span><TrophyIcon size={10} /> Cups</span><strong><FlipNumber value={trophies} /></strong></div>
       </div>
     </header>
   );
