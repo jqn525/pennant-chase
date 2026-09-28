@@ -19,7 +19,7 @@ import { teamPayroll, luxuryTax } from "./game/salary.js";
 import TabBar from "./ui/TabBar.jsx";
 import TipModal from "./ui/TipModal.jsx";
 import DraftBoard from "./ui/DraftBoard.jsx";
-import PlayerCard from "./ui/PlayerCard.jsx";
+import PlayerCard from "./ui/player/PlayerSheet.jsx";
 import { globalCss } from "./ui/styles.js";
 import Scoreboard from "./ui/Scoreboard.jsx";
 import CitySelect from "./ui/CitySelect.jsx";
@@ -970,7 +970,6 @@ export default function App() {
         <motion.main key={tab} className="screen-stack"
           initial={{ opacity: 0, x: 18 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -12 }}
           transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}>
-        {activeTip && <TipModal tipId={activeTip} onClose={closeTip} />}
 
         {cardView && (
           <PlayerCard
@@ -982,6 +981,8 @@ export default function App() {
             city={city} year={year} onPrintCard={printCard}
           />
         )}
+        {/* after the player sheet, so a tip it triggers sits on top of it */}
+        {activeTip && <TipModal tipId={activeTip} onClose={closeTip} />}
 
         {tab === "game" && phase === "draft" && draftClass && (
           <DraftBoard draftClass={draftClass} roster={roster} money={money} year={year}

@@ -1,0 +1,199 @@
+/* ── The UI kit: one type scale, one button set, one panel language ──
+   Pixel font for headings and big numbers only; everything else is
+   Barlow Condensed at 11px or larger. */
+
+:root {
+  --fs-xs: 11px;
+  --fs-sm: 13px;
+  --fs-md: 15px;
+  --fs-lg: 18px;
+  --fs-xl: 24px;
+  --fs-num: 28px;
+  --font-ui: 'Barlow Condensed', 'Arial Narrow', sans-serif;
+  --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 24px; --sp-6: 32px;
+  --r-sm: 4px;
+  --r-md: 8px;
+  --dirt: #c89b6c;
+  --line: #2c5540;
+  --well: #0a1a12;
+  --pixel-drop: 0 3px 0 #06130d;
+}
+
+/* ── Buttons ── */
+.ui-btn {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  min-height: 44px;
+  padding: 6px 14px;
+  border: 2px solid var(--amber);
+  border-radius: var(--r-md);
+  background: transparent;
+  color: var(--amber);
+  font-family: var(--font-ui);
+  font-size: var(--fs-md);
+  font-weight: 700;
+  letter-spacing: .6px;
+  line-height: 1.1;
+  text-align: center;
+  text-transform: uppercase;
+  box-shadow: var(--pixel-drop);
+  cursor: pointer;
+}
+.ui-btn--primary { background: var(--amber); border-color: #a8701c; color: var(--ink); }
+.ui-btn--ghost { border-color: var(--line); color: var(--cream); }
+.ui-btn--danger { background: var(--red); border-color: #86302a; color: var(--cream); }
+.ui-btn--lg { min-height: 52px; font-size: var(--fs-lg); }
+.ui-btn--sm { min-height: 36px; padding: 4px 10px; font-size: var(--fs-sm); }
+.ui-btn--block { display: flex; width: 100%; }
+.ui-btn__sub { font-size: var(--fs-sm); font-weight: 600; letter-spacing: .3px; opacity: .85; text-transform: none; }
+.ui-btn:disabled, .ui-btn.is-disabled {
+  border-color: var(--line);
+  background: var(--well);
+  color: var(--cream-dim);
+  box-shadow: none;
+  cursor: default;
+}
+.ui-btn:disabled .ui-btn__sub { color: var(--dirt); opacity: 1; }
+
+/* ── Chips ── */
+.ui-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  border: 1px solid currentColor;
+  border-radius: var(--r-sm);
+  font-family: var(--font-ui);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  letter-spacing: .8px;
+  line-height: 1.3;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.ui-chip--amber { color: var(--amber); }
+.ui-chip--green { color: var(--grass); }
+.ui-chip--red { color: #e8826f; }
+.ui-chip--dim { color: var(--cream-dim); border-color: #c8bda266; }
+.ui-chip--solid { background: var(--amber); border-color: var(--amber); color: var(--ink); }
+.ui-chip--common { color: var(--cream-dim); border-color: #c8bda266; }
+.ui-chip--uncommon { color: var(--grass); }
+.ui-chip--rare { color: #9fd0ff; }
+.ui-chip--unique { color: #f5d27a; background: #f5d27a1a; }
+
+/* ── Segmented control ── */
+.ui-seg {
+  display: flex;
+  border: 2px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--well);
+  overflow: hidden;
+}
+.ui-seg button {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 40px;
+  padding: 4px 6px;
+  border: 0;
+  border-right: 1px solid var(--line);
+  background: transparent;
+  color: var(--cream-dim);
+  font-family: var(--font-ui);
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  letter-spacing: .6px;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.ui-seg button:last-child { border-right: 0; }
+.ui-seg button.is-active { background: var(--amber); color: var(--ink); }
+.ui-seg--wrap { flex-wrap: wrap; gap: 6px; border: 0; background: transparent; overflow: visible; }
+.ui-seg--wrap button { flex: 1 1 auto; border: 2px solid var(--line); border-radius: var(--r-md); background: var(--well); }
+.ui-seg--wrap button.is-active { border-color: var(--amber); }
+
+/* ── Stat grid ── */
+.ui-stats { display: grid; grid-template-columns: repeat(var(--cols, 4), minmax(0, 1fr)); gap: 1px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--line); overflow: hidden; }
+.ui-stats > div { padding: 8px 6px 9px; background: var(--well); text-align: center; min-width: 0; }
+.ui-stats span { display: block; color: var(--cream-dim); font-family: var(--font-ui); font-size: var(--fs-xs); font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
+.ui-stats strong { display: block; margin-top: 3px; overflow: hidden; color: var(--cream); font-family: var(--font-pixel); font-size: 13px; font-weight: 400; text-overflow: ellipsis; white-space: nowrap; }
+.ui-stats--big strong { font-size: 16px; }
+
+/* ── Section ── */
+.ui-section { margin-top: var(--sp-4); }
+.ui-section:first-child { margin-top: 0; }
+.ui-section__head { display: flex; align-items: baseline; gap: 8px; margin-bottom: var(--sp-2); padding-bottom: 6px; border-bottom: 2px solid var(--line); }
+.ui-section__head h3 { flex: 1; margin: 0; color: var(--amber); font-family: var(--font-pixel); font-size: 11px; font-weight: 400; letter-spacing: 1px; line-height: 1.4; }
+.ui-section__head small { color: var(--cream-dim); font-family: var(--font-ui); font-size: var(--fs-sm); font-weight: 600; }
+.ui-note { margin: var(--sp-2) 0 0; color: var(--cream-dim); font-family: var(--font-ui); font-size: var(--fs-sm); line-height: 1.35; }
+
+/* ── Sheet: the shared overlay shell ── */
+.ui-sheet {
+  border: 3px solid var(--amber);
+  border-radius: 10px;
+  background: var(--green-900);
+  color: var(--cream);
+  font-family: var(--font-ui);
+  font-size: var(--fs-md);
+  box-shadow: 0 12px 40px #000c;
+}
+.ui-sheet__head {
+  position: sticky;
+  top: calc(-1 * max(16px, env(safe-area-inset-top)));
+  z-index: 3;
+  padding: 10px 12px 10px;
+  border-bottom: 2px solid var(--line);
+  border-radius: 7px 7px 0 0;
+  background: var(--green-900);
+}
+.ui-sheet__bar { display: flex; align-items: center; gap: 10px; }
+.ui-sheet__title { flex: 1; min-width: 0; margin: 0; color: var(--amber); font-family: var(--font-pixel); font-size: 12px; font-weight: 400; letter-spacing: 1px; line-height: 1.5; }
+.ui-sheet__close {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 2px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--well);
+  color: var(--cream);
+  font-family: var(--font-ui);
+  font-size: 20px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.ui-sheet__body { padding: 14px 12px 16px; }
+.ui-sheet__foot {
+  position: sticky;
+  bottom: calc(-1 * max(40px, calc(env(safe-area-inset-bottom) + 16px)));
+  z-index: 3;
+  padding: 10px 12px 12px;
+  border-top: 2px solid var(--line);
+  border-radius: 0 0 7px 7px;
+  background: var(--green-900);
+}
+
+/* ── Row: the list-item building block (roster, gear, trades) ── */
+.ui-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 56px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--well);
+}
+.ui-row + .ui-row { margin-top: 6px; }
+.ui-row__main { flex: 1; min-width: 0; }
+.ui-row__title { overflow: hidden; color: var(--cream); font-size: var(--fs-md); font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+.ui-row__meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin-top: 3px; color: var(--cream-dim); font-size: var(--fs-sm); font-weight: 600; }
+.ui-pixel-img { image-rendering: pixelated; flex: none; }
+.pos-plus { color: var(--grass); }
+.pos-minus { color: #e8826f; }
+.ui-sheet__subhead { margin-top: 10px; }
+/* Sheets pin to the top so switching tabs doesn't make the header jump */
+.game-modal__sheet:has(> .ui-sheet) { margin-top: 0; }

@@ -7,19 +7,6 @@ export const SLAB = "'Alfa Slab One', serif";
 export const PIXEL = "'Press Start 2P', monospace";
 export const CONDENSED = "'Barlow Condensed', sans-serif";
 
-// Chunky retro frame with a label that breaks the border (mockup style)
-export const pixelPanel = {
-  position: "relative", border: `3px solid ${C.amber}`, borderRadius: 8,
-  padding: "16px 10px 10px", marginTop: 14,
-};
-export const pixelLegend = (bg) => ({
-  position: "absolute", top: 0, left: "50%", transform: "translate(-50%, -55%)",
-  background: bg, padding: "0 8px", fontFamily: PIXEL, fontSize: 11,
-  color: C.amber, letterSpacing: 1, whiteSpace: "nowrap",
-});
-
-export const bulb = { fontFamily: MONO, color: C.amber, textShadow: `0 0 12px ${C.amber}55` };
-
 export const panel = {
   background: "linear-gradient(145deg, #183A28, #0E281B)",
   border: "1px solid #85602D", borderRadius: 10,
@@ -34,13 +21,6 @@ export const btn = (enabled) => ({
   color: enabled ? C.amber : C.creamDim,
   boxShadow: enabled ? "inset 0 1px #FFF2, 0 4px 10px #0004" : "none",
   cursor: enabled ? "pointer" : "default", opacity: enabled ? 1 : 0.55, textAlign: "left",
-});
-
-export const tabBtn = (active) => ({
-  fontFamily: MONO, fontSize: 12, letterSpacing: 1, padding: "8px 14px",
-  background: active ? C.greenPanel : "transparent", color: active ? C.amber : C.creamDim,
-  border: `1px solid ${active ? C.amber : C.greenLine}`, borderBottom: active ? `1px solid ${C.greenPanel}` : `1px solid ${C.greenLine}`,
-  borderRadius: "6px 6px 0 0", cursor: "pointer",
 });
 
 // No backdrop-filter here: iOS WebKit mis-clips blurred fixed overlays with
