@@ -202,6 +202,15 @@ button:focus-visible, input:focus-visible, textarea:focus-visible {
   .game-shell { padding-inline: 18px; padding-bottom: 148px; }
 }
 
+/* Legendary gear: a slow gold pulse with a glint */
+@keyframes gearLegendary {
+  0%, 100% { filter: drop-shadow(0 0 4px #c6503f) brightness(1); }
+  45% { filter: drop-shadow(0 0 7px #e9a431) brightness(1.18); }
+  50% { filter: drop-shadow(0 0 8px #fff4c9) brightness(1.35); }
+  55% { filter: drop-shadow(0 0 7px #e9a431) brightness(1.18); }
+}
+.gear-legendary { animation: gearLegendary 2.4s ease-in-out infinite; }
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }

@@ -22,7 +22,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["pwa-icon.svg", "portraits/*.png", "gear/*.png"],
+      includeAssets: ["pwa-icon.svg"],
       manifest: {
         name: "Pennant Chase",
         short_name: "Pennant",

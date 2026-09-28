@@ -5,29 +5,22 @@
 // secondaries ±4%), applied multiplicatively and capped at 99 — gear can
 // push a rating toward perfect, never past it.
 
+import { GEAR_SLOTS, gearRows, gearSwap } from "../art/sprites/gear.js";
+import { spriteUrl } from "../art/dataUrl.js";
 import { LEAGUE, RARITY, BAT_STATS, PIT_STATS, PLAYER_TRAITS, FRANCHISE } from "./constants.js";
 
 // Trait lookup + the static percentage a player's trait puts on one stat
 export const traitInfo = (id) => PLAYER_TRAITS.find((t) => t.id === id) || null;
 const traitPct = (p, stat) => traitInfo(p.trait)?.mods?.[stat] || 0;
 
-// Pixel-art sprite tiles in public/gear/ (48×48, beige square tiles).
-// Slots with several looks have <slot>.png, <slot>2.png, ... — an item's id
-// hashes to one look so the same item always shows the same art.
-export const GEAR_ART = new Set(["bat", "batGloves", "cleats", "glove", "shades", "sleeve", "rosin"]);
-const GEAR_VARIANTS = { bat: 2, batGloves: 3, cleats: 3, glove: 3, shades: 3, sleeve: 3, rosin: 1 };
+// Code-drawn 16×16 pixel icons (art/sprites/gear.js). An item's id picks its
+// colorway so the same item always looks the same; legendary gear is gold.
+export const GEAR_ART = new Set(GEAR_SLOTS);
 export const gearArtUrl = (itemOrSlot) => {
-  const slot = typeof itemOrSlot === "string" ? itemOrSlot : itemOrSlot.slot;
-  if (typeof itemOrSlot !== "string" && itemOrSlot.rarity === 3) {
-    return `${import.meta.env.BASE_URL}gear/${slot}-legendary.png`;
-  }
-  let v = 0;
-  if (typeof itemOrSlot !== "string" && itemOrSlot.id) {
-    let h = 0;
-    for (let i = 0; i < itemOrSlot.id.length; i++) h = (h * 31 + itemOrSlot.id.charCodeAt(i)) % 9973;
-    v = h % (GEAR_VARIANTS[slot] || 1);
-  }
-  return `${import.meta.env.BASE_URL}gear/${slot}${v ? v + 1 : ""}.png`;
+  const item = typeof itemOrSlot === "string" ? { slot: itemOrSlot } : itemOrSlot;
+  const legendary = item.rarity === 3;
+  const swap = gearSwap(item);
+  return spriteUrl(`gear:${item.slot}|${legendary ? 1 : 0}|${swap.c}`, () => gearRows(item.slot, legendary), swap);
 };
 
 export const GEAR = [

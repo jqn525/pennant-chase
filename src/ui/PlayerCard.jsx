@@ -295,7 +295,7 @@ export default function PlayerCard({ player, isOwn, onClose, money, league, stat
                       display: "flex", alignItems: "center", justifyContent: "center",
                     }}>
                     {GEAR_ART.has(g.slot) ? (
-                      <img src={gearArtUrl(item || g.slot)} alt={g.label} width={34} height={34}
+                      <img src={gearArtUrl(item || g.slot)} alt={g.label} width={34} height={34} className={item?.rarity === 3 ? "gear-legendary" : undefined}
                         style={{ imageRendering: "pixelated", borderRadius: 3, opacity: item ? 1 : 0.2, filter: item ? "none" : "grayscale(1)" }} />
                     ) : (
                       <span style={{ fontFamily: PIXEL, fontSize: 10, color: item ? rarityColor[item.rarity] : C.greenLine }}>

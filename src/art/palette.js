@@ -23,7 +23,30 @@ export const PAL = {
   a: "#e9a431",
   y: "#fff4c9",
   e: "#1a120c", // eyes / hair dark
+  // hair slots (swapped per player)
+  h: "#3a2616",
+  H: "#24170d",
+  m: "#8e3b30", // mouth
+  n: "#5a6660", // catcher's gear
+  N: "#3a4540",
+  // portrait backdrop: a night ballpark, out of focus
+  g: "#1d3c2c",
+  G: "#132b1f",
+  L: "#2c5540",
+  l: "#e9a431",
+  // gear accents
+  x: "#b9b49f",
+  X: "#7d7a6a",
 };
+
+export const HAIR = [
+  ["#1a120c", "#0b0806"],
+  ["#3a2616", "#24170d"],
+  ["#6b4326", "#4a2d18"],
+  ["#9a4a24", "#6b3016"],
+  ["#d9b060", "#a8843c"],
+  ["#9a9a90", "#6e6e66"],
+];
 
 // Park + effects colors (used directly by the scene renderer)
 export const PARK = {
