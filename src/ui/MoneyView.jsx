@@ -6,6 +6,7 @@ import { options } from "../game/advisor.js";
 import { money, count, ordinal } from "./fmt.js";
 import { netPerGame, payroll, payrollShare, fansWin, place, attendance } from "./metrics.js";
 import { OptionList } from "./Options.jsx";
+import { SpendBox } from "./Automation.jsx";
 
 function Ledger({ s }) {
   const [view, setView] = useState("season");
@@ -66,6 +67,9 @@ export default function MoneyView({ f, goTo }) {
       <h2><span className="grow">Best use of your money</span><small>ranked by payback</small></h2>
       <OptionList list={top} f={f} />
       <button className="btn btn--quiet btn--block" style={{ marginTop: 8 }} onClick={() => goTo("spend")}>See every option</button>
+
+      <h2><span className="grow">Spend optimally</span><small>best payback first</small></h2>
+      <SpendBox f={f} />
 
       <Ledger s={s} />
     </>

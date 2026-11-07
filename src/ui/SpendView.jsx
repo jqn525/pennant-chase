@@ -5,6 +5,7 @@ import { restockNote } from "../game/franchise.js";
 import { RARITY } from "../game/constants.js";
 import { money } from "./fmt.js";
 import { OptionList } from "./Options.jsx";
+import { RulesPanel } from "./Automation.jsx";
 
 const KINDS = ["All", "Train", "Gear", "Build", "Print"];
 
@@ -49,6 +50,9 @@ export default function SpendView({ f }) {
           <p className="note">Each item is listed above with the player it helps most.</p>
         </>
       )}
+
+      <h2><span className="grow">Standing orders</span><small>run after every game</small></h2>
+      <RulesPanel f={f} />
 
       {locked.length > 0 && (
         <>
