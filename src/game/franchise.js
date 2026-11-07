@@ -14,7 +14,7 @@ import { nextPrint, cardDraw } from "./cards.js";
 import { loadoutById, applyLoadout, sortRival } from "./lineup.js";
 import { teamPayroll, luxuryTax } from "./salary.js";
 
-export const EMPTY_STAT = { ab: 0, h: 0, d: 0, t: 0, hr: 0, bb: 0, k: 0, r: 0, rbi: 0, outsP: 0, kP: 0, bbP: 0, hP: 0, raP: 0 };
+export const EMPTY_STAT = { g: 0, ab: 0, h: 0, d: 0, t: 0, hr: 0, bb: 0, k: 0, r: 0, rbi: 0, outsP: 0, kP: 0, bbP: 0, hP: 0, raP: 0 };
 export const FENCE = { corner: LEAGUE.fenceCorner, center: LEAGUE.fenceCenter };
 const HOME_BO5 = [1, 1, 0, 0, 1];
 const HOME_BO7 = [1, 1, 0, 0, 0, 1, 1];
@@ -64,7 +64,7 @@ const updatePlayer = (s, pid, fn) => {
 export function blankState() {
   return {
     city: null, money: ECON.startMoney, fans: ECON.startFans, roster: null, merch: 0, tv: 0,
-    stadium: { parking: 0, seats: 0, conc: 0, lights: 0 }, seasonStats: {}, shopItems: genShipment(),
+    stadium: { parking: 0, seats: 0, conc: 0, lights: 0 }, seasonStats: {}, careerStats: {}, gameLog: {}, lastBox: null, shopItems: genShipment(),
     draftClass: null, form: [], year: 1, phase: "regular", rivals: null, schedule: null, rivalDays: null,
     gameIndex: 0, standings: Array.from({ length: 8 }, () => ({ w: 0, l: 0 })), playoffs: null,
     history: [], trophies: 0, allTime: {}, capYears: 0, lineupLoadout: "numbers", autoLineup: true,
@@ -140,7 +140,7 @@ export function loadState(saved) {
   }
   Object.assign(s, {
     city: S.city, money: S.money, fans: S.fans, roster: S.roster, merch: lvlOf(S.merch), tv: lvlOf(S.tv),
-    stadium: S.stadium ?? s.stadium, seasonStats: S.seasonStats ?? {}, shopItems: S.shopItems ?? s.shopItems,
+    stadium: S.stadium ?? s.stadium, seasonStats: S.seasonStats ?? {}, careerStats: S.careerStats ?? {}, gameLog: S.gameLog ?? {}, lastBox: S.lastBox ?? null, shopItems: S.shopItems ?? s.shopItems,
     draftClass: S.draftClass ?? null, form: S.form ?? [], year: S.year ?? 1, phase: S.phase ?? "regular",
     rivals: S.rivals, schedule: S.schedule, rivalDays: S.rivalDays, gameIndex: S.gameIndex ?? 0,
     standings: S.standings ?? s.standings, playoffs: S.playoffs ?? null, history: S.history ?? [],
@@ -159,7 +159,7 @@ export function toSave(s) {
   return {
     version: 3, scale: 100, names: 2, econ: 2, balance: 1, lastSeen: Date.now(),
     city: s.city, money: s.money, fans: s.fans, roster: s.roster, merch: s.merch, tv: s.tv, stadium: s.stadium,
-    seasonStats: s.seasonStats, shopItems: s.shopItems, draftClass: s.draftClass, form: s.form,
+    seasonStats: s.seasonStats, careerStats: s.careerStats, gameLog: s.gameLog, lastBox: s.lastBox, shopItems: s.shopItems, draftClass: s.draftClass, form: s.form,
     year: s.year, phase: s.phase, rivals: s.rivals, schedule: s.schedule, rivalDays: s.rivalDays,
     gameIndex: s.gameIndex, standings: s.standings, playoffs: s.playoffs, history: s.history,
     trophies: s.trophies, allTime: s.allTime, capYears: s.capYears, speed: s.speed, sound: s.sound,
@@ -220,6 +220,36 @@ function flushStats(s, g) {
     next[pid] = cur;
   }
   s.seasonStats = next;
+  // this game's running line per player, kept on the game so a mid-game save keeps it
+  const la = g.lineAcc || (g.lineAcc = {});
+  for (const pid in accs) {
+    const cur = la[pid] || (la[pid] = {});
+    for (const k in accs[pid]) cur[k] = (cur[k] || 0) + accs[pid][k];
+  }
+}
+
+// Career = banked past seasons + the season in progress
+const addCounts = (a, b) => { const o = { ...EMPTY_STAT, ...a }; for (const k in b) o[k] = (o[k] || 0) + b[k]; return o; };
+export const careerOf = (s, pid) => addCounts(s.careerStats?.[pid], s.seasonStats[pid] || {});
+export const GAME_LOG_LEN = 20;
+
+// Bank this game's per-player lines into the game log and the last box score
+function logGame(s, g, won, playoffLabel) {
+  const label = playoffLabel ? (playoffLabel === "CUP" ? "Final" : "Semi") : `G${s.gameIndex + 1}`;
+  const head = { year: s.year, game: label, opp: g.opp.name, home: g.home, won, us: g.us, them: g.them };
+  const lines = {};
+  const log = { ...(s.gameLog || {}) };
+  for (const pid in g.lineAcc || {}) {
+    const line = { ...EMPTY_STAT, ...g.lineAcc[pid], g: 1 };
+    lines[pid] = line;
+    log[pid] = [{ ...head, ...line }, ...(log[pid] || [])].slice(0, GAME_LOG_LEN);
+  }
+  s.gameLog = log;
+  s.lastBox = { ...head, lines };
+  // games played
+  const ss = { ...s.seasonStats };
+  for (const pid in lines) ss[pid] = { ...(ss[pid] || EMPTY_STAT), g: ((ss[pid] || {}).g || 0) + 1 };
+  s.seasonStats = ss;
 }
 const ratingsNow = (s) => [teamRating({ batters: s.roster.batters, sp: s.roster.sp }), ...s.rivals.map(teamRating)];
 
@@ -283,6 +313,7 @@ export function settle(s, g) {
   addAT(s, { g: 1, [res.won ? "w" : "l"]: 1, tickets: res.attendance });
   if (res.fansDelta) s.fans += res.fansDelta;
   flushStats(s, g);
+  logGame(s, g, res.won, playoffLabel);
   s.form = [...s.form, res.won ? "W" : "L"].slice(-10);
   s.results.unshift({ won: res.won, us: g.us, them: g.them, opp: g.opp.name, home: g.home, gate: res.attendance, net: ledgerNet(s.ledger.game), fans: res.fansDelta, year: s.year, playoff: playoffLabel });
   if (s.results.length > 60) s.results.length = 60;
@@ -434,6 +465,9 @@ function offseason(s, championIdx, playerCup) {
   s.playoffs = null;
   s.history = off.history;
   s.trophies = off.trophies;
+  const bank = { ...(s.careerStats || {}) };
+  for (const pid in s.seasonStats) bank[pid] = addCounts(bank[pid], s.seasonStats[pid]);
+  s.careerStats = bank;
   s.seasonStats = {};
   s.form = [];
   s.year = off.year;

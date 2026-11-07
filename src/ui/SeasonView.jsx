@@ -3,8 +3,9 @@ import { LEAGUE } from "../game/constants.js";
 import { seedOrder, teamRating, gamesBehind } from "../game/season.js";
 import { tn, seriesNow } from "../game/franchise.js";
 import { money, count, ordinal } from "./fmt.js";
+import BoxScore from "./BoxScore.jsx";
 
-export default function SeasonView({ f }) {
+export default function SeasonView({ f, openPlayer }) {
   const { s } = f;
   const names = [tn(s.city), ...s.rivals.map((r) => r.name)];
   const ratings = [teamRating({ batters: s.roster.batters, sp: s.roster.sp }), ...s.rivals.map(teamRating)];
@@ -48,6 +49,9 @@ export default function SeasonView({ f }) {
         </table>
       </div>
       {s.phase === "regular" && <p className="note">Playoff line: {cut.w}–{cut.l}. You are {ordinal(order.indexOf(0) + 1)}.</p>}
+
+      <h2>Last game</h2>
+      <BoxScore s={s} openPlayer={openPlayer} />
 
       <h2><span className="grow">Results</span><small>{thisYear.length ? `${thisYear.filter((r) => r.won).length}–${thisYear.filter((r) => !r.won).length} this year` : ""}</small></h2>
       <div className="panel">

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { blankState, found, tick, closeDraft, ledgerNet, credit, merchTick, build, buildLock, train, toSave, loadState, trainCost, allPlayers } from "./franchise.js";
+import { careerOf, blankState, found, tick, closeDraft, ledgerNet, credit, merchTick, build, buildLock, train, toSave, loadState, trainCost, allPlayers } from "./franchise.js";
 import { validateSave } from "./save.js";
 import { LEAGUE } from "./constants.js";
 
@@ -84,5 +84,41 @@ describe("franchise core", () => {
     expect(t.ledger.life).toEqual({});
     expect(t.rules).toEqual([]);
     expect(t.gameIndex).toBe(5);
+  });
+});
+
+describe("player stats", () => {
+  const COUNT = ["ab", "h", "d", "t", "hr", "bb", "k", "r", "rbi", "outsP", "kP", "bbP", "hP", "raP"];
+  it("game log lines add up to the season, and the last box matches the last result", () => {
+    const s = fresh();
+    for (let i = 0; i < 12; i++) tick(s, "max");
+    expect(s.lastBox.us).toBe(s.results[0].us);
+    expect(s.lastBox.them).toBe(s.results[0].them);
+    for (const p of allPlayers(s)) {
+      const log = s.gameLog[p.id] || [];
+      const st = s.seasonStats[p.id];
+      if (!st) continue;
+      expect(st.g).toBe(log.length);
+      for (const k of COUNT) expect(log.reduce((n, g) => n + (g[k] || 0), 0)).toBe(st[k]);
+    }
+    const b = s.roster.batters[0];
+    expect(s.seasonStats[b.id].ab).toBeGreaterThan(0);
+  });
+
+  it("banks the season into career totals at winter, and saves all of it", () => {
+    const s = fresh();
+    playSeason(s);
+    const pid = s.roster.batters[0].id;
+    expect(s.careerStats[pid].ab).toBeGreaterThan(100);
+    expect(Object.keys(s.seasonStats).length).toBe(0);
+    expect(careerOf(s, pid).ab).toBe(s.careerStats[pid].ab);
+    const back = loadState(JSON.parse(JSON.stringify(toSave(s))));
+    expect(back.careerStats[pid].ab).toBe(s.careerStats[pid].ab);
+    expect(back.gameLog[pid].length).toBeGreaterThan(0);
+    expect(back.lastBox).toBeTruthy();
+    const old = toSave(s); delete old.careerStats; delete old.gameLog; delete old.lastBox;
+    const o = loadState(JSON.parse(JSON.stringify(old)));
+    expect(o.careerStats).toEqual({});
+    expect(o.lastBox).toBe(null);
   });
 });

@@ -5,7 +5,7 @@ import { restockNote } from "../game/franchise.js";
 import { RARITY } from "../game/constants.js";
 import { money } from "./fmt.js";
 import { OptionList } from "./Options.jsx";
-import { RulesPanel } from "./Automation.jsx";
+import { RulesPanel, SpendBox } from "./Automation.jsx";
 
 const KINDS = ["All", "Train", "Gear", "Build", "Print"];
 
@@ -20,7 +20,11 @@ export default function SpendView({ f }) {
     <>
       <h1>Spend</h1>
       <p className="lede">{money(s.money)} available. Every option is valued in dollars per game and sorted by how fast it pays for itself.</p>
-      <div className="chips" role="tablist" aria-label="Filter" style={{ margin: "12px 0" }}>
+      <h2><span className="grow">Spend optimally</span><small>best payback first</small></h2>
+      <SpendBox f={f} />
+
+      <h2>Every option</h2>
+      <div className="chips" role="tablist" aria-label="Filter" style={{ margin: "0 0 12px" }}>
         {KINDS.map((k) => (
           <button key={k} role="tab" aria-selected={kind === k} className={kind === k ? "on" : ""} onClick={() => setKind(k)}>
             {k} <span className="dim">{k === "All" ? all.length : all.filter((o) => o.kind === k).length}</span>

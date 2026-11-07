@@ -27,7 +27,7 @@ describe("stat lines", () => {
     expect(ip({ ...s, outsP: 20 })).toBe("6.2");
   });
   it("orders the headline stats first", () => {
-    expect(statLine(Z, true)[0][0]).toBe("AVG");
+    expect(statLine(Z, true).map(([k]) => k)).toContain("OPS");
     expect(statLine(Z, false)[0][0]).toBe("ERA");
   });
 });

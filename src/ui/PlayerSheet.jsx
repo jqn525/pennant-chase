@@ -4,9 +4,10 @@ import { BAT_STATS, PIT_STATS, PLAYER_TRAITS } from "../game/constants.js";
 import { ovr, gearBonus, GEAR } from "../game/gear.js";
 import { salaryOf } from "../game/salary.js";
 import { CARD_TIERS, nextPrint, eligibleTier } from "../game/cards.js";
-import { statLine } from "../game/statline.js";
+import { columns } from "../game/statline.js";
+import StatTable from "./StatTable.jsx";
 import {
-  allPlayers, stat, trainCost, trainCeil, planTraining, train, trainAll, printCard,
+  allPlayers, stat, careerOf, trainCost, trainCeil, planTraining, train, trainAll, printCard,
   tagFranchise, franchiseUsed, franchiseSlots, tradeQuote, makeTrade,
 } from "../game/franchise.js";
 import { gearGain, WIN_PER_BAT_POINT, WIN_PER_ARM_POINT, valueOfWin } from "../game/advisor.js";
@@ -16,6 +17,7 @@ import { Sheet } from "./Shell.jsx";
 export default function PlayerSheet({ f, pid, onClose }) {
   const { s } = f;
   const [armed, setArmed] = useState(null);
+  const [span, setSpan] = useState("season");
   const p = allPlayers(s).find((x) => x.id === pid) || s.draftClass?.find((x) => x.id === pid);
   if (!p) return null;
   const own = allPlayers(s).some((x) => x.id === pid);
@@ -25,7 +27,6 @@ export default function PlayerSheet({ f, pid, onClose }) {
   const up = nextPrint(p);
   const all = own ? planTraining(s, p, keys, s.money) : null;
   const perPoint = (p.role === "bat" ? WIN_PER_BAT_POINT : WIN_PER_ARM_POINT) * valueOfWin(s);
-  const line = statLine(stat(s, p.id), p.role === "bat");
   const slots = GEAR.filter((g) => (g.role === "bat") === (p.role === "bat"));
 
   return (
@@ -71,15 +72,7 @@ export default function PlayerSheet({ f, pid, onClose }) {
         </button>
       )}
 
-      {line.length > 0 && (
-        <>
-          <h2>Season</h2>
-          <div className="panel table-wrap"><table>
-            <thead><tr>{line.map(([k]) => <th key={k}>{k}</th>)}</tr></thead>
-            <tbody><tr>{line.map(([k, v]) => <td key={k} className="n">{v}</td>)}</tr></tbody>
-          </table></div>
-        </>
-      )}
+      {own && <PlayerStats s={s} p={p} span={span} setSpan={setSpan} />}
 
       <h2>Gear</h2>
       <div className="panel table-wrap"><table>
@@ -145,5 +138,45 @@ export default function PlayerSheet({ f, pid, onClose }) {
         </>
       )}
     </Sheet>
+  );
+}
+
+const LOG_COLS = { bat: ["AB", "H", "HR", "RBI", "BB", "K"], pit: ["IP", "H", "R", "BB", "K"] };
+
+function PlayerStats({ s, p, span, setSpan }) {
+  const isBat = p.role === "bat";
+  const log = s.gameLog?.[p.id] || [];
+  const cols = columns(isBat).filter(([k]) => LOG_COLS[isBat ? "bat" : "pit"].includes(k));
+  return (
+    <>
+      <h2>Stats</h2>
+      <div className="chips" role="tablist" aria-label="Stat span" style={{ marginBottom: 8 }}>
+        {[["season", `Year ${s.year}`], ["career", "Career"], ["log", "Game log"]].map(([k, l]) => (
+          <button key={k} role="tab" aria-selected={span === k} className={span === k ? "on" : ""} onClick={() => setSpan(k)}>{l}</button>
+        ))}
+      </div>
+      {span !== "log" ? (
+        <StatTable isBat={isBat} sortable={false}
+          rows={[{ id: p.id, name: span === "career" ? "Career" : `Year ${s.year}`, stat: span === "career" ? careerOf(s, p.id) : stat(s, p.id) }]} />
+      ) : (
+        <div className="panel table-wrap stat-table">
+          <table>
+            <thead><tr><th>Game</th>{cols.map(([k]) => <th key={k}>{k}</th>)}</tr></thead>
+            <tbody>
+              {log.length === 0 && <tr><td className="dim" colSpan={cols.length + 1}>No games yet.</td></tr>}
+              {log.map((g, i) => (
+                <tr key={i}>
+                  <td>
+                    <span className={g.won ? "up" : "down"}>{g.won ? "W" : "L"} {g.us}–{g.them}</span>
+                    <span className="sub">{g.game} {g.home ? "vs" : "@"} {g.opp}</span>
+                  </td>
+                  {cols.map(([k, show]) => <td key={k} className="n">{show(g)}</td>)}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </>
   );
 }

@@ -1,10 +1,10 @@
 // ── The shell: club header with cash and pace, four tabs, overlay sheets ──
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import TeamLogo from "./TeamLogo.jsx";
 import { money } from "./fmt.js";
 import { netPerGame, seasonLabel } from "./metrics.js";
 import { options } from "../game/advisor.js";
-import MoneyView from "./MoneyView.jsx";
+import OverviewView from "./OverviewView.jsx";
 import SpendView from "./SpendView.jsx";
 import RosterView from "./RosterView.jsx";
 import SeasonView from "./SeasonView.jsx";
@@ -12,7 +12,7 @@ import PlayerSheet from "./PlayerSheet.jsx";
 import DraftSheet from "./DraftSheet.jsx";
 import SettingsSheet from "./SettingsSheet.jsx";
 
-const TABS = [["money", "Money"], ["spend", "Spend"], ["roster", "Roster"], ["season", "Season"]];
+const TABS = [["overview", "Overview"], ["spend", "Spend"], ["roster", "Roster"], ["season", "Season"]];
 
 export function Pace({ f }) {
   const { s, paused, setPaused, setSpeed } = f;
@@ -35,7 +35,20 @@ export function Pace({ f }) {
 
 export default function Shell({ f }) {
   const { s } = f;
-  const [tab, setTab] = useState(() => { try { return sessionStorage.getItem("pc-tab") || "money"; } catch { return "money"; } });
+  const [tab, setTab] = useState(() => {
+    try { const t = sessionStorage.getItem("pc-tab"); return TABS.some(([id]) => id === t) ? t : "overview"; } catch { return "overview"; }
+  });
+  // The header is fixed; measure it so the page starts below it
+  const topRef = useRef(null);
+  useLayoutEffect(() => {
+    const el = topRef.current;
+    if (!el) return undefined;
+    const set = () => document.documentElement.style.setProperty("--top-h", `${el.offsetHeight}px`);
+    set();
+    const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(set) : null;
+    ro?.observe(el);
+    return () => ro?.disconnect();
+  }, []);
   const [playerId, setPlayerId] = useState(null);
   const [settings, setSettings] = useState(false);
   const [draftHidden, setDraftHidden] = useState(false);
@@ -45,12 +58,12 @@ export default function Shell({ f }) {
   const net = netPerGame(s);
   const ready = options(s).filter((o) => o.affordable && Number.isFinite(o.payback)).length;
   const showDraft = s.phase === "draft" && !draftHidden;
-  const views = { money: MoneyView, spend: SpendView, roster: RosterView, season: SeasonView };
+  const views = { overview: OverviewView, spend: SpendView, roster: RosterView, season: SeasonView };
   const View = views[tab];
 
   return (
     <>
-      <header className="top">
+      <header className="top" ref={topRef}>
         <div className="top__in">
           <button className="top__club" onClick={() => setSettings(true)} aria-label="Club settings">
             <TeamLogo city={s.city} size={34} />
