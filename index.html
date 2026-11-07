@@ -3,19 +3,21 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <meta name="theme-color" content="#0D2418" />
+    <meta name="theme-color" content="#f4f5f2" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#131614" media="(prefers-color-scheme: dark)" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <link rel="icon" href="/pennant-chase/pwa-icon.svg" />
     <title>Pennant Chase</title>
     <style>
       html, body {
         margin: 0;
         padding: 0;
-        background: #152E22;
+        background: #f4f5f2;
         touch-action: pan-x pan-y; /* scroll yes, pinch/double-tap zoom no */
         -webkit-text-size-adjust: 100%;
       }
+      @media (prefers-color-scheme: dark) { html, body { background: #131614; } }
     </style>
     <script>
       // iOS Safari ignores user-scalable=no; block its pinch gesture directly

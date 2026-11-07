@@ -62,7 +62,7 @@ function perFan(s) {
 }
 
 // Fans one win brings (flat + compounding share, before streaks)
-function fansPerWin(s, fansMult = stadiumFx(s.stadium).fansMult) {
+export function fansPerWin(s, fansMult = stadiumFx(s.stadium).fansMult) {
   const flat = LEAGUE.fansPerWin * fansMult * (s.city?.bonus === "fans" ? 1.25 : 1);
   return flat + s.fans * ECON.fanWinPct * fansMult;
 }

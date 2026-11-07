@@ -5,23 +5,11 @@
 // secondaries ±4%), applied multiplicatively and capped at 99 — gear can
 // push a rating toward perfect, never past it.
 
-import { GEAR_SLOTS, gearRows, gearSwap } from "../art/sprites/gear.js";
-import { spriteUrl } from "../art/dataUrl.js";
 import { LEAGUE, RARITY, BAT_STATS, PIT_STATS, PLAYER_TRAITS, FRANCHISE } from "./constants.js";
 
 // Trait lookup + the static percentage a player's trait puts on one stat
 export const traitInfo = (id) => PLAYER_TRAITS.find((t) => t.id === id) || null;
 const traitPct = (p, stat) => traitInfo(p.trait)?.mods?.[stat] || 0;
-
-// Code-drawn 16×16 pixel icons (art/sprites/gear.js). An item's id picks its
-// colorway so the same item always looks the same; legendary gear is gold.
-export const GEAR_ART = new Set(GEAR_SLOTS);
-export const gearArtUrl = (itemOrSlot) => {
-  const item = typeof itemOrSlot === "string" ? { slot: itemOrSlot } : itemOrSlot;
-  const legendary = item.rarity === 3;
-  const swap = gearSwap(item);
-  return spriteUrl(`gear:${item.slot}|${legendary ? 1 : 0}|${swap.c}`, () => gearRows(item.slot, legendary), swap);
-};
 
 export const GEAR = [
   { slot: "bat", label: "Bat", stat: "power", role: "bat", flavor: "More carry off the barrel" },
