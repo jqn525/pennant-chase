@@ -94,8 +94,10 @@ export default function Shell({ f }) {
         <div className="tabs__in">
           {TABS.map(([id, label]) => (
             <button key={id} className={tab === id ? "on" : ""} aria-current={tab === id ? "page" : undefined} onClick={() => setTab(id)}>
-              {label}
-              {id === "spend" && ready > 0 && <i aria-label={`${ready} worthwhile buys`}>{ready > 99 ? "99+" : ready}</i>}
+              <span className="tabs__label">
+                {label}
+                {id === "spend" && ready > 0 && <i aria-label={`${ready} worthwhile buys`}>{ready > 99 ? "99+" : ready}</i>}
+              </span>
             </button>
           ))}
         </div>
