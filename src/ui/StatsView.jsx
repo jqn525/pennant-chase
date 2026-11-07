@@ -157,9 +157,10 @@ function MoneySection({ s }) {
 // ── Spending & ROI ──
 function Roi({ s }) {
   const [sort, setSort] = useState("recent");
+  const [who, setWho] = useState("all");
   const [more, setMore] = useState(false);
   const rep = spendReport(s);
-  const list = [...rep.events].sort(sort === "recent" ? (a, b) => b.n - a.n || 0 : (a, b) => b.progress - a.progress);
+  const list = rep.events.filter((e) => who === "all" || (who === "auto") === !!e.auto).sort(sort === "recent" ? (a, b) => b.n - a.n || 0 : (a, b) => b.progress - a.progress);
   const shown = more ? list : list.slice(0, 25);
   return (
     <>
@@ -178,7 +179,10 @@ function Roi({ s }) {
       ) : <p className="note">Nothing bought yet. Every purchase from now on is tracked here.</p>}
 
       <h2><span className="grow">Purchases</span></h2>
-      <Chips label="Sort" value={sort} set={setSort} items={[["recent", "Most recent"], ["best", "Best return"]]} />
+      <div className="row" style={{ flexWrap: "wrap" }}>
+        <Chips label="Sort" value={sort} set={setSort} items={[["recent", "Most recent"], ["best", "Best return"]]} />
+        <Chips label="Bought by" value={who} set={setWho} items={[["all", "All"], ["auto", "Auto"], ["manual", "Yours"]]} />
+      </div>
       <div className="panel table-wrap wrap-first" style={{ marginTop: 8 }}>
         <table>
           <thead><tr><th>Purchase</th><th>Cost</th><th>+/g</th><th>Paid</th></tr></thead>
@@ -186,7 +190,7 @@ function Roi({ s }) {
             {shown.length === 0 && <tr><td colSpan={4} className="dim">No purchases yet.</td></tr>}
             {shown.map((e, i) => (
               <tr key={i}>
-                <td><b>{e.name || CAT_LABEL[e.cat]}</b><span className="sub"><i className="dot" style={{ background: CAT_COLOR[e.cat] }} />{e.what}{e.d ? ` · OVR ${e.d > 0 ? "+" : ""}${e.d}` : ""} · Y{e.y} G{e.gi}</span></td>
+                <td><b>{e.name || CAT_LABEL[e.cat]}</b>{e.auto && <> <span className="tag">auto</span></>}<span className="sub"><i className="dot" style={{ background: CAT_COLOR[e.cat] }} />{e.what}{e.d ? ` · OVR ${e.d > 0 ? "+" : ""}${e.d}` : ""} · Y{e.y} G{e.gi}</span></td>
                 <td className="n">{money(e.cost)}</td>
                 <td className="n up">{e.gainPerGame > 0.05 ? money(e.gainPerGame, { sign: true }) : "—"}</td>
                 <td className="n">{e.gainPerGame > 0.05 ? (e.progress >= 1 ? <span className="tag tag--accent">paid off</span> : `${Math.round(e.progress * 100)}%`) : "—"}</td>

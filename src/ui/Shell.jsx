@@ -56,7 +56,7 @@ export default function Shell({ f }) {
   useEffect(() => { if (s.phase !== "draft") setDraftHidden(false); }, [s.phase]);
 
   const net = netPerGame(s);
-  const ready = options(s).filter((o) => o.affordable && Number.isFinite(o.payback)).length;
+  const ready = options(s).filter((o) => o.affordable && Number.isFinite(o.payback) && (!s.autoDev?.on || o.kind === "Build" || o.kind === "Print")).length;
   const showDraft = s.phase === "draft" && !draftHidden;
   const views = { overview: OverviewView, spend: SpendView, roster: RosterView, stats: StatsView };
   const View = views[tab];

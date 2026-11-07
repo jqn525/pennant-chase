@@ -126,7 +126,7 @@ export default function OverviewView({ f, goTo, openPlayer }) {
         <div className="kpi"><span>Payroll</span><b>{money(payroll(s))}</b><small className={share > 1 ? "down" : share > 0.8 ? "warn" : ""}>{Math.round(share * 100)}% of {money(SALARY.cap)} cap</small>
           <div className="bar"><i className={share > 1 ? "over" : share > 0.8 ? "hot" : ""} style={{ width: `${Math.min(100, share * 100)}%` }} /></div></div>
       </div>
-      <p className="note">{status(s)} Crowd {count(attendance(s))} a game · the park counts up to {count(cap)} fans toward ticket sales{s.fans > cap ? <span className="warn"> · you've outgrown it</span> : ""}.</p>
+      <p className="note">{status(s)} Crowd {count(attendance(s))} a game · the park counts up to {count(cap)} fans toward ticket sales{s.fans > cap ? <span className="warn"> · you've outgrown it</span> : ""}.{s.autoDev && <> Auto-develop {s.autoDev.on ? `on · ${Math.round(s.autoDev.share * 100)}% of earnings · ${money(s.autoDev.allowance)} banked` : "off"}.</>}</p>
 
       <h2>Last game</h2>
       <BoxScore s={s} openPlayer={openPlayer} />

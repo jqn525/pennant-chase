@@ -5,29 +5,30 @@ import { restockNote } from "../game/franchise.js";
 import { RARITY } from "../game/constants.js";
 import { money } from "./fmt.js";
 import { OptionList } from "./Options.jsx";
-import { RulesPanel, SpendBox } from "./Automation.jsx";
+import { AutoDevCard } from "./Automation.jsx";
 
-const KINDS = ["All", "Train", "Gear", "Build", "Print"];
+const KINDS = ["Yours", "All", "Train", "Gear", "Build", "Print"];
+const match = (k, o) => k === "All" || (k === "Yours" ? o.kind === "Build" || o.kind === "Print" : o.kind === k);
 
 export default function SpendView({ f }) {
   const { s } = f;
-  const [kind, setKind] = useState("All");
+  const [kind, setKind] = useState(() => (s.autoDev?.on ? "Yours" : "All"));
   const all = options(s);
-  const list = kind === "All" ? all : all.filter((o) => o.kind === kind);
+  const list = all.filter((o) => match(kind, o));
   const buyable = list.filter((o) => !o.lock || /^Needs \$/.test(o.lock));
   const locked = list.filter((o) => o.lock && !/^Needs \$/.test(o.lock));
   return (
     <>
       <h1>Spend</h1>
       <p className="lede">{money(s.money)} available. Every option is valued in dollars per game and sorted by how fast it pays for itself.</p>
-      <h2><span className="grow">Spend optimally</span><small>best payback first</small></h2>
-      <SpendBox f={f} />
+      <h2>Player development</h2>
+      <AutoDevCard f={f} />
 
-      <h2>Every option</h2>
+      <h2><span className="grow">Your decisions</span><small>{kind === "Yours" ? "builds and card prints" : ""}</small></h2>
       <div className="chips" role="tablist" aria-label="Filter" style={{ margin: "0 0 12px" }}>
         {KINDS.map((k) => (
           <button key={k} role="tab" aria-selected={kind === k} className={kind === k ? "on" : ""} onClick={() => setKind(k)}>
-            {k} <span className="dim">{k === "All" ? all.length : all.filter((o) => o.kind === k).length}</span>
+            {k} <span className="dim">{all.filter((o) => match(k, o)).length}</span>
           </button>
         ))}
       </div>
@@ -55,8 +56,6 @@ export default function SpendView({ f }) {
         </>
       )}
 
-      <h2><span className="grow">Standing orders</span><small>run after every game</small></h2>
-      <RulesPanel f={f} />
 
       {locked.length > 0 && (
         <>

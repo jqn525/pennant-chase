@@ -7,7 +7,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { SAVE_KEY, parseSave, decodeBackup, encodeBackup } from "../game/save.js";
 import { blankState, loadState, toSave, tick, merchTick, welcomeBack } from "../game/franchise.js";
 import { sfx, play } from "../game/sfx.js";
-import { runRules } from "../game/rules.js";
+import { afterGame } from "../game/autodev.js";
 
 const PERIOD = { 1: 900, 4: 220, max: 1000 };
 
@@ -70,8 +70,8 @@ export default function useFranchise() {
       if (document.hidden) return;
       const st = ref.current;
       tick(st, st.speed);
-      // standing orders run after every finished game
-      if (st.rules?.length && st.events.some((e) => e.type === "final")) runRules(st);
+      // auto-develop banks its share and spends it after every finished game
+      if (st.events.some((e) => e.type === "final")) afterGame(st);
       refresh();
     }, PERIOD[s.speed] ?? 900);
     return () => clearInterval(iv);

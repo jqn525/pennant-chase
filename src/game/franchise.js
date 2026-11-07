@@ -43,6 +43,15 @@ export function credit(s, cat, amount) {
 }
 export const ledgerNet = (bucket) => Object.values(bucket || {}).reduce((a, b) => a + b, 0);
 
+// Auto-develop settings (the engine lives in autodev.js); old reserve rules carry over
+export const defaultAutoDev = () => ({ on: true, share: 0.4, reserve: 500, allowance: 0 });
+export function migrateAutoDev(saved, rules) {
+  const d = defaultAutoDev();
+  if (saved && typeof saved === "object") return { ...d, ...saved };
+  const res = (rules || []).filter((r) => r?.type === "reserve" && !r.off).map((r) => r.n || 0);
+  return res.length ? { ...d, reserve: Math.max(...res) } : d;
+}
+
 // ── Small helpers ──
 export const tn = (c) => c?.nickname ?? c?.name ?? "";
 export const allPlayers = (s) => (s.roster ? [...s.roster.batters, s.roster.sp, s.roster.rp] : []);
@@ -78,7 +87,7 @@ export function blankState() {
     draftClass: null, form: [], year: 1, phase: "regular", rivals: null, schedule: null, rivalDays: null,
     gameIndex: 0, standings: Array.from({ length: 8 }, () => ({ w: 0, l: 0 })), playoffs: null,
     history: [], trophies: 0, allTime: {}, capYears: 0, lineupLoadout: "numbers", autoLineup: true,
-    speed: 1, sound: true, rules: [], ledger: emptyLedger(), results: [],
+    speed: 1, sound: true, autoDev: defaultAutoDev(), ledger: emptyLedger(), results: [],
     live: null, ctx: null, rest: 0, log: [], logId: 1, events: [], lastSeen: Date.now(),
   };
 }
@@ -157,7 +166,7 @@ export function loadState(saved) {
     trophies: S.trophies ?? 0, allTime, capYears: S.capYears ?? 0,
     lineupLoadout: S.lineupLoadout ?? null, autoLineup: S.autoLineup ?? !!S.lineupLoadout,
     speed: S.speed === "max" && !(S.trophies > 0) ? 4 : S.speed ?? 1, sound: S.sound ?? true,
-    rules: S.rules ?? [], ledger: S.ledger ? { ...emptyLedger(), ...S.ledger } : emptyLedger(),
+    autoDev: migrateAutoDev(S.autoDev, S.rules), ledger: S.ledger ? { ...emptyLedger(), ...S.ledger } : emptyLedger(),
     results: S.results ?? [], live: S.liveGame ?? null, ctx: S.liveContext ?? null,
     lastSeen: S.lastSeen ?? Date.now(),
   });
@@ -173,7 +182,7 @@ export function toSave(s) {
     year: s.year, phase: s.phase, rivals: s.rivals, schedule: s.schedule, rivalDays: s.rivalDays,
     gameIndex: s.gameIndex, standings: s.standings, playoffs: s.playoffs, history: s.history,
     trophies: s.trophies, allTime: s.allTime, capYears: s.capYears, speed: s.speed, sound: s.sound,
-    lineupLoadout: s.lineupLoadout ?? null, autoLineup: s.autoLineup, rules: s.rules, ledger: s.ledger,
+    lineupLoadout: s.lineupLoadout ?? null, autoLineup: s.autoLineup, autoDev: s.autoDev, ledger: s.ledger,
     results: s.results.slice(0, 30), liveGame: s.live, liveContext: s.ctx,
   };
 }
