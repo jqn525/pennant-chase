@@ -6,8 +6,6 @@ import { salaryOf } from "../game/salary.js";
 import { LOADOUTS } from "../game/lineup.js";
 import { stat, trainCost, trainCeil, chooseLoadout, moveBatter, franchiseUsed, franchiseSlots } from "../game/franchise.js";
 import { avg, era } from "../game/statline.js";
-import { careerOf } from "../game/franchise.js";
-import StatTable from "./StatTable.jsx";
 import { CARD_TIERS, nextPrint } from "../game/cards.js";
 import { money } from "./fmt.js";
 
@@ -31,12 +29,10 @@ const COLS = [
   ["pay", "Salary", (s, p) => salaryOf(p)],
 ];
 
-export default function RosterView({ f, openPlayer }) {
+export default function RosterView({ f, openPlayer, goTo }) {
   const { s } = f;
   const [sort, setSort] = useState(["order", 1]);
   const [manual, setManual] = useState(false);
-  const [statSide, setStatSide] = useState("bat");
-  const [statSpan, setStatSpan] = useState("season");
   const order = [...s.roster.batters, s.roster.sp, s.roster.rp];
   const rows = sort[0] === "order" ? order
     : [...order].sort((a, b) => sort[1] * (COLS.find((c) => c[0] === sort[0])[2](s, b) - COLS.find((c) => c[0] === sort[0])[2](s, a)));
@@ -111,24 +107,7 @@ export default function RosterView({ f, openPlayer }) {
       </div>
       <p className="note">Next pt: cost of the cheapest next rating point. Room: points left before training stops.</p>
 
-      <h2><span className="grow">Stats</span><small>tap a column to sort</small></h2>
-      <div className="row" style={{ flexWrap: "wrap", marginBottom: 8 }}>
-        <div className="chips" role="tablist" aria-label="Batting or pitching">
-          {[["bat", "Batting"], ["pit", "Pitching"]].map(([k, l]) => (
-            <button key={k} role="tab" aria-selected={statSide === k} className={statSide === k ? "on" : ""} onClick={() => setStatSide(k)}>{l}</button>
-          ))}
-        </div>
-        <div className="chips" role="tablist" aria-label="Season or career">
-          {[["season", "This season"], ["career", "Career"]].map(([k, l]) => (
-            <button key={k} role="tab" aria-selected={statSpan === k} className={statSpan === k ? "on" : ""} onClick={() => setStatSpan(k)}>{l}</button>
-          ))}
-        </div>
-      </div>
-      <StatTable key={statSide + statSpan} isBat={statSide === "bat"} totals initial={statSide === "bat" ? "OPS" : undefined}
-        rows={(statSide === "bat" ? s.roster.batters : [s.roster.sp, s.roster.rp]).map((p) => ({
-          id: p.id, name: p.name, sub: p.pos, onClick: () => openPlayer(p.id),
-          stat: statSpan === "career" ? careerOf(s, p.id) : stat(s, p.id),
-        }))} />
+      <button className="btn btn--quiet btn--block" style={{ marginTop: 12 }} onClick={() => goTo("stats", "players")}>Batting, pitching and development stats</button>
     </>
   );
 }

@@ -7,12 +7,12 @@ import { options } from "../game/advisor.js";
 import OverviewView from "./OverviewView.jsx";
 import SpendView from "./SpendView.jsx";
 import RosterView from "./RosterView.jsx";
-import SeasonView from "./SeasonView.jsx";
+import StatsView, { STATS_KEY } from "./StatsView.jsx";
 import PlayerSheet from "./PlayerSheet.jsx";
 import DraftSheet from "./DraftSheet.jsx";
 import SettingsSheet from "./SettingsSheet.jsx";
 
-const TABS = [["overview", "Overview"], ["spend", "Spend"], ["roster", "Roster"], ["season", "Season"]];
+const TABS = [["overview", "Overview"], ["spend", "Spend"], ["roster", "Roster"], ["stats", "Stats"]];
 
 export function Pace({ f }) {
   const { s, paused, setPaused, setSpeed } = f;
@@ -36,7 +36,7 @@ export function Pace({ f }) {
 export default function Shell({ f }) {
   const { s } = f;
   const [tab, setTab] = useState(() => {
-    try { const t = sessionStorage.getItem("pc-tab"); return TABS.some(([id]) => id === t) ? t : "overview"; } catch { return "overview"; }
+    try { const raw = sessionStorage.getItem("pc-tab"); const t = raw === "season" ? "stats" : raw; return TABS.some(([id]) => id === t) ? t : "overview"; } catch { return "overview"; }
   });
   // The header is fixed; measure it so the page starts below it
   const topRef = useRef(null);
@@ -58,7 +58,7 @@ export default function Shell({ f }) {
   const net = netPerGame(s);
   const ready = options(s).filter((o) => o.affordable && Number.isFinite(o.payback)).length;
   const showDraft = s.phase === "draft" && !draftHidden;
-  const views = { overview: OverviewView, spend: SpendView, roster: RosterView, season: SeasonView };
+  const views = { overview: OverviewView, spend: SpendView, roster: RosterView, stats: StatsView };
   const View = views[tab];
 
   return (
@@ -87,7 +87,7 @@ export default function Shell({ f }) {
       {f.saveError && <div className="view" style={{ paddingBottom: 0 }}><p className="alert" role="alert">{f.saveError}</p></div>}
 
       <main className="view">
-        <View f={f} openPlayer={setPlayerId} goTo={setTab} />
+        <View f={f} openPlayer={setPlayerId} goTo={(t, sec) => { if (sec) { try { sessionStorage.setItem(STATS_KEY, sec); } catch { /* private mode */ } } setTab(t); }} />
       </main>
 
       <nav className="tabs" aria-label="Sections">

@@ -13,6 +13,7 @@ import { genShipment, genItem, playerValue, GEAR, dealerTier, shipmentWeights, d
 import { nextPrint, cardDraw } from "./cards.js";
 import { loadoutById, applyLoadout, sortRival } from "./lineup.js";
 import { teamPayroll, luxuryTax } from "./salary.js";
+import { emptyHist, loadHist, noteGame, noteSpend, trackOvr, noteGameRecords, noteSeasonRecords, closeSeason } from "./history.js";
 
 export const EMPTY_STAT = { g: 0, ab: 0, h: 0, d: 0, t: 0, hr: 0, bb: 0, k: 0, r: 0, rbi: 0, outsP: 0, kP: 0, bbP: 0, hP: 0, raP: 0 };
 export const FENCE = { corner: LEAGUE.fenceCorner, center: LEAGUE.fenceCenter };
@@ -45,6 +46,15 @@ export const ledgerNet = (bucket) => Object.values(bucket || {}).reduce((a, b) =
 // ── Small helpers ──
 export const tn = (c) => c?.nickname ?? c?.name ?? "";
 export const allPlayers = (s) => (s.roster ? [...s.roster.batters, s.roster.sp, s.roster.rp] : []);
+const findP = (s, pid) => allPlayers(s).find((x) => x.id === pid);
+// Book a purchase into history (after the change has been applied)
+function spent(s, cat, cost, { pid = null, before = null, what }) {
+  if (!s.hist) s.hist = emptyHist();
+  const after = pid != null ? findP(s, pid) : null;
+  const ev = noteSpend(s.hist, { y: s.year, gi: s.gameIndex, cat, cost, pid, name: (after || before)?.name, what, before, after });
+  if (s.roster) trackOvr(s.hist, allPlayers(s));
+  return ev;
+}
 export const stat = (s, id) => s.seasonStats[id] || EMPTY_STAT;
 const cityBonus = (s, k) => s.city?.bonus === k;
 function addAT(s, patch) {
@@ -64,7 +74,7 @@ const updatePlayer = (s, pid, fn) => {
 export function blankState() {
   return {
     city: null, money: ECON.startMoney, fans: ECON.startFans, roster: null, merch: 0, tv: 0,
-    stadium: { parking: 0, seats: 0, conc: 0, lights: 0 }, seasonStats: {}, careerStats: {}, gameLog: {}, lastBox: null, shopItems: genShipment(),
+    stadium: { parking: 0, seats: 0, conc: 0, lights: 0 }, seasonStats: {}, careerStats: {}, gameLog: {}, lastBox: null, hist: emptyHist(), shopItems: genShipment(),
     draftClass: null, form: [], year: 1, phase: "regular", rivals: null, schedule: null, rivalDays: null,
     gameIndex: 0, standings: Array.from({ length: 8 }, () => ({ w: 0, l: 0 })), playoffs: null,
     history: [], trophies: 0, allTime: {}, capYears: 0, lineupLoadout: "numbers", autoLineup: true,
@@ -140,7 +150,7 @@ export function loadState(saved) {
   }
   Object.assign(s, {
     city: S.city, money: S.money, fans: S.fans, roster: S.roster, merch: lvlOf(S.merch), tv: lvlOf(S.tv),
-    stadium: S.stadium ?? s.stadium, seasonStats: S.seasonStats ?? {}, careerStats: S.careerStats ?? {}, gameLog: S.gameLog ?? {}, lastBox: S.lastBox ?? null, shopItems: S.shopItems ?? s.shopItems,
+    stadium: S.stadium ?? s.stadium, seasonStats: S.seasonStats ?? {}, careerStats: S.careerStats ?? {}, gameLog: S.gameLog ?? {}, lastBox: S.lastBox ?? null, hist: loadHist(S.hist), shopItems: S.shopItems ?? s.shopItems,
     draftClass: S.draftClass ?? null, form: S.form ?? [], year: S.year ?? 1, phase: S.phase ?? "regular",
     rivals: S.rivals, schedule: S.schedule, rivalDays: S.rivalDays, gameIndex: S.gameIndex ?? 0,
     standings: S.standings ?? s.standings, playoffs: S.playoffs ?? null, history: S.history ?? [],
@@ -159,7 +169,7 @@ export function toSave(s) {
   return {
     version: 3, scale: 100, names: 2, econ: 2, balance: 1, lastSeen: Date.now(),
     city: s.city, money: s.money, fans: s.fans, roster: s.roster, merch: s.merch, tv: s.tv, stadium: s.stadium,
-    seasonStats: s.seasonStats, careerStats: s.careerStats, gameLog: s.gameLog, lastBox: s.lastBox, shopItems: s.shopItems, draftClass: s.draftClass, form: s.form,
+    seasonStats: s.seasonStats, careerStats: s.careerStats, gameLog: s.gameLog, lastBox: s.lastBox, hist: s.hist, shopItems: s.shopItems, draftClass: s.draftClass, form: s.form,
     year: s.year, phase: s.phase, rivals: s.rivals, schedule: s.schedule, rivalDays: s.rivalDays,
     gameIndex: s.gameIndex, standings: s.standings, playoffs: s.playoffs, history: s.history,
     trophies: s.trophies, allTime: s.allTime, capYears: s.capYears, speed: s.speed, sound: s.sound,
@@ -289,6 +299,7 @@ function startNextGame(s) {
 export function settle(s, g) {
   if (g.settled) return;
   g.settled = true;
+  const gi = s.phase === "playoffs" ? s.playoffs.gameNo : s.gameIndex;
   const playoffLabel = s.phase === "playoffs" ? (s.playoffs.round === "semi" ? "SEMIS" : "CUP") : null;
   let streak = 0;
   for (let i = s.form.length - 1; i >= 0 && s.form[i] === "W"; i--) streak++;
@@ -337,6 +348,14 @@ export function settle(s, g) {
     res.won ? p.wins.us++ : p.wins.them++;
     s.playoffs = p;
   }
+  // history: one row per game, overall change points, records
+  if (!s.hist) s.hist = emptyHist();
+  const ratings = ratingsNow(s);
+  const head = { y: s.year, gi, playoff: playoffLabel, won: res.won, us: g.us, them: g.them, home: g.home, opp: g.opp.name,
+    cash: s.money, fans: s.fans, att: res.attendance, led: s.ledger.game, tr: ratings[0], place: seedOrder(s.standings, ratings).indexOf(0) + 1 };
+  noteGame(s.hist, head);
+  trackOvr(s.hist, allPlayers(s));
+  noteGameRecords(s.hist, s.lastBox?.lines || {}, { ...head, gate: Math.round(s.ledger.game.gate || 0) });
 }
 
 // One at-bat at watchable speeds; the ticket gate drips per half-inning
@@ -433,6 +452,7 @@ export function restock(s, mega) {
 }
 
 function offseason(s, championIdx, playerCup) {
+  const final = { w: s.standings[0].w, l: s.standings[0].l };
   const ratings = ratingsNow(s);
   const order = seedOrder(s.standings, ratings);
   const mySeed = order.indexOf(0);
@@ -450,6 +470,7 @@ function offseason(s, championIdx, playerCup) {
     s.capYears++;
     const paid = Math.min(Math.round(s.money), tax);
     credit(s, "tax", -paid);
+    spent(s, "tax", paid, { what: "Luxury tax" });
     pushLog(s, `Luxury tax: payroll $${fmt(payroll)} is over the $${fmt(SALARY.cap)} cap. Billed $${fmt(tax)}${paid < tax ? ` (the vault covered $${fmt(paid)})` : ""}.`, "out");
   } else if (s.capYears > 0) {
     s.capYears = 0;
@@ -465,6 +486,11 @@ function offseason(s, championIdx, playerCup) {
   s.playoffs = null;
   s.history = off.history;
   s.trophies = off.trophies;
+  if (!s.hist) s.hist = emptyHist();
+  const last = off.history[off.history.length - 1] || {};
+  noteSeasonRecords(s.hist, s.year, s.seasonStats, Object.fromEntries(allPlayers(s).map((p) => [p.id, p.name])));
+  closeSeason(s.hist, { y: s.year, w: final.w, l: final.l, finish: last.finish ?? mySeed + 1, cup: !!playerCup,
+    champion: last.champion, ledger: s.ledger.season, fans: s.fans });
   const bank = { ...(s.careerStats || {}) };
   for (const pid in s.seasonStats) bank[pid] = addCounts(bank[pid], s.seasonStats[pid]);
   s.careerStats = bank;
@@ -531,10 +557,12 @@ export function planTraining(s, p, keys, budget, maxPoints = Infinity) {
 }
 function applyTraining(s, pid, plan) {
   if (!plan.count) return false;
+  const before = findP(s, pid);
   credit(s, "training", -plan.total);
   addAT(s, { train: plan.count });
   updatePlayer(s, pid, (o) => { const q = { ...o }; for (const k in plan.points) q[k] += plan.points[k]; return q; });
   afterRosterChange(s);
+  spent(s, "training", plan.total, { pid, before, what: Object.entries(plan.points).filter(([, n]) => n).map(([k, n]) => `${k} +${n}`).join(", ") });
   emit(s, "cash");
   return true;
 }
@@ -569,6 +597,7 @@ export function printCard(s, pid) {
   credit(s, "prints", -up.cost);
   addAT(s, { prints: 1 });
   updatePlayer(s, pid, (o) => ({ ...o, cardTier: up.id }));
+  spent(s, "prints", up.cost, { pid, before: p, what: `${up.name} card` });
   pushLog(s, `Printed ${p.name}'s ${up.name} card.`, "win");
   emit(s, "cash");
   return true;
@@ -608,6 +637,7 @@ export function buyGear(s, pid, itemId) {
   s.shopItems = s.shopItems.filter((i) => i.id !== itemId);
   updatePlayer(s, pid, (o) => ({ ...o, gear: { ...(o.gear || {}), [item.slot]: item } }));
   afterRosterChange(s);
+  spent(s, "gear", item.cost, { pid, before: p, what: item.name });
   pushLog(s, `${p.name} equips ${item.name}.`, "win");
   emit(s, "cash");
   return true;
@@ -640,6 +670,7 @@ export function makeTrade(s, myPid, rivalIdx) {
   s.rivals = s.rivals.map((team, i) => (i !== rivalIdx ? team
     : p.role === "bat" ? { ...team, batters: team.batters.map((b) => (b.id === q.id ? p : b)) } : { ...team, sp: p }));
   afterRosterChange(s);
+  if (quote.cash > 0) spent(s, "trades", quote.cash, { pid: incoming.id, before: p, what: `${p.name} for ${q.name}` });
   pushLog(s, `Trade: ${p.name} to the ${s.rivals[rivalIdx].name} for ${q.name}${quote.cash > 0 ? ` plus $${fmt(quote.cash)}` : quote.cash < 0 ? `; they add $${fmt(-quote.cash)}` : ""}.`, "win");
   emit(s, "cash");
   return true;
@@ -658,6 +689,7 @@ export function signRookie(s, rid) {
   else if (rook.pos === "RP") s.roster = { ...s.roster, rp: signed };
   else s.roster = { ...s.roster, batters: s.roster.batters.map((b) => (b.pos === rook.pos ? signed : b)) };
   afterRosterChange(s);
+  spent(s, "draft", rook.signCost, { pid: rook.id, before: released, what: `Signed ${rook.name} (${rook.pos})` });
   pushLog(s, `Signed ${rook.name} (${rook.pos}) for $${fmt(rook.signCost)}${released ? `; ${released.name} is released` : ""}.`, "win");
   emit(s, "cash");
   return true;
@@ -690,6 +722,7 @@ export function build(s, id) {
   if (id === "merch") s.merch = lvl + 1;
   else if (id === "tv") s.tv = lvl + 1;
   else s.stadium = { ...s.stadium, [id]: lvl + 1 };
+  spent(s, "upgrades", next.cost, { what: `${next.name} (${track.title.charAt(0) + track.title.slice(1).toLowerCase()} ${lvl + 1})` });
   pushLog(s, `Built: ${next.name} (${next.label}).`, "win");
   emit(s, "cash");
   return true;

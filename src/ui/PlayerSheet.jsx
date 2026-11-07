@@ -6,6 +6,7 @@ import { salaryOf } from "../game/salary.js";
 import { CARD_TIERS, nextPrint, eligibleTier } from "../game/cards.js";
 import { columns } from "../game/statline.js";
 import StatTable from "./StatTable.jsx";
+import { Sparkline } from "./charts.jsx";
 import {
   allPlayers, stat, careerOf, trainCost, trainCeil, planTraining, train, trainAll, printCard,
   tagFranchise, franchiseUsed, franchiseSlots, tradeQuote, makeTrade,
@@ -37,6 +38,8 @@ export default function PlayerSheet({ f, pid, onClose }) {
         <div className="kpi"><span>Card</span><b style={{ fontFamily: "var(--ui)" }}>{tier.name.toLowerCase()}</b><small>{up ? `${up.name.toLowerCase()} ready` : eligibleTier(p) > (p.cardTier || 0) ? "" : `next at ${CARD_TIERS[(p.cardTier || 0) + 1]?.at ?? "—"} OVR`}</small></div>
         <div className="kpi"><span>A point is worth</span><b>{money(perPoint)}</b><small>per game, in wins</small></div>
       </div>
+
+      {own && <Development s={s} p={p} />}
 
       <h2><span className="grow">Ratings</span>{own && <small>{p.franchise ? "franchise player · trains to his ceiling" : "stops at the league cap"}</small>}</h2>
       <div className="panel table-wrap">
@@ -178,5 +181,22 @@ function PlayerStats({ s, p, span, setSpan }) {
         </div>
       )}
     </>
+  );
+}
+
+function Development({ s, p }) {
+  const series = s.hist?.ovr?.[p.id] || [];
+  const buys = (s.hist?.spend || []).filter((e) => e.pid === p.id && (e.cat === "training" || e.cat === "gear"));
+  const invested = buys.reduce((t, e) => t + e.cost, 0);
+  const pts = buys.reduce((t, e) => t + (e.d > 0 ? e.d : 0), 0);
+  const first = series.length ? series[0][1] / 10 : null;
+  return (
+    <div className="panel panel--pad row" style={{ marginTop: 8 }}>
+      <Sparkline points={series} width={96} height={30} />
+      <div className="grow" style={{ fontSize: 13 }}>
+        {first != null ? <>Overall {first.toFixed(1)} → <b>{ovr(p).toFixed(1)}</b> since tracking began</> : "Development tracking starts with his next game."}
+        <span className="sub">{buys.length ? `${money(invested)} in training and gear · +${pts.toFixed(1)} OVR · ${pts > 0 ? money(invested / pts) : "—"} per point` : "No training or gear bought for him yet."}</span>
+      </div>
+    </div>
   );
 }

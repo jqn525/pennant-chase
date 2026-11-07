@@ -78,7 +78,7 @@ function Race({ s, goTo }) {
   const show = order.slice(0, LEAGUE.playoffTeams).concat(me >= LEAGUE.playoffTeams ? [0] : []);
   return (
     <>
-      <h2><span className="grow">The race</span><button className="btn btn--quiet btn--sm" onClick={() => goTo("season")}>Full standings</button></h2>
+      <h2><span className="grow">The race</span><button className="btn btn--quiet btn--sm" onClick={() => goTo("stats", "team")}>Full standings</button></h2>
       <div className="panel table-wrap">
         <table>
           <thead><tr><th>Club</th><th>W</th><th>L</th><th>GB</th></tr></thead>

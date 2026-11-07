@@ -187,11 +187,23 @@ export function options(s) {
   return all.sort((a, b) => rank(a) - rank(b) || a.payback - b.payback || b.gainPerGame - a.gainPerGame);
 }
 
-export function apply(s, o) {
-  const a = o.action;
+function run(s, a) {
   if (a.type === "train") return train(s, a.pid, a.key, 1);
   if (a.type === "gear") return buyGear(s, a.pid, a.itemId);
   if (a.type === "build") return build(s, a.id);
   if (a.type === "print") return printCard(s, a.pid);
   return false;
+}
+// Buy an option; the history event remembers what the advisor said it was worth
+export function apply(s, o) {
+  const h = s.hist;
+  const len = h?.spend.length ?? 0, prev = len ? h.spend[len - 1] : null, prevCost = prev?.cost;
+  const ok = run(s, o.action);
+  if (ok && h) {
+    const ev = h.spend[h.spend.length - 1];
+    const fresh = h.spend.length > len, merged = !fresh && ev === prev && ev.cost !== prevCost;
+    if (fresh) ev.gain = Math.round(o.gainPerGame * 100) / 100;
+    else if (merged) ev.gain = Math.round(((ev.gain || 0) + o.gainPerGame) * 100) / 100;
+  }
+  return ok;
 }
