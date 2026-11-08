@@ -25,8 +25,12 @@ import {
   train, buyGear, printCard,
 } from "./franchise.js";
 
-export const WIN_PER_BAT_POINT = 0.001;
-export const WIN_PER_ARM_POINT = 0.0009;
+// Win rate per rating point, from scripts/calibrate.mjs (40,000 games per run).
+// A starter only pitches every fifth game; the setup man pitches most games.
+export const WIN_PER_BAT_POINT = 0.0012;
+export const WIN_PER_ARM = { SP: 0.00055, RP: 0.00025, CL: 0.0002 };
+export const WIN_PER_ARM_POINT = WIN_PER_ARM.SP;
+export const winPerPointOf = (p) => (p.role === "bat" ? WIN_PER_BAT_POINT : WIN_PER_ARM[p.pos] ?? WIN_PER_ARM_POINT);
 export const HORIZON = 100; // games a new fan keeps paying, for valuing growth
 // A win also moves you up the table. The playoff purse (a likely semifinal
 // run's share of series pay, game pay and Cup money) times the share of a
@@ -35,7 +39,7 @@ export const PLAYOFF_PURSE = 0.5 * ECON.semisSeriesPay + 3 * ECON.playoffWinPay 
 export const RACE_SHARE = 0.03;
 
 const statsOf = (p) => (p.role === "bat" ? BAT_STATS : PIT_STATS);
-const winPerPoint = (p) => (p.role === "bat" ? WIN_PER_BAT_POINT : WIN_PER_ARM_POINT);
+const winPerPoint = winPerPointOf;
 
 // Season win rate so far (a fair 50% before any games)
 export function winRate(s) {

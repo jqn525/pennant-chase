@@ -17,7 +17,7 @@ export const fansWin = (s) => fansPerWin(s);
 export const attendance = (s) => gateNow(s).attendance;
 
 export function place(s) {
-  const ratings = [teamRating({ batters: s.roster.batters, sp: s.roster.sp }), ...s.rivals.map(teamRating)];
+  const ratings = [teamRating(s.roster), ...s.rivals.map(teamRating)];
   return seedOrder(s.standings, ratings).indexOf(0) + 1;
 }
 export function seasonLabel(s) {

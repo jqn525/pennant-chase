@@ -76,8 +76,11 @@ export const makeSchedule = () => {
 
 // Mean overall of the nine bats plus the starter
 export const teamRating = (team) => {
-  const players = [...team.batters, team.sp];
-  return players.reduce((n, p) => n + ovr(p), 0) / players.length;
+  // nine bats, the rotation as one, the bullpen as half a player
+  const avg = (list) => (list && list.length ? list.reduce((n, p) => n + ovr(p), 0) / list.length : null);
+  const rot = avg(team.rotation), pen = avg(team.pen);
+  const bats = team.batters.reduce((n, p) => n + ovr(p), 0);
+  return (bats + (rot ?? 0) + (pen != null ? 0.5 * pen : 0)) / (team.batters.length + (rot != null ? 1 : 0) + (pen != null ? 0.5 : 0));
 };
 
 // One quick game between two rated teams; returns true if A (home if homeA) wins
@@ -117,8 +120,8 @@ export const ageRoster = (roster) => {
   const PIT = ["stuff", "control", "stamina", "defense"];
   return {
     batters: roster.batters.map((b) => age(b, BAT)),
-    sp: age(roster.sp, PIT),
-    rp: age(roster.rp, PIT),
+    rotation: roster.rotation.map((p) => age(p, PIT)),
+    pen: roster.pen.map((p) => age(p, PIT)),
   };
 };
 

@@ -2,7 +2,8 @@
 import { BAT_STATS, PIT_STATS, PLAYER_TRAITS } from "../game/constants.js";
 import { ovr } from "../game/gear.js";
 import { salaryOf } from "../game/salary.js";
-import { signRookie, closeDraft } from "../game/franchise.js";
+import { signRookie, closeDraft, rookieReplaces } from "../game/franchise.js";
+import { slotOf } from "../game/roster.js";
 import { money } from "./fmt.js";
 import { Sheet } from "./Shell.jsx";
 
@@ -13,7 +14,7 @@ const potOvr = (p) => {
 
 export default function DraftSheet({ f, onHide }) {
   const { s } = f;
-  const current = (pos) => (pos === "SP" ? s.roster.sp : pos === "RP" ? s.roster.rp : s.roster.batters.find((b) => b.pos === pos));
+  const current = (pos) => rookieReplaces(s, { pos });
   return (
     <Sheet title={`Draft · year ${s.year}`} onClose={onHide} closeLabel="Later"
       actions={<button className="btn btn--sm" onClick={() => f.act(closeDraft)}>Start season</button>}>
@@ -25,13 +26,14 @@ export default function DraftSheet({ f, onHide }) {
             {(s.draftClass || []).length === 0 && <tr><td colSpan={6} className="dim">The board is empty.</td></tr>}
             {(s.draftClass || []).map((r) => {
               const out = current(r.pos);
+              const slot = out ? slotOf(s.roster, out.id) : "";
               const trait = PLAYER_TRAITS.find((t) => t.id === r.trait);
               return (
                 <tr key={r.id}>
                   <td><b>{r.name}</b><span className="sub">{r.pos}{trait ? ` · ${trait.label}` : ""}</span></td>
                   <td className="n">{ovr(r).toFixed(0)}</td>
                   <td className="n up">{potOvr(r).toFixed(0)}</td>
-                  <td>{out?.name}<span className="sub">OVR {out ? ovr(out).toFixed(0) : "—"}</span></td>
+                  <td>{out?.name}<span className="sub">{slot} · OVR {out ? ovr(out).toFixed(0) : "—"}</span></td>
                   <td className="n">{money(salaryOf(r))}</td>
                   <td><button className="btn btn--sm" disabled={s.money < r.signCost} onClick={() => f.act(signRookie, r.id)}>{money(r.signCost)}</button></td>
                 </tr>

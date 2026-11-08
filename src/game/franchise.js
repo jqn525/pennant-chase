@@ -6,14 +6,15 @@
 
 import { LEAGUE, ECON, TRADE, BAT_STATS, PIT_STATS, STADIUM, stadiumFx, REVENUE, revenueFx, SALARY, FRANCHISE } from "./constants.js";
 import { fmt } from "./utils.js";
-import { genRoster, seedUid, genDraftClass, vetPot, rollPot, pickTrait, freshName, seedNames, creepRival, seedRivalStars } from "./generators.js";
+import { genRoster, genPitcher, seedUid, genDraftClass, vetPot, rollPot, pickTrait, freshName, seedNames, creepRival, seedRivalStars } from "./generators.js";
 import { newGame, stepAtBat, playGameInstant, settleGame, ticketGate } from "./engine.js";
 import { makeRivals, makeSchedule, teamRating, quickSim, simSeries, seedOrder, runOffseason, ageRoster, seriesInfo } from "./season.js";
-import { genShipment, genItem, playerValue, GEAR, dealerTier, shipmentWeights, devCapFor } from "./gear.js";
+import { genShipment, genItem, playerValue, GEAR, dealerTier, shipmentWeights, devCapFor, ovr } from "./gear.js";
 import { nextPrint, cardDraw } from "./cards.js";
 import { loadoutById, applyLoadout, sortRival } from "./lineup.js";
 import { teamPayroll, luxuryTax } from "./salary.js";
 import { checkUnlocks } from "./unlocks.js";
+import { everyone, mapRoster, starterFor, replaceSlot, ROTATION } from "./roster.js";
 import { progressBuilds } from "./construction.js";
 import { noteBeats } from "./beats.js";
 import { emptyHist, loadHist, noteGame, noteSpend, trackOvr, noteGameRecords, noteSeasonRecords, closeSeason } from "./history.js";
@@ -63,7 +64,7 @@ export const WINTER_NOTE = "Winter: the season is over. Close the draft to start
 
 // ── Small helpers ──
 export const tn = (c) => c?.nickname ?? c?.name ?? "";
-export const allPlayers = (s) => (s.roster ? [...s.roster.batters, s.roster.sp, s.roster.rp] : []);
+export const allPlayers = (s) => (s.roster ? everyone(s.roster) : []);
 const findP = (s, pid) => allPlayers(s).find((x) => x.id === pid);
 // Book a purchase into history (after the change has been applied)
 function spent(s, cat, cost, { pid = null, before = null, what }) {
@@ -85,7 +86,7 @@ export function pushLog(s, text, kind = "play") {
 const emit = (s, type, data = {}) => s.events.push({ type, ...data });
 const updatePlayer = (s, pid, fn) => {
   const upd = (o) => (o.id === pid ? fn(o) : o);
-  s.roster = { batters: s.roster.batters.map(upd), sp: upd(s.roster.sp), rp: upd(s.roster.rp) };
+  s.roster = mapRoster(s.roster, upd);
 };
 
 // ── Creating and loading ──
@@ -101,13 +102,38 @@ export function blankState() {
   };
 }
 
+// Saves from the one-starter era: fill out a 5-man rotation and a setup man + closer.
+// New arms are pitched a few points under the club's current pitching so a
+// developed staff isn't dragged down. Returns true if anything changed.
+function migrateStaff(S) {
+  const level = (p) => Math.round(ovr(p));
+  const reliever = (p) => ({ ...p, stuff: Math.min(LEAGUE.statCap, p.stuff + 4), stamina: Math.max(40, p.stamina - 8) });
+  const fill = (r, rival) => {
+    if (r.rotation) return false;
+    const sp = { ...r.sp, pos: "SP" };
+    const base = level(sp);
+    const make = (pos, d) => { const p = genPitcher(pos, Math.max(40, base - d)); if (rival) delete p.pot; return p; };
+    r.rotation = [sp, ...[3, 4, 5, 7].map((d) => make("SP", d))];
+    const setup = r.rp ? { ...r.rp, pos: "RP" } : reliever(make("RP", 5));
+    r.pen = [setup, reliever(make("CL", 3))];
+    delete r.sp; delete r.rp;
+    return true;
+  };
+  let changed = fill(S.roster, false);
+  for (const r of S.rivals || []) changed = fill(r, true) || changed;
+  if (changed && S.liveGame) { S.liveGame = null; S.liveContext = null; }
+  return changed;
+}
+
 // Older saves: every one-time migration the game has ever needed
 export function loadState(saved) {
   const s = blankState();
   if (!saved?.city) return s;
   const S = saved;
-  const everyone = [S.roster.batters, [S.roster.sp, S.roster.rp], ...(S.rivals || []).map((r) => [...r.batters, r.sp])].flat();
-  seedUid(Math.max(...everyone.map((p) => p.id)) + 1);
+  const oldStaff = (r) => [r.sp, r.rp, ...(r.rotation || []), ...(r.pen || [])].filter(Boolean);
+  const ids = [S.roster.batters, oldStaff(S.roster), ...(S.rivals || []).map((r) => [...r.batters, ...oldStaff(r)]), S.draftClass || []].flat();
+  seedUid(Math.max(...ids.map((p) => p.id)) + 1);
+  const staffed = migrateStaff(S);
 
   const oldScale = S.scale !== 100;
   const toNew = (v) => Math.min(LEAGUE.statCap, v * 4 + 41);
@@ -132,10 +158,10 @@ export function loadState(saved) {
       }
     }
   };
-  [...S.roster.batters, S.roster.sp, S.roster.rp].forEach((p) => upgrade(p, true));
-  (S.rivals || []).forEach((r) => [...r.batters, r.sp].forEach((p) => upgrade(p, false)));
+  everyone(S.roster).forEach((p) => upgrade(p, true));
+  (S.rivals || []).forEach((r) => everyone(r).forEach((p) => upgrade(p, false)));
   (S.draftClass || []).forEach((p) => upgrade(p, true));
-  const allSaved = [...S.roster.batters, S.roster.sp, S.roster.rp, ...(S.rivals || []).flatMap((r) => [...r.batters, r.sp]), ...(S.draftClass || [])];
+  const allSaved = [...everyone(S.roster), ...(S.rivals || []).flatMap((r) => everyone(r)), ...(S.draftClass || [])];
   if (S.names !== 2) allSaved.forEach((p) => { p.name = freshName(); });
   else seedNames(allSaved.map((p) => p.name));
   if (oldScale && S.shopItems) for (const item of S.shopItems) for (const st in item.boosts) {
@@ -144,7 +170,7 @@ export function loadState(saved) {
   }
   if (S.balance !== 1) {
     const cap = devCapFor(S.trophies || 0);
-    [...S.roster.batters, S.roster.sp, S.roster.rp].forEach((p) => {
+    everyone(S.roster).forEach((p) => {
       for (const k of p.role === "bat" ? BAT_STATS : PIT_STATS) p[k] = Math.min(p[k], cap);
     });
     (S.rivals || []).forEach(seedRivalStars);
@@ -179,6 +205,8 @@ export function loadState(saved) {
     results: S.results ?? [], live: S.liveGame ?? null, ctx: S.liveContext ?? null,
     lastSeen: S.lastSeen ?? Date.now(),
   });
+  s.rotationTurn = S.rotationTurn ?? 0;
+  if (staffed) pushLog(s, "The club signs four starters and a closer to fill out a real pitching staff.", "beat");
   return s;
 }
 
@@ -191,7 +219,7 @@ export function toSave(s) {
     year: s.year, phase: s.phase, rivals: s.rivals, schedule: s.schedule, rivalDays: s.rivalDays,
     gameIndex: s.gameIndex, standings: s.standings, playoffs: s.playoffs, history: s.history,
     trophies: s.trophies, allTime: s.allTime, capYears: s.capYears, speed: s.speed, sound: s.sound,
-    lineupLoadout: s.lineupLoadout ?? null, autoLineup: s.autoLineup, autoDev: s.autoDev, unlocked: s.unlocked, builds: s.builds, yearEnd: s.yearEnd, ledger: s.ledger,
+    lineupLoadout: s.lineupLoadout ?? null, autoLineup: s.autoLineup, autoDev: s.autoDev, unlocked: s.unlocked, builds: s.builds, yearEnd: s.yearEnd, rotationTurn: s.rotationTurn ?? 0, ledger: s.ledger,
     results: s.results.slice(0, 30), liveGame: s.live, liveContext: s.ctx,
   };
 }
@@ -286,7 +314,7 @@ function logGame(s, g, won, playoffLabel) {
   for (const pid in lines) ss[pid] = { ...(ss[pid] || EMPTY_STAT), g: ((ss[pid] || {}).g || 0) + 1 };
   s.seasonStats = ss;
 }
-const ratingsNow = (s) => [teamRating({ batters: s.roster.batters, sp: s.roster.sp }), ...s.rivals.map(teamRating)];
+const ratingsNow = (s) => [teamRating(s.roster), ...s.rivals.map(teamRating)];
 
 export function gateNow(s) {
   const fx = stadiumFx(s.stadium);
@@ -312,8 +340,14 @@ function startNextGame(s) {
   }
   const opp = s.rivals[oppIdx - 1];
   s.live = newGame(opp, home, oppIdx);
+  // starters take turns; each rival's turn follows its own games played
+  const turn = s.rotationTurn || 0;
+  s.rotationTurn = turn + 1;
+  const oppTurn = s.standings[oppIdx].w + s.standings[oppIdx].l + (s.phase === "playoffs" ? s.playoffs.gameNo : 0);
   s.ctx = {
-    batters: s.roster.batters, sp: s.roster.sp, rp: s.roster.rp, opp,
+    batters: s.roster.batters, opp,
+    staff: { sp: starterFor(s.roster, turn), setup: s.roster.pen[0], closer: s.roster.pen[1] },
+    oppStaff: { sp: starterFor(opp, oppTurn), setup: opp.pen[0], closer: opp.pen[1] },
     fence: FENCE, statBase: LEAGUE.statBase, innings: LEAGUE.innings, cityName: tn(s.city),
   };
   s.ledger.lastGame = s.ledger.game;
@@ -396,7 +430,7 @@ function yearReview(s, { w, l, finish, champion, cup }) {
   const ops = (x) => (x.ab ? (x.h + x.bb) / (x.ab + x.bb) + (x.h + x.d + 2 * x.t + 3 * x.hr) / x.ab : 0);
   const hitters = s.roster.batters.map((p) => ({ p, st: s.seasonStats[p.id] })).filter((x) => x.st && x.st.ab >= 100);
   const top = hitters.sort((a, b) => ops(b.st) - ops(a.st))[0];
-  const arms = [s.roster.sp, s.roster.rp].map((p) => ({ p, st: s.seasonStats[p.id] })).filter((x) => x.st && x.st.outsP >= 60);
+  const arms = [...s.roster.rotation, ...s.roster.pen].map((p) => ({ p, st: s.seasonStats[p.id] })).filter((x) => x.st && x.st.outsP >= 90);
   const ace = arms.sort((a, b) => a.st.raP / a.st.outsP - b.st.raP / b.st.outsP)[0];
   const h = s.hist;
   const startN = (h.games.find((r) => r[1] === s.year)?.[0] ?? 1) - 1;
@@ -751,7 +785,18 @@ export function tradeCounterpart(s, p, rivalIdx) {
   const team = s.rivals?.[rivalIdx];
   if (!team) return null;
   if (p.role === "bat") return team.batters.find((b) => b.pos === p.pos) || null;
-  return p.pos === "SP" ? team.sp : null;
+  // pitchers trade slot for slot: SP3 for their SP3, setup for setup, closer for closer
+  const i = s.roster.rotation.findIndex((x) => x.id === p.id);
+  if (i >= 0) return team.rotation[i] || null;
+  const j = s.roster.pen.findIndex((x) => x.id === p.id);
+  return j >= 0 ? team.pen[j] || null : null;
+}
+// The draft pick a rookie would replace: his position, or the weakest arm in his role
+export function rookieReplaces(s, rook) {
+  if (rook.pos === "SP") return [...s.roster.rotation].sort((a, b) => ovr(a) - ovr(b))[0];
+  if (rook.pos === "RP") return s.roster.pen[0];
+  if (rook.pos === "CL") return s.roster.pen[1];
+  return s.roster.batters.find((b) => b.pos === rook.pos);
 }
 export function tradeQuote(s, p, rivalIdx) {
   const q = tradeCounterpart(s, p, rivalIdx);
@@ -768,11 +813,8 @@ export function makeTrade(s, myPid, rivalIdx) {
   const incoming = { ...q, pot: vetPot(q, p.role === "bat" ? BAT_STATS : PIT_STATS) };
   credit(s, "trades", -quote.cash);
   addAT(s, { trades: 1 });
-  s.roster = p.role === "bat"
-    ? { ...s.roster, batters: s.roster.batters.map((b) => (b.id === myPid ? incoming : b)) }
-    : { ...s.roster, sp: incoming };
-  s.rivals = s.rivals.map((team, i) => (i !== rivalIdx ? team
-    : p.role === "bat" ? { ...team, batters: team.batters.map((b) => (b.id === q.id ? p : b)) } : { ...team, sp: p }));
+  s.roster = replaceSlot(s.roster, myPid, incoming);
+  s.rivals = s.rivals.map((team, i) => (i !== rivalIdx ? team : replaceSlot(team, q.id, { ...p, pos: q.pos })));
   afterRosterChange(s);
   if (quote.cash > 0) spent(s, "trades", quote.cash, { pid: incoming.id, before: p, what: `${p.name} for ${q.name}` });
   pushLog(s, `Trade: ${p.name} to the ${s.rivals[rivalIdx].name} for ${q.name}${quote.cash > 0 ? ` plus $${fmt(quote.cash)}` : quote.cash < 0 ? `; they add $${fmt(-quote.cash)}` : ""}.`, "win");
@@ -784,14 +826,13 @@ export function makeTrade(s, myPid, rivalIdx) {
 export function signRookie(s, rid) {
   const rook = s.draftClass?.find((p) => p.id === rid);
   if (!rook || s.money < rook.signCost) return false;
-  const released = rook.pos === "SP" ? s.roster.sp : rook.pos === "RP" ? s.roster.rp : s.roster.batters.find((b) => b.pos === rook.pos);
+  const released = rookieReplaces(s, rook);
+  if (!released) return false;
   credit(s, "draft", -rook.signCost);
   addAT(s, { rookies: 1 });
   s.draftClass = s.draftClass.filter((p) => p.id !== rid);
-  const signed = { ...rook, gear: released?.gear };
-  if (rook.pos === "SP") s.roster = { ...s.roster, sp: signed };
-  else if (rook.pos === "RP") s.roster = { ...s.roster, rp: signed };
-  else s.roster = { ...s.roster, batters: s.roster.batters.map((b) => (b.pos === rook.pos ? signed : b)) };
+  const signed = { ...rook, gear: released.gear };
+  s.roster = replaceSlot(s.roster, released.id, signed);
   afterRosterChange(s);
   spent(s, "draft", rook.signCost, { pid: rook.id, before: released, what: `Signed ${rook.name} (${rook.pos})` });
   pushLog(s, `Signed ${rook.name} (${rook.pos}) for $${fmt(rook.signCost)}${released ? `; ${released.name} is released` : ""}.`, "win");

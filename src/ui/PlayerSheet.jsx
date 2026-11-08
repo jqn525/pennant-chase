@@ -7,12 +7,13 @@ import { CARD_TIERS, nextPrint, eligibleTier } from "../game/cards.js";
 import { columns } from "../game/statline.js";
 import StatTable from "./StatTable.jsx";
 import { Sparkline } from "./charts.jsx";
+import { slotOf } from "../game/roster.js";
 import { isOpen, nextUnlockNote } from "../game/unlocks.js";
 import {
   allPlayers, stat, careerOf, trainCost, trainCeil, planTraining, train, trainAll, printCard,
   tagFranchise, franchiseUsed, franchiseSlots, tradeQuote, makeTrade,
 } from "../game/franchise.js";
-import { gearGain, WIN_PER_BAT_POINT, WIN_PER_ARM_POINT, valueOfWin } from "../game/advisor.js";
+import { gearGain, winPerPointOf, valueOfWin } from "../game/advisor.js";
 import { money } from "./fmt.js";
 import { Sheet } from "./Shell.jsx";
 
@@ -29,11 +30,11 @@ export default function PlayerSheet({ f, pid, onClose }) {
   const tier = CARD_TIERS[p.cardTier || 0];
   const up = nextPrint(p);
   const all = own ? planTraining(s, p, keys, s.money) : null;
-  const perPoint = (p.role === "bat" ? WIN_PER_BAT_POINT : WIN_PER_ARM_POINT) * valueOfWin(s);
+  const perPoint = winPerPointOf(p) * valueOfWin(s);
   const slots = GEAR.filter((g) => (g.role === "bat") === (p.role === "bat"));
 
   return (
-    <Sheet title={`${p.name} · ${p.pos}`} onClose={onClose}>
+    <Sheet title={`${p.name} · ${own ? slotOf(s.roster, p.id) : p.pos}`} onClose={onClose}>
       <div className="kpis">
         <div className="kpi"><span>Overall</span><b>{ovr(p).toFixed(1)}</b><small>{trait ? trait.label : "no trait"}</small></div>
         <div className="kpi"><span>Salary</span><b>{money(salaryOf(p))}</b><small>per season</small></div>
@@ -114,7 +115,7 @@ export default function PlayerSheet({ f, pid, onClose }) {
           </div>
 
           <h2><span className="grow">Trade</span><small>{isOpen(s, "trades") ? "same position, cash settles the difference" : ""}</small></h2>
-          {!isOpen(s, "trades") ? <p className="note">{nextUnlockNote.trades}</p> : p.pos === "RP" ? <p className="note">Rival clubs don't carry relievers.</p> : (
+          {!isOpen(s, "trades") ? <p className="note">{nextUnlockNote.trades}</p> : (
             <div className="card card--l table-wrap"><table>
               <thead><tr><th>Their player</th><th>OVR</th><th>Salary</th><th>Cash</th><th /></tr></thead>
               <tbody>

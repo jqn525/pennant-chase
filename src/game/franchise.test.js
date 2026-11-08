@@ -71,7 +71,7 @@ describe("franchise core", () => {
     const t = loadState(data);
     expect(t.money).toBeCloseTo(s.money);
     expect(t.gameIndex).toBe(s.gameIndex);
-    expect(allPlayers(t).length).toBe(11);
+    expect(allPlayers(t).length).toBe(16);
     expect(t.ledger.season.gate).toBeCloseTo(s.ledger.season.gate);
   });
 

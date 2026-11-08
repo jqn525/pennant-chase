@@ -8,7 +8,7 @@ import BoxScore from "./BoxScore.jsx";
 export default function SeasonView({ f, openPlayer }) {
   const { s } = f;
   const names = [tn(s.city), ...s.rivals.map((r) => r.name)];
-  const ratings = [teamRating({ batters: s.roster.batters, sp: s.roster.sp }), ...s.rivals.map(teamRating)];
+  const ratings = [teamRating(s.roster), ...s.rivals.map(teamRating)];
   const order = seedOrder(s.standings, ratings);
   const leader = s.standings[order[0]];
   const sr = seriesNow(s);

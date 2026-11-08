@@ -5,7 +5,7 @@
 import { ovr } from "./gear.js";
 
 const games = (s) => s.hist?.n ?? 0;
-const players = (s) => (s.roster ? [...s.roster.batters, s.roster.sp, s.roster.rp] : []);
+const players = (s) => (s.roster ? [...s.roster.batters, ...s.roster.rotation, ...s.roster.pen] : []);
 
 export const UNLOCKS = [
   { id: "gear", when: (s) => games(s) >= 3, news: "A gear dealer starts calling. Shipments of bats, gloves and cleats arrive every series." },

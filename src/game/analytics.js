@@ -109,7 +109,7 @@ export function teamKpis(s, year = s.year) {
 // Rating of every club (ours first) for the rival comparison
 export function ratingsTable(s) {
   return [
-    { name: s.city.nickname, me: true, r: teamRating({ batters: s.roster.batters, sp: s.roster.sp }) },
+    { name: s.city.nickname, me: true, r: teamRating(s.roster) },
     ...s.rivals.map((t) => ({ name: t.name, me: false, r: teamRating(t) })),
   ].sort((a, b) => b.r - a.r);
 }
@@ -135,7 +135,7 @@ function series(p, bestOf, a0 = 0, b0 = 0, rnd) {
 
 export function project(s, runs = 1000, rnd = Math.random) {
   if (!s.roster || s.phase === "draft") return null;
-  const ratings = [teamRating({ batters: s.roster.batters, sp: s.roster.sp }), ...s.rivals.map(teamRating)];
+  const ratings = [teamRating(s.roster), ...s.rivals.map(teamRating)];
   const edge = ourEdge(s);
   const pGame = (a, b, homeA) => {
     let p = logistic(ratings[a], ratings[b], homeA);

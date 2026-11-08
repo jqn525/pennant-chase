@@ -15,14 +15,49 @@ const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 export const newGame = (opp, home, oppIdx) => ({
   opp, oppIdx, home,
   inning: 1, half: "top", outs: 0, bases: [null, null, null],
-  us: 0, them: 0, usIdx: 0, themIdx: 0, spFaced: 0, usingRP: false,
+  us: 0, them: 0, usIdx: 0, themIdx: 0,
+  arm: { us: { stage: "sp", faced: 0, half: "" }, them: { stage: "sp", faced: 0, half: "" } },
   over: false, hrUs: 0, result: null, gatePaid: 0,
   box: { us: {}, them: {}, lobUs: 0, lobThem: 0, errUs: 0, errThem: 0 },
   balls: [], // every ball in play this game: {spray, dist, t} for the field view
   statAcc: {}, // player id -> {statKey: delta}, flushed by the caller
 });
 
-// ctx is built once per game: { batters, sp, rp, opp, fence, statBase, innings, cityName }
+// Today's pitchers for one side: { sp, setup, closer }
+export function staffFor(ctx, g, side) {
+  if (side === "us") return ctx.staff || { sp: ctx.sp, setup: ctx.rp, closer: ctx.closer || ctx.rp };
+  if (ctx.oppStaff) return ctx.oppStaff;
+  const o = g.opp;
+  return o.rotation ? { sp: o.rotation[0], setup: o.pen[0], closer: o.pen[1] } : { sp: o.sp, setup: o.sp, closer: o.sp };
+}
+const ARM_LABEL = { setup: "the setup man", closer: "the closer" };
+
+// Who pitches this at-bat for the fielding side: the starter until he tires,
+// then the setup man; the closer takes a save situation from the 9th on.
+function currentArm(g, ctx, side, emit) {
+  const staff = staffFor(ctx, g, side);
+  const a = g.arm || (g.arm = {});
+  const st = a[side] || (a[side] = { stage: "sp", faced: 0, half: "" });
+  const lead = side === "us" ? g.us - g.them : g.them - g.us;
+  const halfKey = `${g.inning}${g.half}`;
+  const change = (stage, why) => {
+    const was = staff[st.stage];
+    st.stage = stage; st.faced = 0;
+    emit(`${why} ${staff[stage].name} comes in for ${was.name}${ARM_LABEL[stage] ? `, ${ARM_LABEL[stage]}` : ""}.`, "sys");
+  };
+  if (st.half !== halfKey) {
+    st.half = halfKey;
+    const save = g.inning >= ctx.innings && ((lead >= 1 && lead <= 3) || (lead === 0 && g.inning > ctx.innings));
+    if (save && st.stage !== "closer") change("closer", lead ? "Save situation:" : "Extra innings:");
+  }
+  // a starter goes about 6–7 innings on stamina; the setup man about one
+  if (st.stage === "sp" && st.faced >= 22 + (eff(staff.sp).stamina - 41) * 0.6) change("setup", `${staff.sp.name} is gassed after ${st.faced} batters.`);
+  else if (st.stage === "setup" && st.faced >= 4 + (eff(staff.setup).stamina - 41) / 5) change("closer", `${staff.setup.name} is spent.`);
+  st.faced++;
+  return staff[st.stage];
+}
+
+// ctx is built once per game: { batters, staff, oppStaff, opp, fence, statBase, innings, cityName }
 export function stepAtBat(g, ctx, events) {
   if (g.over) return;
   const emit = (text, kind = "play", side = null, team = null, play = null) => events.push({ text, kind, side, team, play });
@@ -33,18 +68,8 @@ export function stepAtBat(g, ctx, events) {
   const idx = weBat ? g.usIdx : g.themIdx;
   const batter = eff(batters[idx % 9]);
 
-  let pitcher;
-  if (weBat) pitcher = eff(g.opp.sp);
-  else {
-    // stamina (with gear and trait baked in) sets how deep the starter goes
-    const limit = 8 + (eff(ctx.sp).stamina - 41) / 2;
-    if (!g.usingRP && g.spFaced >= limit) {
-      g.usingRP = true;
-      emit(`${ctx.sp.name} is gassed after ${g.spFaced} batters. ${ctx.rp.name} jogs in from the pen.`, "sys");
-    }
-    pitcher = eff(g.usingRP ? ctx.rp : ctx.sp);
-    g.spFaced++;
-  }
+  const arm = currentArm(g, ctx, weBat ? "them" : "us", emit);
+  const pitcher = eff(arm);
   const side = weBat ? "us" : "them";
   const teamName = weBat ? ctx.cityName : g.opp.name;
 
@@ -84,9 +109,7 @@ export function stepAtBat(g, ctx, events) {
     return;
   }
 
-  const fielders = (weBat
-    ? [...g.opp.batters, { ...g.opp.sp }]
-    : [...ctx.batters, { ...(g.usingRP ? ctx.rp : ctx.sp) }]).map(eff);
+  const fielders = [...(weBat ? g.opp.batters : ctx.batters), { ...arm }].map(eff);
 
   const out = resolveAtBat(batter, pitcher, fielders, ctx.fence, ctx.statBase, { forceOn1: !!g.bases[0], outs: g.outs, runnersOn: g.bases.some(Boolean) });
   const who = `${batter.name} (${batter.pos})`;

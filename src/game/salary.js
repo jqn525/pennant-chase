@@ -10,7 +10,7 @@ export const salaryOf = (p) => {
 };
 
 export const teamPayroll = (roster) =>
-  [...roster.batters, roster.sp, roster.rp].reduce((n, p) => n + salaryOf(p), 0);
+  [...roster.batters, ...roster.rotation, ...roster.pen].reduce((n, p) => n + salaryOf(p), 0);
 
 // Winter bill for a payroll above the cap. capYears counts consecutive years
 // over INCLUDING this one: 1st year = 100% of the overage, then +taxStep each.
@@ -22,6 +22,6 @@ export const luxuryTax = (payroll, capYears) => {
 
 // Pay rank among the league's players at his position (1 = highest paid)
 export const payRank = (p, rivals) => {
-  const peers = (rivals || []).flatMap((r) => [...r.batters, r.sp]).filter((q) => q.pos === p.pos);
+  const peers = (rivals || []).flatMap((r) => [...r.batters, ...r.rotation, ...r.pen]).filter((q) => q.pos === p.pos);
   return 1 + peers.filter((q) => salaryOf(q) > salaryOf(p)).length;
 };

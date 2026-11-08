@@ -37,7 +37,7 @@ describe("save validation", () => {
     save.liveGame.bases[0] = save.roster.batters[0];
     save.liveGame.statAcc[save.roster.batters[1].id] = { ab: 1, h: 1 };
     save.liveContext = {
-      ...save.roster, opp, fence: { corner: LEAGUE.fenceCorner, center: LEAGUE.fenceCenter },
+      ...save.roster, staff: { sp: save.roster.rotation[0], setup: save.roster.pen[0], closer: save.roster.pen[1] }, opp, fence: { corner: LEAGUE.fenceCorner, center: LEAGUE.fenceCenter },
       statBase: LEAGUE.statBase, innings: LEAGUE.innings, cityName: "Club",
     };
     const restored = decodeBackup(encodeBackup(save));

@@ -1,5 +1,5 @@
 // ── Roster: the lineup philosophy and a sortable table of the club ──
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { BAT_STATS, PIT_STATS } from "../game/constants.js";
 import { ovr } from "../game/gear.js";
 import { salaryOf } from "../game/salary.js";
@@ -8,6 +8,7 @@ import { stat, trainCost, trainCeil, chooseLoadout, moveBatter, franchiseUsed, f
 import { avg, era } from "../game/statline.js";
 import { CARD_TIERS, nextPrint } from "../game/cards.js";
 import { isOpen } from "../game/unlocks.js";
+import { slotOf, starterFor } from "../game/roster.js";
 import { money } from "./fmt.js";
 
 // Cheapest next training point and the points left before the ceiling
@@ -34,14 +35,16 @@ export default function RosterView({ f, openPlayer, goTo }) {
   const { s } = f;
   const [sort, setSort] = useState(["order", 1]);
   const [manual, setManual] = useState(false);
-  const order = [...s.roster.batters, s.roster.sp, s.roster.rp];
+  const order = [...s.roster.batters, ...s.roster.rotation, ...s.roster.pen];
+  const nextUp = starterFor(s.roster, s.rotationTurn || 0)?.id;
+  const groupAt = { 0: "Lineup", 9: "Rotation", 14: "Bullpen" };
   const rows = sort[0] === "order" ? order
     : [...order].sort((a, b) => sort[1] * (COLS.find((c) => c[0] === sort[0])[2](s, b) - COLS.find((c) => c[0] === sort[0])[2](s, a)));
   const setCol = (k) => setSort(([c, d]) => (c === k ? [k, -d] : [k, 1]));
   return (
     <>
       <h1>Roster</h1>
-      <p className="lede">Franchise tags {franchiseUsed(s)} of {franchiseSlots(s)} used. Tap a player to train, gear up, print or trade.</p>
+      <p className="lede">Franchise tags {franchiseUsed(s)} of {franchiseSlots(s)} used. Tap a player to train, gear up, promote or trade.</p>
 
       <h2><span className="grow">Lineup</span><small>{s.autoLineup ? "set automatically" : "custom order"}</small></h2>
       <div className="card card--m panel--pad stack">
@@ -86,14 +89,17 @@ export default function RosterView({ f, openPlayer, goTo }) {
             </tr>
           </thead>
           <tbody>
-            {rows.map((p) => {
+            {rows.map((p, i) => {
               const r = trainRoom(s, p), st = stat(s, p.id);
               const tier = CARD_TIERS[p.cardTier || 0];
+              const head = sort[0] === "order" && groupAt[i];
               return (
-                <tr key={p.id} className="link" onClick={() => openPlayer(p.id)} tabIndex={0} onKeyDown={(e) => e.key === "Enter" && openPlayer(p.id)}>
+                <Fragment key={p.id}>
+                {head && <tr className="group"><td colSpan={6}>{head}</td></tr>}
+                <tr className="link" onClick={() => openPlayer(p.id)} tabIndex={0} onKeyDown={(e) => e.key === "Enter" && openPlayer(p.id)}>
                   <td>
                     <b>{p.name}</b>{p.franchise && <> <span className="tag tag--accent">F</span></>}{nextPrint(p) && isOpen(s, "star") && <> <span className="tag tag--warn">promo ready</span></>}
-                    <span className="sub">{p.pos}{tier.id > 0 ? ` · ★ ${tier.name.toLowerCase()}` : ""}</span>
+                    <span className="sub">{slotOf(s.roster, p.id)}{p.id === nextUp ? " · starts next" : ""}{tier.id > 0 ? ` · ★ ${tier.name.toLowerCase()}` : ""}</span>
                   </td>
                   <td className="n">{ovr(p).toFixed(0)}</td>
                   <td className="n">{r.next == null ? "max" : money(r.next)}</td>
@@ -101,6 +107,7 @@ export default function RosterView({ f, openPlayer, goTo }) {
                   <td className="n">{money(salaryOf(p))}</td>
                   <td className="n">{p.role === "bat" ? `${avg(st)} · ${st.hr} HR` : `${era(st)} ERA`}</td>
                 </tr>
+                </Fragment>
               );
             })}
           </tbody>

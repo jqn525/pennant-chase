@@ -72,10 +72,18 @@ export const genPitcher = (pos, base) => {
   return p;
 };
 
+// Relievers throw harder for shorter stints
+const reliever = (p) => ({ ...p, stuff: Math.min(LEAGUE.statCap, p.stuff + 4), stamina: Math.max(40, p.stamina - 8) });
+
+// A pitching staff: an ace, four starters a step or two behind, a setup man and a closer
+export const genStaff = (base, make = genPitcher) => ({
+  rotation: [0, 2, 3, 4, 6].map((d) => make("SP", Math.max(40, base - d))),
+  pen: [reliever(make("RP", Math.max(40, base - 4))), reliever(make("CL", Math.max(40, base - 2)))],
+});
+
 export const genRoster = (base) => ({
   batters: POSITIONS.map((p) => genBatter(p, base)),
-  sp: genPitcher("SP", base),
-  rp: genPitcher("RP", Math.max(40, base - 4)),
+  ...genStaff(base),
 });
 
 // Every real club has a marquee name or two. Boost a player's core skills
@@ -86,7 +94,7 @@ export const seedRivalStars = (team) => {
     p[k] = Math.min(LEAGUE.statCap, p[k] + jitter(12, 4));
   }
   if (Math.random() < 0.5) for (const k of ["stuff", "control"]) {
-    team.sp[k] = Math.min(LEAGUE.statCap, team.sp[k] + jitter(12, 4));
+    team.rotation[0][k] = Math.min(LEAGUE.statCap, team.rotation[0][k] + jitter(12, 4));
   }
   return team;
 };
@@ -107,7 +115,12 @@ export const genRivalTeam = (name, traitId, base) => {
       pull: (Math.random() * 1.2 - 0.6),
       trait: pickTrait("bat"),
     })),
-    sp: { id: uid++, name: rname(), pos: "SP", role: "SP", stuff: b("stuff"), control: b("control"), stamina: jitter(base, 10), defense: b("defense"), trait: pickTrait("pit") },
+    ...genStaff(base, (pos, lvl) => ({
+      id: uid++, name: rname(), pos, role: pos,
+      stuff: Math.min(LEAGUE.statCap, Math.max(40, jitter(lvl, 10) + (m.stuff || 0))),
+      control: Math.min(LEAGUE.statCap, Math.max(40, jitter(lvl, 10) + (m.control || 0))),
+      stamina: jitter(lvl, 10), defense: b("defense"), trait: pickTrait("pit"),
+    })),
   }));
 };
 
@@ -117,17 +130,19 @@ export const creepRival = (team, points, bump = CREEP.bump) => {
   const t = {
     ...team,
     batters: team.batters.map((p) => ({ ...p })),
-    sp: { ...team.sp },
+    rotation: team.rotation.map((p) => ({ ...p })),
+    pen: team.pen.map((p) => ({ ...p })),
   };
   const tSpots = [];
   for (const p of t.batters) for (const k of BAT_STATS) tSpots.push([p, k]);
-  for (const k of PIT_STATS) tSpots.push([t.sp, k]);
+  // the staff develops as one slot's worth of chances, spread across the arms
+  const arms = [...t.rotation, ...t.pen];
+  for (const k of PIT_STATS) tSpots.push([null, k]);
   for (let i = 0; i < points; i++) {
-    const [p, k] = tSpots[(Math.random() * tSpots.length) | 0];
+    const [p0, k] = tSpots[(Math.random() * tSpots.length) | 0];
+    const p = p0 || arms[(Math.random() * arms.length) | 0];
     p[k] = Math.min(LEAGUE.statCap, p[k] + bump);
   }
-  // Growth can shuffle who deserves the marquee slots — the skipper re-sets
-  // the order to the club's philosophy after every development pass
   return sortRival(t);
 };
 
@@ -137,11 +152,11 @@ export const genDraftClass = (finish) => {
   const qBonus = Math.round(finish / 2) * 4; // worse finish = higher ceilings (new-unit spread)
   const base = LEAGUE.statBase;
   // guarantee at least one arm; the rest random field positions
-  const slots = [Math.random() < 0.5 ? "SP" : "RP"];
+  const slots = [Math.random() < 0.6 ? "SP" : Math.random() < 0.5 ? "RP" : "CL"];
   const shuffled = [...POSITIONS].sort(() => Math.random() - 0.5);
   while (slots.length < DRAFT.classSize) slots.push(shuffled[slots.length - 1]);
   return slots.map((pos) => {
-    const isPit = pos === "SP" || pos === "RP";
+    const isPit = pos === "SP" || pos === "RP" || pos === "CL";
     const p = isPit ? genPitcher(pos, base - 4) : genBatter(pos, base - 4);
     // rookies re-roll ceilings HIGH: +16..(+31+quality), capped at 97
     p.pot = rollPot(p, isPit ? PIT_STATS : BAT_STATS, 16, 16 + qBonus);

@@ -151,7 +151,7 @@ export const playerValue = (p, perOvr) =>
 
 // Team talent vs the league level, as a letter grade
 export const talentGrade = (roster, statBase = LEAGUE.statBase) => {
-  const all = [...roster.batters, roster.sp, roster.rp];
+  const all = [...roster.batters, ...roster.rotation, ...roster.pen];
   const diff = all.reduce((n, p) => n + ovr(p), 0) / all.length - statBase;
   return diff >= 10 ? "S" : diff >= 6 ? "A" : diff >= 2 ? "B" : diff >= -2 ? "C" : "D";
 };

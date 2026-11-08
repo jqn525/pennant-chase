@@ -261,7 +261,7 @@ function Players({ s, openPlayer }) {
         <Chips label="Season or career" value={span} set={setSpan} items={[["season", "This season"], ["career", "Career"]]} />
       </div>
       <StatTable key={side + span} isBat={side === "bat"} totals initial={side === "bat" ? "OPS" : undefined}
-        rows={(side === "bat" ? s.roster.batters : [s.roster.sp, s.roster.rp]).map((p) => ({
+        rows={(side === "bat" ? s.roster.batters : [...s.roster.rotation, ...s.roster.pen]).map((p) => ({
           id: p.id, name: p.name, sub: p.pos, onClick: () => openPlayer(p.id), stat: span === "career" ? careerOf(s, p.id) : stat(s, p.id),
         }))} />
     </>

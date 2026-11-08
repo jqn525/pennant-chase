@@ -5,15 +5,19 @@ const finite = (v) => typeof v === "number" && Number.isFinite(v);
 const player = (p) => object(p) && Number.isInteger(p.id) && typeof p.name === "string"
   && typeof p.pos === "string" && typeof p.role === "string";
 
+// A staff: the old single starter + reliever, or a 5-man rotation + setup and closer
+const staffOk = (r) => (player(r.sp) && (player(r.rp) || r.rp === undefined))
+  || (Array.isArray(r.rotation) && r.rotation.length === 5 && r.rotation.every(player) && Array.isArray(r.pen) && r.pen.length === 2 && r.pen.every(player));
+
 export function validateSave(s) {
   if (!object(s) || s.version !== 3) return "That code isn't a Pennant Chase v3 save.";
   if (!object(s.city) || typeof s.city.name !== "string") return "The save has an invalid city.";
   const r = s.roster;
   if (!object(r) || !Array.isArray(r.batters) || r.batters.length !== 9
-    || !r.batters.every(player) || !player(r.sp) || !player(r.rp)) return "The save has an invalid roster.";
+    || !r.batters.every(player) || !staffOk(r)) return "The save has an invalid roster.";
   if (!Array.isArray(s.rivals) || s.rivals.length !== 7 || !s.rivals.every((t) =>
     object(t) && typeof t.name === "string" && Array.isArray(t.batters)
-    && t.batters.length === 9 && t.batters.every(player) && player(t.sp))) return "The save has an invalid league.";
+    && t.batters.length === 9 && t.batters.every(player) && (player(t.sp) || staffOk(t)))) return "The save has an invalid league.";
   if (!Array.isArray(s.schedule) || !s.schedule.every((d) => object(d)
     && Number.isInteger(d.opp) && d.opp >= 1 && d.opp <= 7 && typeof d.home === "boolean")) return "The save has an invalid schedule.";
   if (!Array.isArray(s.rivalDays) || s.rivalDays.length !== s.schedule.length
@@ -34,8 +38,8 @@ export function validateSave(s) {
     || s.liveGame.outs < 0 || s.liveGame.outs > 2 || !Array.isArray(s.liveGame.bases)
     || s.liveGame.bases.length !== 3 || !finite(s.liveGame.us) || !finite(s.liveGame.them)
     || !Array.isArray(s.liveContext.batters) || s.liveContext.batters.length !== 9
-    || !s.liveContext.batters.every(player) || !player(s.liveContext.sp)
-    || !player(s.liveContext.rp) || !object(s.liveContext.opp))) return "The save has an invalid live game.";
+    || !s.liveContext.batters.every(player) || !(player(s.liveContext.sp) || object(s.liveContext.staff))
+    || !object(s.liveContext.opp))) return "The save has an invalid live game.";
   return null;
 }
 

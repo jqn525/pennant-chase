@@ -8,6 +8,7 @@ import { avg, ops, era } from "../game/statline.js";
 import { money, count, ordinal } from "./fmt.js";
 import { netPerGame, payroll, payrollShare, fansWin, place, attendance } from "./metrics.js";
 import BoxScore from "./BoxScore.jsx";
+import { starterFor } from "../game/roster.js";
 import { useTween } from "./motion.js";
 
 function Ledger({ s }) {
@@ -52,7 +53,7 @@ function Ledger({ s }) {
 function leaders(s) {
   const games = Math.max(1, s.results.filter((r) => r.year === s.year).length);
   const bats = s.roster.batters.map((p) => ({ p, st: stat(s, p.id) }));
-  const arms = [s.roster.sp, s.roster.rp].map((p) => ({ p, st: stat(s, p.id) }));
+  const arms = [...s.roster.rotation, ...s.roster.pen].map((p) => ({ p, st: stat(s, p.id) }));
   const qual = bats.filter((x) => x.st.ab >= games * 2);
   const best = (list, v, show, low = false) => {
     const pool = list.filter((x) => Number.isFinite(v(x.st)));
@@ -73,7 +74,7 @@ function leaders(s) {
 
 function Race({ s, goTo }) {
   const names = [tn(s.city), ...s.rivals.map((r) => r.name)];
-  const ratings = [teamRating({ batters: s.roster.batters, sp: s.roster.sp }), ...s.rivals.map(teamRating)];
+  const ratings = [teamRating(s.roster), ...s.rivals.map(teamRating)];
   const order = seedOrder(s.standings, ratings);
   const leader = s.standings[order[0]];
   const me = order.indexOf(0);
@@ -113,7 +114,8 @@ function NowPlaying({ s }) {
     const them = g.opp.name;
     const away = g.home ? [them, g.them] : [me, g.us], home = g.home ? [me, g.us] : [them, g.them];
     const bases = (g.bases || []).map((x) => (x ? "◆" : "◇"));
-    label = `${g.half === "top" ? "Top" : "Bottom"} ${g.inning} · ${g.outs} out${g.outs === 1 ? "" : "s"}`;
+    const usArm = s.ctx?.staff?.sp?.name?.split(" ").pop(), themArm = s.ctx?.oppStaff?.sp?.name?.split(" ").pop();
+    label = `${g.half === "top" ? "Top" : "Bottom"} ${g.inning} · ${g.outs} out${g.outs === 1 ? "" : "s"}${usArm ? ` · ${usArm} vs ${themArm}` : ""}`;
     head = (
       <div className="ticker__score">
         <div><span>{away[0]}</span><b>{away[1]}</b></div>
@@ -135,7 +137,7 @@ function NowPlaying({ s }) {
     const nextName = next ? s.rivals[next.opp - 1].name : null;
     rows = [
       s.phase === "draft" ? { tag: "", text: "The draft board is open. The season waits until you close it." }
-        : nextName ? { tag: "Next", text: `Game ${s.gameIndex + 1} of ${LEAGUE.seasonGames}: ${next.home ? `${nextName} at ${me}` : `${me} at ${nextName}`}.` } : null,
+        : nextName ? { tag: "Next", text: `Game ${s.gameIndex + 1} of ${LEAGUE.seasonGames}: ${next.home ? `${nextName} at ${me}` : `${me} at ${nextName}`}. ${starterFor(s.roster, s.rotationTurn || 0).name} starts.` } : null,
       ...s.log.filter((e) => e.kind !== "play").slice(0, ROWS).map((e) => ({ tag: "", text: e.text, cls: e.kind === "beat" ? "beat" : "dim" })),
     ].filter(Boolean).slice(0, ROWS);
   }

@@ -230,7 +230,7 @@ export const RARITY = {
 export const SALARY = {
   base: 400,        // $/season at league-average OVR — a fresh club breaks even
   growth10: 3,      // salary multiplies by this per +10 OVR
-  cap: 40000,       // team payroll line — starts to bite around an all-85 roster
+  cap: 58000,       // team payroll line (16 players) — starts to bite around an all-85 roster
   taxStep: 0.5,     // +50% tax rate per consecutive year over
   posMult: { SP: 1.5, RP: 0.7, SS: 1.15, CF: 1.15, C: 0.85 },
 };
