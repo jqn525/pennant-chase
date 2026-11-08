@@ -60,7 +60,7 @@ export default function SeasonView({ f, openPlayer }) {
           {s.results.slice(0, 15).map((r, i) => (
             <li key={i}>
               <span className={`wl ${r.won ? "up" : "down"}`}>{r.won ? "W" : "L"}</span>
-              <span className="grow">{r.us}–{r.them} {r.home ? "vs" : "at"} {r.opp}{r.playoff ? ` · ${r.playoff === "CUP" ? "final" : "semi"}` : ""}<span className="sub">{count(r.gate)} attended{r.fans ? ` · +${count(r.fans)} fans` : ""}</span></span>
+              <span className="grow">{r.us}–{r.them} {r.home ? "vs" : "at"} {r.opp}{r.playoff ? ` · ${r.playoff === "CUP" ? "final" : "semi"}` : ""}<span className="sub">{count(r.gate)} attended{r.fans ? ` · ${r.fans > 0 ? "+" : "−"}${count(Math.abs(r.fans))} fans` : ""}</span></span>
               <span className={`num ${r.net >= 0 ? "up" : "down"}`}>{money(r.net, { sign: true })}</span>
             </li>
           ))}

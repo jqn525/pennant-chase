@@ -101,7 +101,9 @@ export const ECON = {
   // Hot streaks: 3+ straight wins draw bandwagon fans, up to double growth
   streakStep: 0.15,
   streakMax: 2,
-  fanWinPct: 0.01,        // every win also grows the base by 1% — empires compound
+  fanWinPct: 0.01,        // every win grows the base by up to 1% while the market has room
+  fanMarket: 200000,      // the region's appetite: growth slows to nothing as fans approach it
+  fanLossPct: 0.002,      // every loss loses 0.2% of the fans above the founding base
   playoffWinPay: 2000,    // per playoff game won
   semisSeriesPay: 6000,   // winning a semifinal series
   cupPay: 40000,          // winning the Pennant Cup
@@ -198,7 +200,9 @@ export const stadiumFx = (levels = {}) => {
 // +CREEP.cellarBonus extra for the last-place club. Standing still = falling behind.
 // Rubber band: rivals trailing the PLAYER's rating gain up to rubberCap extra
 // points (rubber × rating gap), so a dynasty gets hunted down within a few years.
-export const CREEP = { base: 12, cellarBonus: 6, rubber: 2, rubberCap: 40, bump: 4 };
+export const CREEP = { base: 12, cellarBonus: 6, rubber: 3, rubberCap: 60, bump: 4,
+  // in season: every series change, rivals behind you scout, sign and train in proportion to the gap
+  seriesRubber: 1.6, seriesBump: 2 };
 
 // One per player — a defined percentage shift on his ratings, like gear.
 // `mods` bake into effective stats everywhere; `sit` applies with runners on.

@@ -338,11 +338,15 @@ export function settleGame(g, { fans, gateBonus, floorBonus, fansBonus, cityName
     const onARun = run >= 3;
     if (onARun) flat *= Math.min(ECON.streakMax, 1 + ECON.streakStep * (run - 2));
     if (fansBonus) flat *= 1.25;
-    fansDelta = Math.round(flat + fans * ECON.fanWinPct * fansMult);
+    // the compounding part fades as the region runs out of new fans
+    const room = Math.max(0, 1 - fans / ECON.fanMarket);
+    fansDelta = Math.round(flat + fans * ECON.fanWinPct * fansMult * room);
     if (onARun) streakNote = ` ${run} straight — the bandwagon rolls, +${fansDelta} fans!`;
     kind = "win";
   } else {
     kind = "out";
+    // fair-weather fans drift away after a loss
+    if (!playoff) fansDelta = -Math.round(Math.max(0, fans - ECON.startFans) * ECON.fanLossPct);
   }
 
   let moneyDelta = Math.max(0, gate - (g.gatePaid || 0));

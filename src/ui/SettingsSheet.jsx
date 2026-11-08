@@ -79,7 +79,7 @@ export default function SettingsSheet({ f, onClose }) {
         <ul className="feed" style={{ margin: 0 }}>
           <li><span className="grow"><b>Gate</b> — every game pays by attendance. Attendance can't exceed your seats; more fans than seats lets you charge more per ticket (up to +60%).</span></li>
           <li><span className="grow"><b>Construction</b> takes games. Each project is paid in installments, one per game, and stalls if you can't cover one. One project per area.</span></li>
-          <li><span className="grow"><b>Fans</b> grow with wins. Wins come from ratings: training, gear and trades.</span></li>
+          <li><span className="grow"><b>Fans</b> grow with wins until the region runs out of new ones (about 200,000), and drift away after losses. Wins come from ratings: training, gear and trades.</span></li>
           <li><span className="grow"><b>Merch and TV</b> pay every game, scaled by fans and how famous your players are (star power), and keep selling while you're away.</span></li>
           <li><span className="grow"><b>Payroll</b> is due each season and rises with each player's overall. Over the cap, a luxury tax applies.</span></li>
           <li><span className="grow"><b>Playoffs</b> — the top four meet in semifinals; the Pennant Cup pays the most.</span></li>

@@ -4,7 +4,7 @@
 // through credit(), so the ledger always explains the bank balance.
 // Side effects the UI cares about (sounds, results) are queued on s.events.
 
-import { LEAGUE, ECON, TRADE, BAT_STATS, PIT_STATS, STADIUM, stadiumFx, REVENUE, revenueFx, SALARY, FRANCHISE } from "./constants.js";
+import { LEAGUE, ECON, TRADE, BAT_STATS, PIT_STATS, STADIUM, stadiumFx, REVENUE, revenueFx, SALARY, FRANCHISE, CREEP } from "./constants.js";
 import { fmt } from "./utils.js";
 import { genRoster, genPitcher, seedUid, genDraftClass, vetPot, rollPot, pickTrait, freshName, seedNames, creepRival, seedRivalStars } from "./generators.js";
 import { newGame, stepAtBat, playGameInstant, settleGame, ticketGate } from "./engine.js";
@@ -515,7 +515,9 @@ export function advance(s) {
       const prev = s.schedule[s.gameIndex - 1], next = s.schedule[s.gameIndex];
       if (prev.opp !== next.opp || prev.home !== next.home) {
         restock(s, false);
-        s.rivals = s.rivals.map((t) => creepRival(t, 1, 2));
+        // rivals scout, sign and train between series; the further you're ahead, the harder they work
+        const usR = teamRating(s.roster);
+        s.rivals = s.rivals.map((t) => creepRival(t, 1 + Math.round(Math.max(0, usR - teamRating(t)) * CREEP.seriesRubber), CREEP.seriesBump));
       }
     }
     return startNextGame(s);

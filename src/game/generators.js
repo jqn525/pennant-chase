@@ -133,14 +133,14 @@ export const creepRival = (team, points, bump = CREEP.bump) => {
     rotation: team.rotation.map((p) => ({ ...p })),
     pen: team.pen.map((p) => ({ ...p })),
   };
+  // every player, bat or arm, has the same chance to improve; budgets were set
+  // for the old 10-player club (49 stat slots), so scale them to the full roster
   const tSpots = [];
   for (const p of t.batters) for (const k of BAT_STATS) tSpots.push([p, k]);
-  // the staff develops as one slot's worth of chances, spread across the arms
-  const arms = [...t.rotation, ...t.pen];
-  for (const k of PIT_STATS) tSpots.push([null, k]);
-  for (let i = 0; i < points; i++) {
-    const [p0, k] = tSpots[(Math.random() * tSpots.length) | 0];
-    const p = p0 || arms[(Math.random() * arms.length) | 0];
+  for (const p of [...t.rotation, ...t.pen]) for (const k of ["stuff", "control", "stamina", "stuff", "control"]) tSpots.push([p, k]);
+  const n = Math.round(points * tSpots.length / 49);
+  for (let i = 0; i < n; i++) {
+    const [p, k] = tSpots[(Math.random() * tSpots.length) | 0];
     p[k] = Math.min(LEAGUE.statCap, p[k] + bump);
   }
   return sortRival(t);

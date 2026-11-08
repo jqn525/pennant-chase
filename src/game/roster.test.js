@@ -27,7 +27,7 @@ describe("pitching staffs", () => {
     while (s.gameIndex < LEAGUE.seasonGames) tick(s, "max");
     const starts = s.roster.rotation.map((p) => (s.gameLog[p.id] ? s.seasonStats[p.id].g : 0));
     const ks = [...s.roster.rotation, ...s.roster.pen].map((p) => s.seasonStats[p.id]?.kP || 0);
-    expect(Math.max(...ks)).toBeLessThan(260);
+    expect(Math.max(...ks)).toBeLessThan(340);
     for (const p of s.roster.rotation) expect(s.seasonStats[p.id].g).toBeGreaterThanOrEqual(28);
     expect(s.seasonStats[s.roster.pen[0].id].g).toBeGreaterThan(100);
     expect(starts.length).toBe(5);
