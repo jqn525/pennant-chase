@@ -99,15 +99,27 @@ export default function useFranchise() {
   const setSpeed = (sp) => { ref.current.speed = sp; setPaused(false); refresh(); save(); };
 
   const backupCode = () => { const d = toSave(ref.current); return d ? encodeBackup(d) : ""; };
+  // Both swap the franchise in memory (no page reload): a reload would let the
+  // unload-time autosave write the old club straight back over the change.
   const restore = (code) => {
     const parsed = decodeBackup(code);
     if (!parsed.ok) return parsed.error;
-    try { localStorage.setItem(SAVE_KEY, parsed.json); window.location.reload(); return null; }
+    ref.current = loadState(parsed.value);
+    welcomeBack(ref.current);
+    try { localStorage.setItem(SAVE_KEY, JSON.stringify(toSave(ref.current))); }
     catch { return "The backup is valid, but this browser couldn't store it."; }
+    setSaveError(null);
+    refresh();
+    return null;
   };
   const eraseAndRestart = () => {
-    try { localStorage.removeItem(SAVE_KEY); window.location.reload(); }
-    catch { setSaveError("This browser couldn't erase the saved franchise."); }
+    try { localStorage.removeItem(SAVE_KEY); }
+    catch { setSaveError("This browser couldn't erase the saved franchise."); return; }
+    try { sessionStorage.removeItem("pc-tab"); sessionStorage.removeItem("pc-stats"); } catch { /* private mode */ }
+    ref.current = blankState();
+    setPaused(false);
+    setSaveError(null);
+    refresh();
   };
 
   return { s, act, paused, setPaused, setSpeed, saveError, backupCode, restore, eraseAndRestart };

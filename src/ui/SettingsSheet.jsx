@@ -1,5 +1,5 @@
 // ── Settings: identity, sound, backup and restore, the rulebook, new franchise ──
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { LOGO_STYLES, COLOR_SCHEMES, clubLogo, cleanInitials } from "../game/identity.js";
 import { rename } from "../game/franchise.js";
 import TeamLogo from "./TeamLogo.jsx";
@@ -14,6 +14,8 @@ export default function SettingsSheet({ f, onClose }) {
   const [paste, setPaste] = useState("");
   const [err, setErr] = useState(null);
   const [erase, setErase] = useState(false);
+  // the armed Erase button disarms itself if not tapped again
+  useEffect(() => { if (!erase) return undefined; const t = setTimeout(() => setErase(false), 4000); return () => clearTimeout(t); }, [erase]);
   const setLogo = (patch) => f.act(rename, { logo: { ...(s.city.logo || {}), ...patch } });
 
   return (
@@ -69,7 +71,7 @@ export default function SettingsSheet({ f, onClose }) {
         </label>
         {err && <p className="alert" style={{ margin: 0 }}>{err}</p>}
         <button className="btn btn--sm btn--ghost" style={{ justifySelf: "start" }} disabled={!paste.trim()}
-          onClick={() => setErr(f.restore(paste.trim()))}>Restore (replaces this franchise)</button>
+          onClick={() => { const e = f.restore(paste.trim()); setErr(e); if (!e) onClose(); }}>Restore (replaces this franchise)</button>
       </div>
 
       <h2>How the money works</h2>
