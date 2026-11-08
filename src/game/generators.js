@@ -132,11 +132,13 @@ export const creepRival = (team, points, bump = CREEP.bump) => {
   for (const p of t.batters) for (const k of BAT_STATS) tSpots.push([p, k]);
   for (const p of [...t.rotation, ...t.pen]) for (const k of ["stuff", "control", "stamina", "stuff", "control"]) tSpots.push([p, k]);
   // front offices can only develop what's there: nobody passes his own ceiling
+  // and they work on players who still have room, like you would
   const n = Math.round(points * tSpots.length / 49);
   for (let i = 0; i < n; i++) {
-    const [p, k] = tSpots[(Math.random() * tSpots.length) | 0];
-    const ceil = p.pot?.[k] ?? LEAGUE.statCap;
-    if (p[k] < ceil) p[k] = Math.min(ceil, p[k] + bump);
+    const open = tSpots.filter(([p, k]) => p[k] < (p.pot?.[k] ?? LEAGUE.statCap));
+    if (!open.length) break;
+    const [p, k] = open[(Math.random() * open.length) | 0];
+    p[k] = Math.min(p.pot?.[k] ?? LEAGUE.statCap, p[k] + bump);
   }
   return sortRival(t);
 };

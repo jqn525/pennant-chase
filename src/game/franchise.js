@@ -252,8 +252,18 @@ export function toSave(s) {
 
 export function found(s, c) {
   s.city = c;
-  s.roster = genRoster(LEAGUE.statBase);
   s.rivals = makeRivals(LEAGUE.statBase, { tCity: c.name, name: c.nickname });
+  // a fair start: an expansion club sits a touch below the league's middle,
+  // so the season is decided by what you do, not by the opening roll
+  const ratings = s.rivals.map(teamRating).sort((a, b) => a - b);
+  const target = (ratings[3] + ratings[4]) / 2 - 0.5;
+  let best = null;
+  for (let i = 0; i < 40; i++) {
+    const r = genRoster(LEAGUE.statBase);
+    if (!best || Math.abs(teamRating(r) - target) < Math.abs(teamRating(best) - target)) best = r;
+    if (Math.abs(teamRating(best) - target) < 0.4) break;
+  }
+  s.roster = best;
   const sch = makeSchedule();
   s.schedule = sch.schedule;
   s.rivalDays = sch.rivalDays;
@@ -509,6 +519,19 @@ function stretchRun(s) {
   }
 }
 
+// Rival clubs shop for gear too: now and then a player gets a better piece
+function equipRival(team) {
+  const all = everyone(team);
+  const p = all[(Math.random() * all.length) | 0];
+  const slots = GEAR.filter((g) => (g.role === "bat") === (p.role === "bat"));
+  const def = slots[(Math.random() * slots.length) | 0];
+  const rarity = Math.random() < 0.7 ? 1 : Math.random() < 0.85 ? 2 : 3;
+  const cur = p.gear?.[def.slot];
+  if (cur && cur.rarity >= rarity) return team;
+  const item = genItem(rarity, def);
+  return replaceSlot(team, p.id, { ...p, gear: { ...(p.gear || {}), [def.slot]: item } });
+}
+
 // A rival front office upgrades its weakest spot with a prime-age player
 function acquire(team) {
   const all = everyone(team);
@@ -562,8 +585,11 @@ export function advance(s) {
         // clubs far behind also go shopping: their weakest player is replaced by someone better
         s.rivals = s.rivals.map((t) => {
           const gap = usR - teamRating(t);
-          let team = creepRival(t, Math.round(Math.max(0, gap - 2) * CREEP.seriesRubber), CREEP.seriesBump);
+          // every front office develops its players a little each series (as auto-develop
+          // does for you); clubs well behind push harder. Nobody passes a player's ceiling.
+          let team = creepRival(t, CREEP.seriesBase + Math.round(Math.max(0, gap - 2) * CREEP.seriesRubber), CREEP.seriesBump);
           if (gap > 4 && Math.random() < CREEP.acquire) team = acquire(team);
+          if (Math.random() < CREEP.gear) team = equipRival(team);
           return team;
         });
       }

@@ -201,7 +201,7 @@ export const stadiumFx = (levels = {}) => {
 // points (rubber × rating gap), so a dynasty gets hunted down within a few years.
 export const CREEP = { base: 4, cellarBonus: 4, rubber: 3, rubberCap: 40, bump: 3,
   // in season: every series change, rivals behind you scout, sign and train in proportion to the gap
-  seriesRubber: 1.6, seriesBump: 2, acquire: 0.25 };
+  seriesBase: 3, seriesRubber: 1.6, seriesBump: 2, acquire: 0.25, gear: 0.5 };
 
 // One per player — a defined percentage shift on his ratings, like gear.
 // `mods` bake into effective stats everywhere; `sit` applies with runners on.

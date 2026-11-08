@@ -15,6 +15,8 @@ const SECTIONS = [["team", "Team"], ["money", "Money", "stats-money"], ["roi", "
 export const CAT_COLOR = { training: SERIES[0], gear: SERIES[1], upgrades: SERIES[2], prints: SERIES[3], draft: SERIES[4], trades: SERIES[5], tax: SERIES[6] };
 const usd = (v) => { const a = Math.abs(v); const s = a >= 1e6 ? `${(a / 1e6).toFixed(1)}M` : a >= 1e4 ? `${Math.round(a / 1e3)}k` : a >= 1e3 ? `${(a / 1e3).toFixed(1)}k` : `${Math.round(a)}`; return `${v < 0 ? "−" : ""}$${s}`; };
 const compact = (v) => (Math.abs(v) >= 1e6 ? `${(v / 1e6).toFixed(1)}M` : Math.abs(v) >= 1e3 ? `${Math.round(v / 1e3)}k` : `${Math.round(v)}`);
+// odds from a simulation are never truly 0% or 100%
+const odds = (p) => (p >= 0.995 && p < 1 ? ">99%" : p >= 1 ? "100%" : p <= 0.005 && p > 0 ? "<1%" : `${Math.round(p * 100)}%`);
 const pct3 = (v) => v.toFixed(3).replace(/^0/, "");
 
 function Chips({ value, set, items, label }) {
@@ -45,12 +47,12 @@ function Team({ f, openPlayer }) {
         <Kpi label="Record" value={`${k.w}–${k.l}`} sub={k.games ? `${pct3(k.w / k.games)} · last 10 ${k.last10.w}–${k.last10.l}` : "no games yet"} />
         <Kpi label="Run differential" value={`${k.diff > 0 ? "+" : ""}${k.diff}`} cls={k.diff > 0 ? "up" : k.diff < 0 ? "down" : ""} sub={`${k.rf} scored · ${k.ra} allowed`} />
         <Kpi label="Expected wins" value={k.expW.toFixed(1)} sub={`luck ${k.luck >= 0 ? "+" : ""}${k.luck.toFixed(1)} wins`} />
-        <Kpi label="Playoff odds" value={pr ? `${Math.round(pr.playoffPct * 100)}%` : "—"} sub={pr ? `Cup ${Math.round(pr.cupPct * 100)}%` : "winter"} />
+        <Kpi label="Playoff odds" value={pr ? odds(pr.playoffPct) : "—"} sub={pr ? `Cup ${odds(pr.cupPct)}` : "winter"} />
       </div>
       <p className="note">Expected wins come from runs scored and allowed. Luck is the gap between your record and that.</p>
 
       <h2><span className="grow">Win rate through the season</span></h2>
-      <LineChart label="Winning percentage by game" series={[{ label: "Win %", color: SERIES[0], points: k.winPct }]}
+      <LineChart label="Winning percentage by game" series={[{ label: "Win %", color: SERIES[0], points: k.winPct.filter(([g]) => g >= 5) }]}
         refs={[{ y: 0.5, label: ".500" }]} yFmt={(v) => pct3(Math.max(0, Math.min(1, v)))} />
 
       <h2><span className="grow">Team rating vs the league</span><small>average overall</small></h2>

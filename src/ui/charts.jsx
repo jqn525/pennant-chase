@@ -11,7 +11,11 @@ function useWidth() {
   useEffect(() => {
     const el = ref.current;
     if (!el) return undefined;
-    const set = () => setW(Math.max(200, el.clientWidth));
+    // the drawable width is inside the card's padding
+    const set = () => {
+      const cs = getComputedStyle(el);
+      setW(Math.max(200, el.clientWidth - parseFloat(cs.paddingLeft || 0) - parseFloat(cs.paddingRight || 0)));
+    };
     set();
     const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(set) : null;
     ro?.observe(el);
@@ -25,8 +29,10 @@ function ticks(lo, hi, n = 4) {
   if (lo === hi) { hi = lo + 1; }
   const span = hi - lo, raw = span / n, mag = 10 ** Math.floor(Math.log10(raw));
   const step = [1, 2, 2.5, 5, 10].map((m) => m * mag).find((s) => span / s <= n) || mag * 10;
+  // the scale always covers the data: first tick at or below lo, last at or above hi
   const out = [];
-  for (let v = Math.floor(lo / step) * step; v <= hi + step * 1e-9; v += step) out.push(Math.round(v * 1e6) / 1e6);
+  const top = Math.ceil(hi / step - 1e-9) * step;
+  for (let v = Math.floor(lo / step + 1e-9) * step; v <= top + step * 1e-9; v += step) out.push(Math.round(v * 1e6) / 1e6);
   return out;
 }
 
@@ -81,7 +87,7 @@ export function LineChart({ series, markers = [], height = 370, yFmt = String, x
             <text x={pad.l - 6} y={Y(v)} className="ax" textAnchor="end" dominantBaseline="middle">{yFmt(v)}</text>
           </g>
         ))}
-        {xt.map((v) => <text key={v} x={X(v)} y={H - 6} className="ax" textAnchor="middle">{xFmt(v)}</text>)}
+        {xt.map((v) => <text key={v} x={X(v)} y={H - 6} className="ax" textAnchor={X(v) > W - 30 ? "end" : X(v) < pad.l + 20 ? "start" : "middle"}>{xFmt(v)}</text>)}
         {refs.map((r) => (
           <g key={r.label}>
             <line x1={pad.l} x2={W - pad.r} y1={Y(r.y)} y2={Y(r.y)} className="ref" />
@@ -203,7 +209,7 @@ export function Sparkline({ points, width = 72, height = 22, color = "var(--c1)"
 export function Meter({ label, pct, sub }) {
   return (
     <div className="meter">
-      <div className="barlist__head"><span>{label}{sub && <small> {sub}</small>}</span><b>{pct == null ? "—" : `${Math.round(pct * 100)}%`}</b></div>
+      <div className="barlist__head"><span>{label}{sub && <small> {sub}</small>}</span><b>{pct == null ? "—" : pct >= 0.995 && pct < 1 ? ">99%" : pct <= 0.005 && pct > 0 ? "<1%" : `${Math.round(pct * 100)}%`}</b></div>
       <div className="barlist__track"><i style={{ width: `${Math.round((pct || 0) * 100)}%`, background: "var(--c1)" }} /></div>
     </div>
   );
