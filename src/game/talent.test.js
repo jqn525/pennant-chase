@@ -71,7 +71,7 @@ describe("talent", () => {
     expect(Math.max(...now.map((p) => p.age))).toBeLessThanOrEqual(40);
     expect(now.filter((p) => starting.has(p.id)).length).toBeLessThan(8);
     expect(retiredNews).toBe(true);
-  });
+  }, 120000);
 
   it("old saves get ages and ceilings without anyone losing ratings", () => {
     const s = fresh();

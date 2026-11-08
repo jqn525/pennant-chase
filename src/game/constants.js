@@ -110,7 +110,8 @@ export const ECON = {
   cupFansPct: 0.25,       // a Cup swells the fan base by a quarter
   playoffFansPct: 0.10,   // made the playoffs (missed = -5% fans)
   offlineRate: 1.0,       // tunable damper on away income
-  trainBase: 6,           // training: cost per +1 = trainBase × 1.5^((stat−41)/4)
+  trainBase: 24,          // training: cost per +1 = trainBase × 1.5^((stat−41)/4)
+  lastPoints: 1,          // the last 5 points under a ceiling cost up to 2× more
   eliteAt: 78,            // above this, every point also pays the surcharge…
   eliteRamp: 1.15,        // …× eliteRamp^(stat − eliteAt). Greatness is expensive.
 };
@@ -201,7 +202,7 @@ export const stadiumFx = (levels = {}) => {
 // points (rubber × rating gap), so a dynasty gets hunted down within a few years.
 export const CREEP = { base: 4, cellarBonus: 4, rubber: 3, rubberCap: 40, bump: 3,
   // in season: every series change, rivals behind you scout, sign and train in proportion to the gap
-  seriesBase: 3, seriesRubber: 1.6, seriesBump: 2, acquire: 0.25, gear: 0.5 };
+  seriesBase: 2, seriesRubber: 1.6, seriesBump: 2, acquire: 0.25, gear: 0.5 };
 
 // One per player — a defined percentage shift on his ratings, like gear.
 // `mods` bake into effective stats everywhere; `sit` applies with runners on.

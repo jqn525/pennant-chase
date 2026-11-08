@@ -746,6 +746,9 @@ export function tick(s, speed) {
 export function trainCost(s, p, key) {
   let c = ECON.trainBase * Math.pow(1.5, (p[key] - 41) / 4);
   if (p[key] >= ECON.eliteAt) c *= Math.pow(ECON.eliteRamp, p[key] - ECON.eliteAt);
+  // the last few points before his ceiling are the hardest to find
+  const gap = (p.pot?.[key] ?? p[key] + 10) - p[key];
+  if (gap <= 5) c *= 1 + ECON.lastPoints * (5 - Math.max(0, gap) + 1) / 5;
   if (cityBonus(s, "train")) c *= 0.85;
   return Math.ceil(c);
 }
