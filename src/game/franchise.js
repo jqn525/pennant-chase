@@ -13,6 +13,8 @@ import { genShipment, genItem, playerValue, GEAR, dealerTier, shipmentWeights, d
 import { nextPrint, cardDraw } from "./cards.js";
 import { loadoutById, applyLoadout, sortRival } from "./lineup.js";
 import { teamPayroll, luxuryTax } from "./salary.js";
+import { checkUnlocks } from "./unlocks.js";
+import { noteBeats } from "./beats.js";
 import { emptyHist, loadHist, noteGame, noteSpend, trackOvr, noteGameRecords, noteSeasonRecords, closeSeason } from "./history.js";
 
 export const EMPTY_STAT = { g: 0, ab: 0, h: 0, d: 0, t: 0, hr: 0, bb: 0, k: 0, r: 0, rbi: 0, outsP: 0, kP: 0, bbP: 0, hP: 0, raP: 0 };
@@ -32,7 +34,7 @@ export const LEDGER_LINES = [
   ["gate", "Ticket gate", 1], ["winBonus", "Win bonus", 1], ["merch", "Merch", 1], ["tv", "TV share", 1],
   ["postseason", "Playoff & Cup pay", 1], ["trades", "Trades", 0], ["away", "Away sales", 1],
   ["payroll", "Payroll", -1], ["training", "Training", -1], ["gear", "Gear", -1], ["upgrades", "Upgrades", -1],
-  ["prints", "Card prints", -1], ["draft", "Draft signings", -1], ["tax", "Luxury tax", -1],
+  ["prints", "Promotions", -1], ["draft", "Draft signings", -1], ["tax", "Luxury tax", -1],
 ];
 const emptyLedger = () => ({ game: {}, lastGame: {}, season: {}, lastSeason: {}, life: {} });
 export function credit(s, cat, amount) {
@@ -87,7 +89,7 @@ export function blankState() {
     draftClass: null, form: [], year: 1, phase: "regular", rivals: null, schedule: null, rivalDays: null,
     gameIndex: 0, standings: Array.from({ length: 8 }, () => ({ w: 0, l: 0 })), playoffs: null,
     history: [], trophies: 0, allTime: {}, capYears: 0, lineupLoadout: "numbers", autoLineup: true,
-    speed: 1, sound: true, autoDev: defaultAutoDev(), ledger: emptyLedger(), results: [],
+    speed: 1, sound: true, autoDev: defaultAutoDev(), unlocked: [], ledger: emptyLedger(), results: [],
     live: null, ctx: null, rest: 0, log: [], logId: 1, events: [], lastSeen: Date.now(),
   };
 }
@@ -165,8 +167,8 @@ export function loadState(saved) {
     standings: S.standings ?? s.standings, playoffs: S.playoffs ?? null, history: S.history ?? [],
     trophies: S.trophies ?? 0, allTime, capYears: S.capYears ?? 0,
     lineupLoadout: S.lineupLoadout ?? null, autoLineup: S.autoLineup ?? !!S.lineupLoadout,
-    speed: S.speed === "max" && !(S.trophies > 0) ? 4 : S.speed ?? 1, sound: S.sound ?? true,
-    autoDev: migrateAutoDev(S.autoDev, S.rules), ledger: S.ledger ? { ...emptyLedger(), ...S.ledger } : emptyLedger(),
+    speed: S.speed ?? 1, sound: S.sound ?? true,
+    autoDev: migrateAutoDev(S.autoDev, S.rules), unlocked: Array.isArray(S.unlocked) ? S.unlocked : null, ledger: S.ledger ? { ...emptyLedger(), ...S.ledger } : emptyLedger(),
     results: S.results ?? [], live: S.liveGame ?? null, ctx: S.liveContext ?? null,
     lastSeen: S.lastSeen ?? Date.now(),
   });
@@ -182,7 +184,7 @@ export function toSave(s) {
     year: s.year, phase: s.phase, rivals: s.rivals, schedule: s.schedule, rivalDays: s.rivalDays,
     gameIndex: s.gameIndex, standings: s.standings, playoffs: s.playoffs, history: s.history,
     trophies: s.trophies, allTime: s.allTime, capYears: s.capYears, speed: s.speed, sound: s.sound,
-    lineupLoadout: s.lineupLoadout ?? null, autoLineup: s.autoLineup, autoDev: s.autoDev, ledger: s.ledger,
+    lineupLoadout: s.lineupLoadout ?? null, autoLineup: s.autoLineup, autoDev: s.autoDev, unlocked: s.unlocked, ledger: s.ledger,
     results: s.results.slice(0, 30), liveGame: s.live, liveContext: s.ctx,
   };
 }
@@ -364,7 +366,19 @@ export function settle(s, g) {
     cash: s.money, fans: s.fans, att: res.attendance, led: s.ledger.game, tr: ratings[0], place: seedOrder(s.standings, ratings).indexOf(0) + 1 };
   noteGame(s.hist, head);
   trackOvr(s.hist, allPlayers(s));
-  noteGameRecords(s.hist, s.lastBox?.lines || {}, { ...head, gate: Math.round(s.ledger.game.gate || 0) });
+  const broken = noteGameRecords(s.hist, s.lastBox?.lines || {}, { ...head, gate: Math.round(s.ledger.game.gate || 0) });
+  let run = 0;
+  for (let i = s.form.length - 1; i >= 0 && s.form[i] === "W"; i--) run++;
+  for (const line of noteBeats(s, { att: res.attendance, attCap: stadiumFx(s.stadium).attCap, streak: run, broken })) pushLog(s, line, "beat");
+  openUnlocks(s);
+}
+
+// New systems open as the club grows; each gets one news line
+export function openUnlocks(s) {
+  for (const u of checkUnlocks(s)) {
+    if (u.news) pushLog(s, u.news, "beat");
+    emit(s, "unlock", { id: u.id });
+  }
 }
 
 // One at-bat at watchable speeds; the ticket gate drips per half-inning
@@ -374,6 +388,8 @@ export function liveStep(s) {
   const ev = [];
   stepAtBat(g, s.ctx, ev);
   ev.forEach((e) => { if (e.kind === "hr") emit(s, "homer"); });
+  // the last few plays, in prose, for the Overview ticker
+  if (ev.length) g.feed = [...ev.map((e) => ({ i: prevInning, h: prevHalf, t: e.text, k: e.kind, us: e.side === "us" || undefined })).reverse(), ...(g.feed || [])].slice(0, 8);
   flushStats(s, g);
   if (!g.over && (g.half !== prevHalf || g.inning !== prevInning)) {
     const drip = gateNow(s).gate / (LEAGUE.innings * 2);
@@ -606,8 +622,8 @@ export function printCard(s, pid) {
   credit(s, "prints", -up.cost);
   addAT(s, { prints: 1 });
   updatePlayer(s, pid, (o) => ({ ...o, cardTier: up.id }));
-  spent(s, "prints", up.cost, { pid, before: p, what: `${up.name} card` });
-  pushLog(s, `Printed ${p.name}'s ${up.name} card.`, "win");
+  spent(s, "prints", up.cost, { pid, before: p, what: `${up.deal} · ${up.name.toLowerCase()}` });
+  pushLog(s, `${p.name} is now a ${up.name.toLowerCase()}: ${up.blurb}.`, "win");
   emit(s, "cash");
   return true;
 }

@@ -2,6 +2,8 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import TeamLogo from "./TeamLogo.jsx";
 import { money } from "./fmt.js";
+import { useTween } from "./motion.js";
+import { Sparkline } from "./charts.jsx";
 import { netPerGame, seasonLabel } from "./metrics.js";
 import { options } from "../game/advisor.js";
 import OverviewView from "./OverviewView.jsx";
@@ -21,11 +23,9 @@ export function Pace({ f }) {
     <div className="pace" role="group" aria-label="Game pace">
       {opts.map(([v, label]) => {
         const on = v === "pause" ? paused : !paused && s.speed === v;
-        const locked = v === "max" && !(s.trophies > 0);
         return (
-          <button key={label} className={on ? "on" : ""} disabled={locked}
-            aria-label={v === "pause" ? "Pause" : locked ? "MAX unlocks with your first Pennant Cup" : `Pace ${label}`}
-            title={locked ? "Unlocks with your first Pennant Cup" : undefined}
+          <button key={label} className={on ? "on" : ""}
+            aria-label={v === "pause" ? "Pause" : `Pace ${label}`}
             onClick={() => (v === "pause" ? setPaused(!paused) : setSpeed(v))}>{label}</button>
         );
       })}
@@ -56,7 +56,9 @@ export default function Shell({ f }) {
   useEffect(() => { if (s.phase !== "draft") setDraftHidden(false); }, [s.phase]);
 
   const net = netPerGame(s);
-  const ready = options(s).filter((o) => o.affordable && Number.isFinite(o.payback) && (!s.autoDev?.on || o.kind === "Build" || o.kind === "Print")).length;
+  const cash = useTween(s.money);
+  const trail = (s.hist?.games || []).slice(-30).map((r) => [r[0], r[8]]);
+  const ready = options(s).filter((o) => o.affordable && Number.isFinite(o.payback) && (!s.autoDev?.on || o.kind === "Build" || o.kind === "Promote")).length;
   const showDraft = s.phase === "draft" && !draftHidden;
   const views = { overview: OverviewView, spend: SpendView, roster: RosterView, stats: StatsView };
   const View = views[tab];
@@ -73,8 +75,8 @@ export default function Shell({ f }) {
             </span>
           </button>
           <div className="top__cash">
-            <b>{money(s.money)}</b>
-            <small className={net >= 0 ? "up" : "down"}>{money(net, { sign: true })}/game</small>
+            <b>{money(cash)}</b>
+            <small className={net >= 0 ? "up" : "down"}>{trail.length > 2 && <Sparkline points={trail} width={44} height={14} color={net >= 0 ? "var(--good)" : "var(--bad)"} />} {money(net, { sign: true })}/game</small>
           </div>
         </div>
         <div className="top__in" style={{ paddingTop: 0 }}>

@@ -7,6 +7,7 @@
 
 import { options, apply } from "./advisor.js";
 import { pushLog } from "./franchise.js";
+import { isOpen } from "./unlocks.js";
 
 export const AUTO_KINDS = ["Train", "Gear"];
 export const SHARES = [0.2, 0.4, 0.6, 0.8, 1];
@@ -58,7 +59,7 @@ export function runAutoDev(s, { log = true } = {}) {
 
 // After each finished game
 export function afterGame(s) {
-  if (!s.autoDev) return null;
+  if (!s.autoDev || !isOpen(s, "autodev")) return null;
   earnAllowance(s);
   return s.autoDev.on ? runAutoDev(s) : null;
 }

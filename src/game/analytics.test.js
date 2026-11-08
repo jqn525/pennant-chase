@@ -5,7 +5,7 @@ import { seasonRows, SPEND_CATS, field } from "./history.js";
 import { LEAGUE } from "./constants.js";
 
 const club = { name: "Vancouver", nickname: "Suns", bonus: "fans", label: "HUNGRY MARKET" };
-const fresh = () => { const s = blankState(); found(s, club); return s; };
+const fresh = () => { const s = blankState(); found(s, club); s.unlocked = null; return s; };
 function playSeason(s) { const y = s.year; for (let i = 0; i < 400 && !(s.phase === "draft" && s.year > y); i++) tick(s, "max"); }
 const seeded = (seed = 1) => () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
 

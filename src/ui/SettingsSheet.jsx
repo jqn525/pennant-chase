@@ -79,7 +79,7 @@ export default function SettingsSheet({ f, onClose }) {
         <ul className="feed" style={{ margin: 0 }}>
           <li><span className="grow"><b>Gate</b> — every game pays by attendance. Attendance can't exceed your seats, so fans above the cap add nothing until you build more.</span></li>
           <li><span className="grow"><b>Fans</b> grow with wins. Wins come from ratings: training, gear and trades.</span></li>
-          <li><span className="grow"><b>Merch and TV</b> pay every second, scaled by fans and printed cards.</span></li>
+          <li><span className="grow"><b>Merch and TV</b> pay every second, scaled by fans and how famous your players are (star power).</span></li>
           <li><span className="grow"><b>Payroll</b> is due each season and rises with each player's overall. Over the cap, a luxury tax applies.</span></li>
           <li><span className="grow"><b>Playoffs</b> — the top four meet in semifinals; the Pennant Cup pays the most.</span></li>
           <li><span className="grow"><b>Payback</b> on the Spend tab is cost divided by extra dollars per game. Lower is better.</span></li>

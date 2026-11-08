@@ -7,6 +7,7 @@ import { LOADOUTS } from "../game/lineup.js";
 import { stat, trainCost, trainCeil, chooseLoadout, moveBatter, franchiseUsed, franchiseSlots } from "../game/franchise.js";
 import { avg, era } from "../game/statline.js";
 import { CARD_TIERS, nextPrint } from "../game/cards.js";
+import { isOpen } from "../game/unlocks.js";
 import { money } from "./fmt.js";
 
 // Cheapest next training point and the points left before the ceiling
@@ -91,8 +92,8 @@ export default function RosterView({ f, openPlayer, goTo }) {
               return (
                 <tr key={p.id} className="link" onClick={() => openPlayer(p.id)} tabIndex={0} onKeyDown={(e) => e.key === "Enter" && openPlayer(p.id)}>
                   <td>
-                    <b>{p.name}</b>{p.franchise && <> <span className="tag tag--accent">F</span></>}{nextPrint(p) && <> <span className="tag tag--warn">print</span></>}
-                    <span className="sub">{p.pos}{tier.id > 0 ? ` · ${tier.name.toLowerCase()}` : ""}</span>
+                    <b>{p.name}</b>{p.franchise && <> <span className="tag tag--accent">F</span></>}{nextPrint(p) && isOpen(s, "star") && <> <span className="tag tag--warn">promo ready</span></>}
+                    <span className="sub">{p.pos}{tier.id > 0 ? ` · ★ ${tier.name.toLowerCase()}` : ""}</span>
                   </td>
                   <td className="n">{ovr(p).toFixed(0)}</td>
                   <td className="n">{r.next == null ? "max" : money(r.next)}</td>

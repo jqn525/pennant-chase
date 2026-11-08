@@ -9,7 +9,7 @@ import { allPlayers, trainCeil, ledgerNet } from "./franchise.js";
 import { seasonRows, SPEND_CATS } from "./history.js";
 import { BAT_STATS, PIT_STATS } from "./constants.js";
 
-export const CAT_LABEL = { training: "Training", gear: "Gear", upgrades: "Ballpark", prints: "Card prints", draft: "Draft", trades: "Trades", tax: "Luxury tax" };
+export const CAT_LABEL = { training: "Training", gear: "Gear", upgrades: "Ballpark", prints: "Star power", draft: "Draft", trades: "Trades", tax: "Luxury tax" };
 
 const wpp = (r) => (r === "p" ? WIN_PER_ARM_POINT : WIN_PER_BAT_POINT);
 

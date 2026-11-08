@@ -6,27 +6,30 @@ import { RARITY } from "../game/constants.js";
 import { money } from "./fmt.js";
 import { OptionList } from "./Options.jsx";
 import { AutoDevCard } from "./Automation.jsx";
+import { isOpen, nextUnlockNote } from "../game/unlocks.js";
 
-const KINDS = ["Yours", "All", "Train", "Gear", "Build", "Print"];
-const match = (k, o) => k === "All" || (k === "Yours" ? o.kind === "Build" || o.kind === "Print" : o.kind === k);
+const KINDS = ["Yours", "All", "Train", "Gear", "Build", "Promote"];
+const match = (k, o) => k === "All" || (k === "Yours" ? o.kind === "Build" || o.kind === "Promote" : o.kind === k);
 
 export default function SpendView({ f }) {
   const { s } = f;
-  const [kind, setKind] = useState(() => (s.autoDev?.on ? "Yours" : "All"));
+  const [kind, setKind] = useState(() => (s.autoDev?.on && isOpen(s, "autodev") && isOpen(s, "ballpark") ? "Yours" : "All"));
   const all = options(s);
+  const kinds = KINDS.filter((k) => ({ Gear: "gear", Build: "ballpark", Promote: "star" }[k] ? isOpen(s, { Gear: "gear", Build: "ballpark", Promote: "star" }[k]) : true));
   const list = all.filter((o) => match(kind, o));
   const buyable = list.filter((o) => !o.lock || /^Needs \$/.test(o.lock));
-  const locked = list.filter((o) => o.lock && !/^Needs \$/.test(o.lock));
+  // far-off builds stay hidden until the club is at least halfway there
+  const locked = list.filter((o) => o.lock && !/^Needs \$/.test(o.lock) && !(o.needFans && s.fans < o.needFans * 0.5));
   return (
     <>
       <h1>Spend</h1>
       <p className="lede">{money(s.money)} available. Every option is valued in dollars per game and sorted by how fast it pays for itself.</p>
       <h2>Player development</h2>
-      <AutoDevCard f={f} />
+      {isOpen(s, "autodev") ? <AutoDevCard f={f} /> : <p className="note">{nextUnlockNote.autodev} Until then, train players by hand from the list below or the Roster tab.</p>}
 
-      <h2><span className="grow">Your decisions</span><small>{kind === "Yours" ? "builds and card prints" : ""}</small></h2>
+      <h2><span className="grow">Your decisions</span><small>{kind === "Yours" ? "builds and promotions" : ""}</small></h2>
       <div className="chips" role="tablist" aria-label="Filter" style={{ margin: "0 0 12px" }}>
-        {KINDS.map((k) => (
+        {kinds.map((k) => (
           <button key={k} role="tab" aria-selected={kind === k} className={kind === k ? "on" : ""} onClick={() => setKind(k)}>
             {k} <span className="dim">{all.filter((o) => match(k, o)).length}</span>
           </button>
@@ -34,7 +37,7 @@ export default function SpendView({ f }) {
       </div>
       <OptionList list={buyable} f={f} empty="Nothing in this group right now." />
 
-      {(kind === "All" || kind === "Gear") && (
+      {(kind === "All" || kind === "Gear") && isOpen(s, "gear") && (
         <>
           <h2><span className="grow">Gear shipment</span><small>{restockNote(s)}</small></h2>
           <div className="panel table-wrap">

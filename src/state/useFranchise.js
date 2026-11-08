@@ -5,7 +5,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { SAVE_KEY, parseSave, decodeBackup, encodeBackup } from "../game/save.js";
-import { blankState, loadState, toSave, tick, merchTick, welcomeBack } from "../game/franchise.js";
+import { blankState, loadState, toSave, tick, merchTick, welcomeBack, openUnlocks } from "../game/franchise.js";
 import { sfx, play } from "../game/sfx.js";
 import { afterGame } from "../game/autodev.js";
 
@@ -58,6 +58,7 @@ export default function useFranchise() {
   // Run any franchise or advisor function against the state
   const act = useCallback((fn, ...args) => {
     const out = fn(ref.current, ...args);
+    openUnlocks(ref.current);
     refresh();
     save();
     return out;

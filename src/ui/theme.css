@@ -200,3 +200,18 @@ th.sort.on { color: var(--fg); }
 .wrap-first td:first-child { white-space: normal; min-width: 150px; }
 .wrap-first td:first-child .sub { overflow-wrap: anywhere; }
 .wrap-first th, .wrap-first td { padding-left: 8px; padding-right: 8px; }
+
+/* ── Ticker and news beats ── */
+.ticker__score { display: grid; grid-template-columns: 1fr 1fr auto; gap: 4px 14px; align-items: center; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+.ticker__score div { display: flex; justify-content: space-between; gap: 8px; min-width: 0; }
+.ticker__score span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; }
+.ticker__score b { font-family: var(--num); font-size: 18px; }
+.ticker__bases { display: grid !important; grid-template-columns: repeat(3, 12px); grid-template-rows: 10px 10px; font-size: 12px; color: var(--accent); line-height: 10px; }
+.ticker__bases i { font-style: normal; text-align: center; }
+.ticker__bases i:nth-child(1) { grid-column: 2; grid-row: 1; }
+.ticker__bases i:nth-child(2) { grid-column: 1; grid-row: 2; }
+.ticker__bases i:nth-child(3) { grid-column: 3; grid-row: 2; }
+.ticker__inn { flex: none; width: 30px; color: var(--dim); font-family: var(--num); font-size: 12px; }
+.feed li.big .grow { font-weight: 600; }
+.feed li.beat { box-shadow: inset 3px 0 0 var(--accent); }
+.feed li.beat .grow { color: var(--fg); font-weight: 500; }

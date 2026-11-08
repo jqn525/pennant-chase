@@ -5,7 +5,7 @@ import { options } from "./advisor.js";
 import { earnAllowance, runAutoDev, afterGame, setAutoDev, operatingResult, ALLOWANCE_GAMES } from "./autodev.js";
 
 const club = { name: "Vancouver", nickname: "Suns", bonus: "fans", label: "HUNGRY MARKET" };
-const fresh = () => { const s = blankState(); found(s, club); return s; };
+const fresh = () => { const s = blankState(); found(s, club); s.unlocked = null; return s; };
 const teamOvr = (s) => allPlayers(s).reduce((t, p) => t + ovr(p), 0);
 
 describe("auto-develop", () => {
@@ -13,7 +13,7 @@ describe("auto-develop", () => {
     const s = fresh();
     expect(s.autoDev).toMatchObject({ on: true, share: 0.4 });
     s.money = 1e6; s.fans = 200000; s.autoDev.allowance = 1e6; s.autoDev.reserve = 0;
-    expect(options(s).some((o) => (o.kind === "Build" || o.kind === "Print") && o.affordable)).toBe(true);
+    expect(options(s).some((o) => (o.kind === "Build" || o.kind === "Promote") && o.affordable)).toBe(true);
     const lvl = { merch: s.merch, tv: s.tv, stadium: { ...s.stadium } };
     const tiers = allPlayers(s).map((p) => p.cardTier || 0);
     const before = teamOvr(s);

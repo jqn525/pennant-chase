@@ -95,10 +95,14 @@ const GAME_RECS = [
 ];
 export function noteGameRecords(h, lines, head) {
   const rec = h.records.game;
+  const broken = [];
   for (const pid in lines) {
     for (const [k, label] of GAME_RECS) {
       const v = lines[pid][k] || 0;
-      if (v > 0 && (!rec[k] || v > rec[k].v)) rec[k] = { v, label, pid, name: h.names[pid], y: head.y, gi: head.gi, opp: head.opp };
+      if (v > 0 && (!rec[k] || v > rec[k].v)) {
+        if (rec[k] && h.n > 10) broken.push({ k, label, v, name: h.names[pid] });
+        rec[k] = { v, label, pid, name: h.names[pid], y: head.y, gi: head.gi, opp: head.opp };
+      }
     }
   }
   const team = [
@@ -107,7 +111,13 @@ export function noteGameRecords(h, lines, head) {
     ["gate", "Best gate", head.gate],
     ["att", "Biggest crowd", head.att],
   ];
-  for (const [k, label, v] of team) if (v > 0 && (!rec[k] || v > rec[k].v)) rec[k] = { v, label, y: head.y, gi: head.gi, opp: head.opp };
+  for (const [k, label, v] of team) {
+    if (v > 0 && (!rec[k] || v > rec[k].v)) {
+      if (rec[k] && h.n > 10 && (k === "runs" || k === "margin")) broken.push({ k, label, v });
+      rec[k] = { v, label, y: head.y, gi: head.gi, opp: head.opp };
+    }
+  }
+  return broken;
 }
 
 // Season bests from one finished season's stat table

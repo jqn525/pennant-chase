@@ -5,7 +5,7 @@ import { ticketGate } from "./engine.js";
 import { stadiumFx, ECON } from "./constants.js";
 
 const club = { name: "Vancouver", nickname: "Suns", bonus: "train", label: "DEV ACADEMY" };
-const fresh = () => { const s = blankState(); found(s, club); for (let i = 0; i < 20; i++) tick(s, "max"); return s; };
+const fresh = () => { const s = blankState(); found(s, club); s.unlocked = null; for (let i = 0; i < 20; i++) tick(s, "max"); return s; };
 
 describe("advisor", () => {
   it("lists train, gear, build and is sorted by payback", () => {

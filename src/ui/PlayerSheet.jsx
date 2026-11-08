@@ -1,4 +1,4 @@
-// ── A player: ratings with training costs, gear, card, tag and trades ──
+// ── A player: ratings with training costs, gear, star power, tag and trades ──
 import { useState } from "react";
 import { BAT_STATS, PIT_STATS, PLAYER_TRAITS } from "../game/constants.js";
 import { ovr, gearBonus, GEAR } from "../game/gear.js";
@@ -7,6 +7,7 @@ import { CARD_TIERS, nextPrint, eligibleTier } from "../game/cards.js";
 import { columns } from "../game/statline.js";
 import StatTable from "./StatTable.jsx";
 import { Sparkline } from "./charts.jsx";
+import { isOpen, nextUnlockNote } from "../game/unlocks.js";
 import {
   allPlayers, stat, careerOf, trainCost, trainCeil, planTraining, train, trainAll, printCard,
   tagFranchise, franchiseUsed, franchiseSlots, tradeQuote, makeTrade,
@@ -35,7 +36,7 @@ export default function PlayerSheet({ f, pid, onClose }) {
       <div className="kpis">
         <div className="kpi"><span>Overall</span><b>{ovr(p).toFixed(1)}</b><small>{trait ? trait.label : "no trait"}</small></div>
         <div className="kpi"><span>Salary</span><b>{money(salaryOf(p))}</b><small>per season</small></div>
-        <div className="kpi"><span>Card</span><b style={{ fontFamily: "var(--ui)" }}>{tier.name.toLowerCase()}</b><small>{up ? `${up.name.toLowerCase()} ready` : eligibleTier(p) > (p.cardTier || 0) ? "" : `next at ${CARD_TIERS[(p.cardTier || 0) + 1]?.at ?? "—"} OVR`}</small></div>
+        <div className="kpi"><span>Star power</span><b style={{ fontFamily: "var(--ui)", fontSize: 16 }}>{tier.name.toLowerCase()}</b><small>{up ? `${up.deal.toLowerCase()} ready` : eligibleTier(p) > (p.cardTier || 0) ? "" : `next at ${CARD_TIERS[(p.cardTier || 0) + 1]?.at ?? "—"} OVR`}</small></div>
         <div className="kpi"><span>A point is worth</span><b>{money(perPoint)}</b><small>per game, in wins</small></div>
       </div>
 
@@ -96,12 +97,12 @@ export default function PlayerSheet({ f, pid, onClose }) {
 
       {own && (
         <>
-          <h2>Card and franchise tag</h2>
+          <h2>{isOpen(s, "star") ? "Star power and franchise tag" : "Franchise tag"}</h2>
           <div className="panel panel--pad stack">
-            <div className="row">
-              <div className="grow">{up ? <>Print his <b>{up.name.toLowerCase()}</b> card: more jersey sales, higher trade value.</> : <>Printed: {tier.name.toLowerCase()}. {CARD_TIERS[(p.cardTier || 0) + 1] ? `The next print unlocks at ${CARD_TIERS[(p.cardTier || 0) + 1].at} OVR.` : "Top tier."}</>}</div>
+            {isOpen(s, "star") && <div className="row">
+              <div className="grow">{up ? <><b>{up.deal}</b>: {up.blurb}. Makes him a {up.name.toLowerCase()}, sells more merch, raises his trade value.</> : <>{tier.id ? `He is a ${tier.name.toLowerCase()}.` : "Nobody outside the ballpark knows him yet."} {CARD_TIERS[(p.cardTier || 0) + 1] ? `The next deal (${CARD_TIERS[(p.cardTier || 0) + 1].deal.toLowerCase()}) opens at ${CARD_TIERS[(p.cardTier || 0) + 1].at} OVR.` : "As famous as it gets."}</>}</div>
               {up && <button className="btn btn--sm" disabled={s.money < up.cost} onClick={() => f.act(printCard, p.id)}>{money(up.cost)}</button>}
-            </div>
+            </div>}
             {!p.franchise && (
               <div className="row">
                 <div className="grow">Franchise tag: lets him train past the league cap to his natural ceiling. {franchiseUsed(s)} of {franchiseSlots(s)} used.</div>
@@ -110,8 +111,8 @@ export default function PlayerSheet({ f, pid, onClose }) {
             )}
           </div>
 
-          <h2><span className="grow">Trade</span><small>same position, cash settles the difference</small></h2>
-          {p.pos === "RP" ? <p className="note">Rival clubs don't carry relievers.</p> : (
+          <h2><span className="grow">Trade</span><small>{isOpen(s, "trades") ? "same position, cash settles the difference" : ""}</small></h2>
+          {!isOpen(s, "trades") ? <p className="note">{nextUnlockNote.trades}</p> : p.pos === "RP" ? <p className="note">Rival clubs don't carry relievers.</p> : (
             <div className="panel table-wrap"><table>
               <thead><tr><th>Their player</th><th>OVR</th><th>Salary</th><th>Cash</th><th /></tr></thead>
               <tbody>

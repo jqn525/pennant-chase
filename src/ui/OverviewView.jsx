@@ -7,6 +7,7 @@ import { avg, ops, era } from "../game/statline.js";
 import { money, count, ordinal } from "./fmt.js";
 import { netPerGame, payroll, payrollShare, fansWin, place, attendance } from "./metrics.js";
 import BoxScore from "./BoxScore.jsx";
+import { useTween } from "./motion.js";
 
 function Ledger({ s }) {
   const [view, setView] = useState("season");
@@ -100,6 +101,35 @@ function Race({ s, goTo }) {
   );
 }
 
+// Live game: line score and the last few plays
+function NowPlaying({ s }) {
+  const g = s.live;
+  if (!g || g.over) return null;
+  const me = tn(s.city), them = g.opp.name;
+  const away = g.home ? [them, g.them] : [me, g.us], home = g.home ? [me, g.us] : [them, g.them];
+  const bases = (g.bases || []).map((b) => (b ? "◆" : "◇"));
+  return (
+    <>
+      <h2><span className="grow">Now playing</span><small>{g.half === "top" ? "Top" : "Bottom"} {g.inning} · {g.outs} out{g.outs === 1 ? "" : "s"}</small></h2>
+      <div className="panel ticker">
+        <div className="ticker__score">
+          <div><span>{away[0]}</span><b>{away[1]}</b></div>
+          <div><span>{home[0]}</span><b>{home[1]}</b></div>
+          <div className="ticker__bases" aria-label="Runners on base"><i>{bases[1]}</i><i>{bases[2]}</i><i>{bases[0]}</i></div>
+        </div>
+        <ul className="feed">
+          {(g.feed || []).length === 0 && <li className="dim">Play ball.</li>}
+          {(g.feed || []).map((e, i) => (
+            <li key={i} className={`${e.k === "hr" || /score/.test(e.t) ? "big" : ""} ${e.k === "sys" ? "dim" : ""}`}>
+              <span className="ticker__inn">{e.h === "top" ? "▲" : "▼"}{e.i}</span><span className="grow">{e.t}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </>
+  );
+}
+
 function status(s) {
   if (s.phase === "draft") return "Winter: the draft board is open.";
   if (s.phase === "playoffs" && s.playoffs) {
@@ -117,16 +147,26 @@ export default function OverviewView({ f, goTo, openPlayer }) {
   const cap = stadiumFx(s.stadium).attCap;
   const { w, l } = s.standings[0];
   const lead = leaders(s);
+  const cashT = useTween(s.money), fansT = useTween(s.fans);
   return (
     <>
       <div className="kpis">
-        <div className="kpi"><span>Cash</span><b>{money(s.money)}</b><small className={net >= 0 ? "up" : "down"}>{money(net, { sign: true })} per game</small></div>
-        <div className="kpi"><span>Fans</span><b>{count(s.fans)}</b><small>+{count(fansWin(s))} per win</small></div>
+        <div className="kpi"><span>Cash</span><b>{money(cashT)}</b><small className={net >= 0 ? "up" : "down"}>{money(net, { sign: true })} per game</small></div>
+        <div className="kpi"><span>Fans</span><b>{count(fansT)}</b><small>+{count(fansWin(s))} per win</small></div>
         <div className="kpi"><span>Record</span><b>{w}–{l}</b><small>{ordinal(place(s))} of 8 · top 4 make it</small></div>
         <div className="kpi"><span>Payroll</span><b>{money(payroll(s))}</b><small className={share > 1 ? "down" : share > 0.8 ? "warn" : ""}>{Math.round(share * 100)}% of {money(SALARY.cap)} cap</small>
           <div className="bar"><i className={share > 1 ? "over" : share > 0.8 ? "hot" : ""} style={{ width: `${Math.min(100, share * 100)}%` }} /></div></div>
       </div>
       <p className="note">{status(s)} Crowd {count(attendance(s))} a game · the park counts up to {count(cap)} fans toward ticket sales{s.fans > cap ? <span className="warn"> · you've outgrown it</span> : ""}.{s.autoDev && <> Auto-develop {s.autoDev.on ? `on · ${Math.round(s.autoDev.share * 100)}% of earnings · ${money(s.autoDev.allowance)} banked` : "off"}.</>}</p>
+
+      <NowPlaying s={s} />
+
+      <h2>Club news</h2>
+      <div className="panel">
+        <ul className="feed">
+          {s.log.filter((e) => e.kind !== "play").slice(0, 5).map((e) => <li key={e.id} className={e.kind === "beat" ? "beat" : ""}><span className="grow">{e.text}</span></li>)}
+        </ul>
+      </div>
 
       <h2>Last game</h2>
       <BoxScore s={s} openPlayer={openPlayer} />

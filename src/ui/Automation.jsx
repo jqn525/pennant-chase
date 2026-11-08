@@ -1,8 +1,9 @@
-// ── Auto-develop card: training and gear on autopilot; builds and prints stay yours ──
+// ── Auto-develop card: training and gear on autopilot; builds and promotions stay yours ──
 import { useState } from "react";
 import { setAutoDev, developNow, SHARES } from "../game/autodev.js";
 import { CAT_LABEL } from "../game/analytics.js";
 import { money } from "./fmt.js";
+import { useTween } from "./motion.js";
 
 const num = (v) => { const n = Number(String(v).replace(/[^0-9.]/g, "")); return Number.isFinite(n) ? n : 0; };
 
@@ -15,6 +16,7 @@ export function AutoDevCard({ f }) {
   const spent = season.reduce((t, e) => t + e.cost, 0);
   const pts = season.reduce((t, e) => t + (e.d > 0 ? e.d : 0), 0);
   const recent = auto.slice(-5).reverse();
+  const banked = useTween(a.allowance);
 
   return (
     <div className="panel panel--pad stack">
@@ -42,7 +44,7 @@ export function AutoDevCard({ f }) {
       </label>
 
       <div className="kpis">
-        <div className="kpi"><span>Banked to spend</span><b>{money(a.allowance)}</b><small>{a.avg ? `+${money(a.avg)} a game` : "fills after each game"}</small></div>
+        <div className="kpi"><span>Banked to spend</span><b>{money(banked)}</b><small>{a.avg ? `+${money(a.avg)} a game` : "fills after each game"}</small></div>
         <div className="kpi"><span>This season</span><b>{money(spent)}</b><small>{season.length} buys · +{pts.toFixed(1)} OVR</small></div>
       </div>
       <button className="btn btn--quiet btn--sm" style={{ justifySelf: "start" }} disabled={a.allowance < 1}
@@ -58,7 +60,7 @@ export function AutoDevCard({ f }) {
           ))}
         </ul>
       )}
-      <p className="note" style={{ margin: 0 }}>Builds and card prints are never bought automatically. The rest of your earnings stays in the bank for those.</p>
+      <p className="note" style={{ margin: 0 }}>Builds and star-power promotions are never bought automatically. The rest of your earnings stays in the bank for those.</p>
     </div>
   );
 }

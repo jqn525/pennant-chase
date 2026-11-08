@@ -2,6 +2,7 @@
 import { useMemo, useState } from "react";
 import { LEAGUE } from "../game/constants.js";
 import { careerOf, stat, tn } from "../game/franchise.js";
+import { isOpen } from "../game/unlocks.js";
 import { seasonRows, row as decode } from "../game/history.js";
 import { spendReport, development, teamKpis, ratingsTable, project, paceProjection, milestones, careerLeaders, CAT_LABEL } from "../game/analytics.js";
 import { money, count, ordinal } from "./fmt.js";
@@ -10,7 +11,7 @@ import StatTable from "./StatTable.jsx";
 import SeasonView from "./SeasonView.jsx";
 
 export const STATS_KEY = "pc-stats";
-const SECTIONS = [["team", "Team"], ["money", "Money"], ["roi", "Spending"], ["players", "Players"], ["proj", "Projections"], ["records", "Records"]];
+const SECTIONS = [["team", "Team"], ["money", "Money", "stats-money"], ["roi", "Spending", "stats-roi"], ["players", "Players", "stats-players"], ["proj", "Projections", "projections"], ["records", "Records", "records"]];
 export const CAT_COLOR = { training: SERIES[0], gear: SERIES[1], upgrades: SERIES[2], prints: SERIES[3], draft: SERIES[4], trades: SERIES[5], tax: SERIES[6] };
 const usd = (v) => { const a = Math.abs(v); const s = a >= 1e6 ? `${(a / 1e6).toFixed(1)}M` : a >= 1e4 ? `${Math.round(a / 1e3)}k` : a >= 1e3 ? `${(a / 1e3).toFixed(1)}k` : `${Math.round(a)}`; return `${v < 0 ? "−" : ""}$${s}`; };
 const compact = (v) => (Math.abs(v) >= 1e6 ? `${(v / 1e6).toFixed(1)}M` : Math.abs(v) >= 1e3 ? `${Math.round(v / 1e3)}k` : `${Math.round(v)}`);
@@ -380,15 +381,17 @@ export default function StatsView({ f, openPlayer }) {
   const { s } = f;
   const [sec, setSecRaw] = useState(() => { try { return sessionStorage.getItem(STATS_KEY) || "team"; } catch { return "team"; } });
   const setSec = (k) => { setSecRaw(k); try { sessionStorage.setItem(STATS_KEY, k); } catch { /* private mode */ } };
+  const open = SECTIONS.filter(([, , u]) => !u || isOpen(s, u));
+  const cur = open.some(([k]) => k === sec) ? sec : "team";
   const body = {
     team: <Team f={f} openPlayer={openPlayer} />, money: <MoneySection s={s} />, roi: <Roi s={s} />,
     players: <Players s={s} openPlayer={openPlayer} />, proj: <Projections s={s} />, records: <Records s={s} openPlayer={openPlayer} />,
-  }[sec] || null;
+  }[cur] || null;
   return (
     <>
       <h1>Stats</h1>
       <p className="lede">The {tn(s.city)} by the numbers{s.hist.n ? ` · ${count(s.hist.n)} games on record` : ""}.</p>
-      <div className="stats-nav"><Chips label="Stats section" value={sec} set={setSec} items={SECTIONS} /></div>
+      <div className="stats-nav"><Chips label="Stats section" value={cur} set={setSec} items={open} /></div>
       {body}
     </>
   );

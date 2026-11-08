@@ -17,6 +17,7 @@
 import { ECON, LEAGUE, BAT_STATS, PIT_STATS, stadiumFx, revenueFx } from "./constants.js";
 import { eff } from "./gear.js";
 import { CARD_TIERS, nextPrint, cardDraw } from "./cards.js";
+import { isOpen } from "./unlocks.js";
 import { ticketGate } from "./engine.js";
 import {
   allPlayers, merchRate, trainCost, trainCeil, buildLock, build, BALLPARK, trackLevel,
@@ -152,7 +153,7 @@ function buildOptions(s, vWin) {
     return [{
       id: `build-${track.id}`, kind: "Build", cost: next.cost, gainPerGame: gain,
       title: `${next.name}`, detail: `${track.title.charAt(0) + track.title.slice(1).toLowerCase()} ${lvl + 1} · ${why}`,
-      lock: buildLock(s, track.id), action: { type: "build", id: track.id },
+      lock: buildLock(s, track.id), needFans: next.fans, action: { type: "build", id: track.id },
     }];
   });
 }
@@ -165,9 +166,9 @@ function printOptions(s) {
     const drawAfter = drawNow - CARD_TIERS[p.cardTier || 0].draw + up.draw;
     const gain = merchPerGame(s, s.merch, s.tv, s.fans, drawAfter) - merchPerGame(s, s.merch, s.tv);
     return [{
-      id: `print-${p.id}`, kind: "Print", cost: up.cost, gainPerGame: gain,
-      title: `${p.name} · ${up.name} card`,
-      detail: s.merch ? "Sells more jerseys · raises trade value" : "Pays once you own a merch store · raises trade value",
+      id: `promo-${p.id}`, kind: "Promote", cost: up.cost, gainPerGame: gain,
+      title: `${p.name} · ${up.deal} → ${up.name.toLowerCase()}`,
+      detail: s.merch ? `More fame sells more merch · raises trade value · ${p.pos}` : `Pays once you own a merch store · raises trade value · ${p.pos}`,
       action: { type: "print", pid: p.id },
     }];
   });
@@ -177,7 +178,7 @@ function printOptions(s) {
 export function options(s) {
   if (!s.roster) return [];
   const vWin = valueOfWin(s);
-  const all = [...trainOptions(s, vWin), ...gearOptions(s, vWin), ...buildOptions(s, vWin), ...printOptions(s)]
+  const all = [...trainOptions(s, vWin), ...(isOpen(s, "gear") ? gearOptions(s, vWin) : []), ...(isOpen(s, "ballpark") ? buildOptions(s, vWin) : []), ...(isOpen(s, "star") ? printOptions(s) : [])]
     .map((o) => {
       const pb = payback(o.cost, o.gainPerGame);
       const lock = o.lock || (s.money < o.cost ? `Needs $${Math.ceil(o.cost - s.money).toLocaleString("en-US")} more` : null);

@@ -4,7 +4,7 @@ import { validateSave } from "./save.js";
 import { LEAGUE } from "./constants.js";
 
 const club = { name: "Vancouver", nickname: "Suns", bonus: "fans", label: "HUNGRY MARKET" };
-const fresh = () => { const s = blankState(); found(s, club); return s; };
+const fresh = () => { const s = blankState(); found(s, club); s.unlocked = null; return s; };
 
 // Play until the season rolls over to the draft (or a cap on ticks)
 function playSeason(s) {

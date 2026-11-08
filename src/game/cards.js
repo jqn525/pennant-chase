@@ -1,17 +1,18 @@
-// ── Trading cards: every player is a card ──
-// A league-average filler guy gets a plain base-set card. Talent earns the
-// RIGHT to reprint him at a higher rarity; the press still has to be paid.
-// Printed tier lives on the player (`cardTier`) and is never taken back —
-// winter aging can cost him a step, but the card he earned stays printed.
+// ── Star power: how famous a player is ──
+// Talent earns the RIGHT to promote a player to the next level of fame; the
+// deal still has to be paid for. Fame lives on the player (`cardTier`, kept
+// under its old name so saves carry over) and is never taken back: winter
+// aging can cost him a step, but the town doesn't forget.
 
 import { ovr } from "./gear.js";
 
 export const CARD_TIERS = [
-  { id: 0, key: "common", name: "COMMON", flavor: "Base Set", at: 0, cost: 0, draw: 0 },
-  { id: 1, key: "uncommon", name: "UNCOMMON", flavor: "Foil Stamp", at: 70, cost: 750, draw: 0.1 },
-  { id: 2, key: "rare", name: "RARE HOLO", flavor: "Rainbow Shimmer", at: 80, cost: 10000, draw: 0.3 },
-  { id: 3, key: "unique", name: "ONE-OF-ONE", flavor: "Gold Refractor", at: 88, cost: 50000, draw: 0.6 },
+  { id: 0, key: "unknown", name: "Unknown", deal: null, at: 0, cost: 0, draw: 0 },
+  { id: 1, key: "local", name: "Local favorite", deal: "Jersey line", blurb: "his number on jerseys around town", at: 70, cost: 750, draw: 0.1 },
+  { id: 2, key: "regional", name: "Regional star", deal: "Bobblehead night", blurb: "a bobblehead giveaway that sells out", at: 80, cost: 10000, draw: 0.3 },
+  { id: 3, key: "national", name: "National icon", deal: "Sneaker deal", blurb: "a national sneaker campaign", at: 88, cost: 50000, draw: 0.6 },
 ];
+export const STAR_TIERS = CARD_TIERS;
 
 // Highest tier a rating qualifies for
 export const tierFor = (rating) => {
@@ -24,17 +25,12 @@ export const eligibleTier = (p) => tierFor(ovr(p));
 export const printedTier = (p) => p.cardTier || 0;
 export const tierOf = (p) => CARD_TIERS[printedTier(p)];
 
-// The press runs one step at a time — you collect the whole ladder
+// Fame climbs one step at a time
 export const nextPrint = (p) => {
   const next = printedTier(p) + 1;
   return next < CARD_TIERS.length && eligibleTier(p) >= next ? CARD_TIERS[next] : null;
 };
 
-// How much a roster's printed cards move merchandise
+// How much the roster's fame moves merchandise
 export const cardDraw = (players) => players.reduce((n, p) => n + CARD_TIERS[printedTier(p)].draw, 0);
-
-// Card furniture, deterministic per player so a card never changes on him
-export const cardNumber = (p) => ((p.id * 37) % 660) + 1;
-// A batter who pulls left is swinging right-handed
-export const batsOf = (p) => (p.role === "bat" ? (p.pull < 0 ? "R" : "L") : p.id % 2 ? "R" : "L");
-export const throwsOf = (p) => (p.id % 3 === 0 ? "L" : "R");
+export const nextPromo = (p) => nextPrint(p);
