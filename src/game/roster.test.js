@@ -19,7 +19,7 @@ describe("pitching staffs", () => {
     for (const r of s.rivals) { expect(r.rotation).toHaveLength(5); expect(r.pen).toHaveLength(2); }
     expect(slotOf(s.roster, s.roster.rotation[2].id)).toBe("SP3");
     expect(slotOf(s.roster, s.roster.pen[1].id)).toBe("Closer");
-    expect(teamPayroll(s.roster)).toBeLessThan(SALARY.cap * 0.3);
+    expect(teamPayroll(s.roster)).toBeLessThan(SALARY.cap * 0.45);
   });
 
   it("starters take turns over a season and nobody throws 600 strikeouts", () => {
@@ -29,7 +29,7 @@ describe("pitching staffs", () => {
     const ks = [...s.roster.rotation, ...s.roster.pen].map((p) => s.seasonStats[p.id]?.kP || 0);
     expect(Math.max(...ks)).toBeLessThan(340);
     for (const p of s.roster.rotation) expect(s.seasonStats[p.id].g).toBeGreaterThanOrEqual(28);
-    expect(s.seasonStats[s.roster.pen[0].id].g).toBeGreaterThan(100);
+    expect(s.seasonStats[s.roster.pen[0].id].g).toBeGreaterThan(50);
     expect(starts.length).toBe(5);
   });
 

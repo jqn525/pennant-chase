@@ -200,9 +200,9 @@ export const stadiumFx = (levels = {}) => {
 // +CREEP.cellarBonus extra for the last-place club. Standing still = falling behind.
 // Rubber band: rivals trailing the PLAYER's rating gain up to rubberCap extra
 // points (rubber × rating gap), so a dynasty gets hunted down within a few years.
-export const CREEP = { base: 12, cellarBonus: 6, rubber: 3, rubberCap: 60, bump: 4,
+export const CREEP = { base: 4, cellarBonus: 4, rubber: 3, rubberCap: 40, bump: 3,
   // in season: every series change, rivals behind you scout, sign and train in proportion to the gap
-  seriesRubber: 1.6, seriesBump: 2 };
+  seriesRubber: 1.6, seriesBump: 2, acquire: 0.25 };
 
 // One per player — a defined percentage shift on his ratings, like gear.
 // `mods` bake into effective stats everywhere; `sit` applies with runners on.
@@ -222,9 +222,9 @@ export const PLAYER_TRAITS = [
 
 // Gear rarities: shipment weights and price anchors
 export const RARITY = {
-  1: { name: "COMMON", weight: 65, cost: 500, pct: 5 },
-  2: { name: "RARE", weight: 28, cost: 1500, pct: 10 },
-  3: { name: "LEGENDARY", weight: 7, cost: 3500, pct: 15 },
+  1: { name: "COMMON", weight: 65, cost: 500, pct: 3 },
+  2: { name: "RARE", weight: 28, cost: 1500, pct: 5 },
+  3: { name: "LEGENDARY", weight: 7, cost: 3500, pct: 8 },
 };
 
 // Salaries: pay grows steeply with effective OVR (×growth10 per 10 points

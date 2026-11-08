@@ -98,8 +98,8 @@ export default function RosterView({ f, openPlayer, goTo }) {
                 {head && <tr className="group"><td colSpan={6}>{head}</td></tr>}
                 <tr className="link" onClick={() => openPlayer(p.id)} tabIndex={0} onKeyDown={(e) => e.key === "Enter" && openPlayer(p.id)}>
                   <td>
-                    <b>{p.name}</b>{p.franchise && <> <span className="tag tag--accent">F</span></>}{nextPrint(p) && isOpen(s, "star") && <> <span className="tag tag--warn">promo ready</span></>}
-                    <span className="sub">{slotOf(s.roster, p.id)}{p.id === nextUp ? " · starts next" : ""}{tier.id > 0 ? ` · ★ ${tier.name.toLowerCase()}` : ""}</span>
+                    <b>{p.name}</b>{p.franchise && <> <span className="tag tag--accent">F</span></>}{p.age >= 34 && <> <span className="tag tag--warn">final years</span></>}{nextPrint(p) && isOpen(s, "star") && <> <span className="tag tag--warn">promo ready</span></>}
+                    <span className="sub">{slotOf(s.roster, p.id)}{p.age ? ` · ${p.age}` : ""}{p.id === nextUp ? " · starts next" : ""}{tier.id > 0 ? ` · ★ ${tier.name.toLowerCase()}` : ""}</span>
                   </td>
                   <td className="n">{ovr(p).toFixed(0)}</td>
                   <td className="n">{r.next == null ? "max" : money(r.next)}</td>

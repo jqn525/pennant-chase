@@ -17,6 +17,7 @@ describe("history", () => {
     expect(field(s.hist.games[9], "n")).toBe(10);
     s.money = 50000;
     const p = s.roster.batters[0];
+    p.pot = { ...p.pot, contact: p.contact + 10 };
     const before = s.hist.ovr[p.id].length;
     train(s, p.id, "contact", 4);
     const item = s.shopItems.find((i) => i.slot !== "glove" || true);
@@ -61,7 +62,10 @@ describe("analytics", () => {
     const s = fresh();
     for (let i = 0; i < 30; i++) tick(s, "max");
     s.money = 20000;
-    train(s, s.roster.batters[0].id, "power", 3);
+    // someone with room left to grow
+    const grow = s.roster.batters.find((p) => (p.pot?.power ?? 0) - p.power >= 3) || s.roster.batters[0];
+    if (grow.pot) grow.pot.power = Math.max(grow.pot.power, grow.power + 5);
+    train(s, grow.id, "power", 3);
     for (let i = 0; i < 10; i++) tick(s, "max");
     const k = teamKpis(s);
     expect(k.w).toBe(s.standings[0].w);
@@ -71,7 +75,7 @@ describe("analytics", () => {
     expect(r.total).toBe(r.byCat.reduce((t, c) => t + c.cost, 0));
     expect(r.ovrBought).toBeGreaterThan(0);
     expect(r.returned).toBeGreaterThan(0);
-    const d = development(s).find((x) => x.p.id === s.roster.batters[0].id);
+    const d = development(s).find((x) => x.p.id === grow.id);
     expect(d.invested).toBeGreaterThan(0);
     expect(d.season).toBeGreaterThan(0);
     expect(paceProjection(s).left).toBe(LEAGUE.seasonGames - s.gameIndex);

@@ -2,12 +2,14 @@
 // Team index convention everywhere: 0 = the player's club, 1..7 = rivals.
 
 import { LEAGUE, TRAITS, CREEP, ECON } from "./constants.js";
-import { genRivalTeam, creepRival, genTeamIdentity } from "./generators.js";
+import { genRivalTeam, creepRival, genTeamIdentity, genCallUp, genReplacement } from "./generators.js";
+import { ageOneYear, retireChance } from "./talent.js";
+import { mapRoster } from "./roster.js";
 import { ovr } from "./gear.js";
 
 // Logistic win probability constants (calibrated against the real engine —
 // on the 0-100 scale one OVR point is worth K=0.325 of log-odds)
-export const QS = { K: 0.325, H: 0.03 };
+export const QS = { K: 0.09, H: 0.03 }; // matches the engine: +4 team rating ≈ .59, +10 ≈ .70
 
 export const makeRivals = (base = LEAGUE.statBase, playerIdentity = null) => {
   const traitIds = [...TRAITS.map((t) => t.id)];
@@ -103,27 +105,23 @@ export const simSeries = (rA, rB, bestOf) => {
   return a > b;
 };
 
-// Winter takes its toll: every player loses one point from a random stat that
-// sits above the league base. Gear is unaffected. Keeps an infinite game honest —
-// you spend to climb AND to hold your ground.
-export const ageRoster = (roster) => {
-  const age = (p, keys) => {
-    const q = { ...p };
-    const above = keys.filter((k) => q[k] > LEAGUE.statBase);
-    if (above.length) {
-      const k = above[(Math.random() * above.length) | 0];
-      q[k] = Math.max(LEAGUE.statBase, q[k] - (2 + ((Math.random() * 4) | 0))); // lose 2-5 points
+// Winter: everyone is a year older. Young players grow toward their ceiling,
+// players in their prime hold, veterans slide (legs first), and some retire.
+// `replace(pos)` supplies whoever takes a retiree's spot.
+export function careerWinter(team, replace) {
+  const retired = [];
+  const step = (p) => {
+    const q = ageOneYear(p);
+    if (Math.random() < retireChance(q, ovr(q))) {
+      const n = { ...replace(p.pos), gear: p.gear };
+      retired.push({ old: q, next: n });
+      return n;
     }
     return q;
   };
-  const BAT = ["contact", "power", "eye", "speed", "defense"];
-  const PIT = ["stuff", "control", "stamina", "defense"];
-  return {
-    batters: roster.batters.map((b) => age(b, BAT)),
-    rotation: roster.rotation.map((p) => age(p, PIT)),
-    pen: roster.pen.map((p) => age(p, PIT)),
-  };
-};
+  return { team: mapRoster(team, step), retired };
+}
+export const ageRoster = (roster) => careerWinter(roster, genCallUp).team;
 
 // Where are we in the current series? Uses the schedule (series = consecutive
 // games vs the same club at the same park) and recent form for the series score.
@@ -168,12 +166,19 @@ export const runOffseason = ({ year, rivals, standings, ratings, seedOrder: fina
   // Rival development: worse finish = bigger winter, and anyone trailing the
   // player's rating gets a rubber-band boost so dynasties stay hunted
   const order = finalizedOrder || seedOrder(standings, ratings);
+  // the league anchor: if talent has drifted up, the next wave of replacements is leaner
+  const leagueMean = rivals.flatMap((r) => [...r.batters, ...r.rotation, ...r.pen]).reduce((t, p, _, a) => t + ovr(p) / a.length, 0);
+  const shift = leagueMean > 68 ? -Math.min(1.5, (leagueMean - 68) / 3) : 0;
+  const rivalRetired = [];
   const newRivals = rivals.map((team, i) => {
     const idx = i + 1;
     const rank = order.indexOf(idx);
-    const catchUp = Math.min(CREEP.rubberCap, Math.max(0, Math.round((ratings[0] - ratings[idx]) * CREEP.rubber)));
+    const aged = careerWinter(team, (pos) => genReplacement(pos, shift));
+    aged.retired.forEach((r) => rivalRetired.push({ ...r, club: team.name }));
+    // front-office work: worse clubs work harder; clubs well behind you work hardest (never past their ceilings)
+    const catchUp = Math.min(CREEP.rubberCap, Math.max(0, Math.round((ratings[0] - 2 - ratings[idx]) * CREEP.rubber)));
     const points = CREEP.base + rank + (rank === 7 ? CREEP.cellarBonus : 0) + catchUp;
-    return creepRival(team, points);
+    return creepRival(aged.team, points);
   });
 
   let fansDelta;
@@ -190,6 +195,7 @@ export const runOffseason = ({ year, rivals, standings, ratings, seedOrder: fina
   return {
     year: year + 1,
     rivals: newRivals,
+    rivalRetired,
     schedule,
     rivalDays,
     gameIndex: 0,

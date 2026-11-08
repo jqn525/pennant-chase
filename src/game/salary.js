@@ -4,9 +4,19 @@ import { LEAGUE, SALARY } from "./constants.js";
 import { ovr } from "./gear.js";
 
 // A player's seasonal salary from his effective overall (gear + traits priced in)
+// Career stage moves pay: rookie deals are cheap, prime stars get paid,
+// fading veterans take less
+export const careerPay = (p) => {
+  const y = p.years ?? 8, a = p.age ?? 28;
+  if (y <= 2) return 0.5;
+  if (y <= 5) return 0.8;
+  if (a >= 36) return 0.6;
+  if (a >= 33) return 0.8;
+  return 1;
+};
 export const salaryOf = (p) => {
   const mult = SALARY.posMult[p.pos] ?? 1;
-  return Math.round(SALARY.base * Math.pow(SALARY.growth10, (ovr(p) - LEAGUE.statBase) / 10) * mult);
+  return Math.round(SALARY.base * Math.pow(SALARY.growth10, (ovr(p) - LEAGUE.statBase) / 10) * mult * careerPay(p));
 };
 
 export const teamPayroll = (roster) =>

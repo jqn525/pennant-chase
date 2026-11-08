@@ -8,6 +8,7 @@ import { resolveAtBat } from "./atBat.js";
 import { eff } from "./gear.js";
 import { makePitch, makeWildPitch } from "./pitch.js";
 import { LEAGUE, ECON } from "./constants.js";
+import { gauss } from "./utils.js";
 
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 
@@ -57,6 +58,19 @@ function currentArm(g, ctx, side, emit) {
   return staff[st.stage];
 }
 
+// Nobody is the same player every day: a starter's stuff can be electric or
+// flat, a hitter can be locked in or lost. One roll per player per game.
+export const DAY_SWING = { hitter: 3, starter: 6, reliever: 3 };
+function onTheDay(g, p, spread, keys) {
+  const f = g.form || (g.form = {});
+  if (f[p.id] == null) f[p.id] = Math.round((gauss() * 2 - 1) * spread * 10) / 10;
+  const d = f[p.id];
+  if (!d) return p;
+  const q = { ...p };
+  for (const k of keys) q[k] += d;
+  return q;
+}
+
 // ctx is built once per game: { batters, staff, oppStaff, opp, fence, statBase, innings, cityName }
 export function stepAtBat(g, ctx, events) {
   if (g.over) return;
@@ -66,10 +80,10 @@ export function stepAtBat(g, ctx, events) {
   const weBat = g.half === (g.home ? "bottom" : "top");
   const batters = weBat ? ctx.batters : g.opp.batters;
   const idx = weBat ? g.usIdx : g.themIdx;
-  const batter = eff(batters[idx % 9]);
+  const batter = onTheDay(g, eff(batters[idx % 9]), 3, ["contact", "power", "eye"]);
 
   const arm = currentArm(g, ctx, weBat ? "them" : "us", emit);
-  const pitcher = eff(arm);
+  const pitcher = onTheDay(g, eff(arm), arm.pos === "SP" ? 6 : 3, ["stuff", "control"]);
   const side = weBat ? "us" : "them";
   const teamName = weBat ? ctx.cityName : g.opp.name;
 

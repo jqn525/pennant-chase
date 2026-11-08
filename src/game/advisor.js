@@ -27,8 +27,8 @@ import {
 
 // Win rate per rating point, from scripts/calibrate.mjs (40,000 games per run).
 // A starter only pitches every fifth game; the setup man pitches most games.
-export const WIN_PER_BAT_POINT = 0.0012;
-export const WIN_PER_ARM = { SP: 0.00055, RP: 0.00025, CL: 0.0002 };
+export const WIN_PER_BAT_POINT = 0.0003;
+export const WIN_PER_ARM = { SP: 0.0005, RP: 0.0002, CL: 0.0003 };
 export const WIN_PER_ARM_POINT = WIN_PER_ARM.SP;
 export const winPerPointOf = (p) => (p.role === "bat" ? WIN_PER_BAT_POINT : WIN_PER_ARM[p.pos] ?? WIN_PER_ARM_POINT);
 export const HORIZON = 100; // games a new fan keeps paying, for valuing growth

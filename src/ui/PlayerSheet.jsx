@@ -8,6 +8,8 @@ import { columns } from "../game/statline.js";
 import StatTable from "./StatTable.jsx";
 import { Sparkline } from "./charts.jsx";
 import { slotOf } from "../game/roster.js";
+import { stage, ARCHETYPES } from "../game/talent.js";
+import { ordinal as ordinalSeason } from "./fmt.js";
 import { isOpen, nextUnlockNote } from "../game/unlocks.js";
 import {
   allPlayers, stat, careerOf, trainCost, trainCeil, planTraining, train, trainAll, printCard,
@@ -125,7 +127,7 @@ export default function PlayerSheet({ f, pid, onClose }) {
                   const pay = q.cash > 0;
                   return (
                     <tr key={team.name}>
-                      <td>{q.them.name}<span className="sub">{team.name}</span></td>
+                      <td>{q.them.name}<span className="sub">{team.name}{q.them.age ? ` · age ${q.them.age}` : ""}</span></td>
                       <td className="n">{ovr(q.them).toFixed(0)}</td>
                       <td className="n">{money(salaryOf(q.them))}</td>
                       <td className={`n ${pay ? "down" : "up"}`}>{pay ? money(-q.cash) : money(-q.cash, { sign: true })}</td>
@@ -194,13 +196,23 @@ function Development({ s, p }) {
   const invested = buys.reduce((t, e) => t + e.cost, 0);
   const pts = buys.reduce((t, e) => t + (e.d > 0 ? e.d : 0), 0);
   const first = series.length ? series[0][1] / 10 : null;
+  const keys = p.role === "bat" ? ["contact", "power", "eye", "speed", "defense"] : ["stuff", "control", "stamina"];
+  const ceiling = p.pot ? keys.reduce((t, k) => t + (p.pot[k] ?? p[k]), 0) / keys.length : null;
   return (
-    <div className="card card--s panel--pad row" style={{ marginTop: 8 }}>
-      <Sparkline points={series} width={96} height={30} />
-      <div className="grow" style={{ fontSize: 13 }}>
-        {first != null ? <>Overall {first.toFixed(1)} → <b>{ovr(p).toFixed(1)}</b> since tracking began</> : "Development tracking starts with his next game."}
-        <span className="sub">{buys.length ? `${money(invested)} in training and gear · +${pts.toFixed(1)} OVR · ${pts > 0 ? money(invested / pts) : "—"} per point` : "No training or gear bought for him yet."}</span>
+    <>
+      <div className="card card--s panel--pad row" style={{ marginTop: 8 }}>
+        <div className="grow" style={{ fontSize: 13 }}>
+          <b>Age {p.age ?? "—"}</b> · {p.years != null ? `${ordinalSeason(p.years + 1)} season` : ""} · <span className={p.age >= 34 ? "warn" : p.age <= 26 ? "up" : ""}>{stage(p.age)}</span>
+          <span className="sub">{ARCHETYPES[p.arch] ? `${ARCHETYPES[p.arch]} · ` : ""}{ceiling != null ? `natural ceiling about ${Math.round(ceiling)} (gear adds on top)` : ""}{p.age >= 34 ? " · retirement could come any winter" : p.age <= 24 ? " · still growing on his own" : ""}</span>
+        </div>
       </div>
-    </div>
+      <div className="card card--s panel--pad row" style={{ marginTop: 8 }}>
+        <Sparkline points={series} width={96} height={30} />
+        <div className="grow" style={{ fontSize: 13 }}>
+          {first != null ? <>Overall {first.toFixed(1)} → <b>{ovr(p).toFixed(1)}</b> since tracking began</> : "Development tracking starts with his next game."}
+          <span className="sub">{buys.length ? `${money(invested)} in training and gear · +${pts.toFixed(1)} OVR · ${pts > 0 ? money(invested / pts) : "—"} per point` : "No training or gear bought for him yet."}</span>
+        </div>
+      </div>
+    </>
   );
 }

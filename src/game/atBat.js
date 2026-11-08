@@ -1,9 +1,9 @@
 // ── The batted-ball engine ──
 // Returns a rich outcome object; caller applies it to game state.
-// All skill effects are measured RELATIVE to the league's statBase, so a
-// player who is +2 above his league plays like a star at every level, and
-// every league produces realistic baseball numbers (BA ~.250-.290,
-// K% rising as you climb, homers rare in Little League, common in the Show).
+// Every skill effect is a MATCHUP: hitter vs pitcher, hitter vs fielder. Two
+// clubs of equal quality play the same baseball at any rating level (about
+// 4–5 runs a side, a .260 average), and only the gap between them matters.
+// SENS scales how much a rating point moves the odds; lower = more upsets.
 
 import { gauss } from "./utils.js";
 import { PLAYER_TRAITS, LEAGUE } from "./constants.js";
@@ -18,8 +18,10 @@ const sitBoost = (v, traitId, stat, runnersOn) => {
   return pct ? Math.min(LEAGUE.statCap, v * (1 + pct / 100)) : v;
 };
 
+export const SENS = 0.2;
+
 export function resolveAtBat(batter, pitcher, fielders, fence, base = 5, sit = {}) {
-  const rel = (v) => v - base;
+  const S = SENS;
 
   const bT = batter.trait, pT = pitcher.trait;
   const bContact = sitBoost(batter.contact, bT, "contact", sit.runnersOn);
@@ -27,8 +29,8 @@ export function resolveAtBat(batter, pitcher, fielders, fence, base = 5, sit = {
   const pStuff = sitBoost(pitcher.stuff, pT, "stuff", sit.runnersOn);
   const pControl = pitcher.control;
 
-  const kChance = clamp(0.212 + rel(pStuff) * 0.0075 - rel(bContact) * 0.005 - rel(bEye) * 0.002, 0.06, 0.5);
-  const bbChance = clamp(0.085 + rel(bEye) * 0.0055 - rel(pControl) * 0.005, 0.02, 0.22);
+  const kChance = clamp(0.2 + S * ((pStuff - bContact) * 0.0055 + (pStuff - bEye) * 0.002), 0.06, 0.5);
+  const bbChance = clamp(0.085 + S * (bEye - pControl) * 0.0052, 0.02, 0.22);
   const r = Math.random();
   if (r < kChance) return { type: "K", text: `strikes out swinging.` };
   if (r < kChance + bbChance) return { type: "BB", text: `works a walk.` };
@@ -56,7 +58,8 @@ export function resolveAtBat(batter, pitcher, fielders, fence, base = 5, sit = {
     // Fair ball. Fence distance at this angle (shallow at corners, deep in center).
     // Carry is a SHARE of the fence distance, so every park plays to scale.
     const fenceHere = fence.center - (fence.center - fence.corner) * (Math.abs(spray) / 45);
-    const pow = rel(batter.power);
+    // how squarely he barrels it: his power against the pitcher's stuff and location
+    const pow = S * (batter.power - (0.6 * pStuff + 0.4 * pControl));
     const carry = launch === "ground"
       ? 0.12 + gauss() * 0.5
       : launch === "liner"
@@ -81,19 +84,19 @@ export function resolveAtBat(batter, pitcher, fielders, fence, base = 5, sit = {
 
     // Contact skill makes harder-to-field contact; defense converts chances.
     const fDef = fielder.defense;
-    const catchBase = launch === "ground" ? (infield ? 0.78 : 0.45) : launch === "fly" ? (infield ? 0.93 : 0.82) : 0.32;
-    const catchChance = clamp(catchBase + rel(fDef) * 0.00625 - rel(bContact) * 0.0055, 0.05, 0.97);
+    const catchBase = launch === "ground" ? (infield ? 0.78 : 0.45) : launch === "fly" ? (infield ? 0.94 : 0.84) : 0.31;
+    const catchChance = clamp(catchBase + S * (fDef - bContact) * 0.006, 0.05, 0.97);
     const desc = launch === "ground" ? "grounder" : launch === "liner" ? "sharp liner" : "fly ball";
 
     if (Math.random() < catchChance) {
       // Even routine plays get booted now and then — sure hands boot fewer
-      const errChance = clamp(0.025 - rel(fDef) * 0.0015, 0.004, 0.07);
+      const errChance = clamp(0.025 - S * (fDef - batter.speed) * 0.0015, 0.004, 0.07);
       if (Math.random() < errChance) {
         return { type: "E", text: `hits a ${desc} ${deg}° ${side} — ${fielder.name} (${fielderPos}) boots it! Error, everybody safe.`, spray, dist, launch, fielderPos };
       }
       // Ground ball, force at second, fewer than two outs: chance to turn two
       if (launch === "ground" && infield && sit.forceOn1 && sit.outs < 2) {
-        const dpChance = clamp(0.5 + rel(fDef) * 0.0075, 0.2, 0.8);
+        const dpChance = clamp(0.5 + S * (fDef - batter.speed) * 0.0075, 0.2, 0.8);
         if (Math.random() < dpChance) {
           return { type: "DP", text: `raps a grounder ${deg}° ${side} — ${fielder.name} (${fielderPos}) starts it, around the horn, TWO!`, spray, dist, launch, fielderPos };
         }
@@ -102,7 +105,7 @@ export function resolveAtBat(batter, pitcher, fielders, fence, base = 5, sit = {
     }
 
     // It's a hit. Bases from depth + speed.
-    const spd = rel(batter.speed);
+    const spd = S * (batter.speed - fDef);
     const deep = dist > fenceHere * 0.78;
     const gapper = dist > fenceHere * 0.6 && launch !== "ground";
     let bases = 1;

@@ -6,14 +6,15 @@
 
 import { LEAGUE, ECON, TRADE, BAT_STATS, PIT_STATS, STADIUM, stadiumFx, REVENUE, revenueFx, SALARY, FRANCHISE, CREEP } from "./constants.js";
 import { fmt } from "./utils.js";
-import { genRoster, genPitcher, seedUid, genDraftClass, vetPot, rollPot, pickTrait, freshName, seedNames, creepRival, seedRivalStars } from "./generators.js";
+import { genRoster, genPitcher, genBatter, genCallUp, seedUid, genDraftClass, vetPot, rollPot, pickTrait, freshName, seedNames, creepRival, seedRivalStars } from "./generators.js";
 import { newGame, stepAtBat, playGameInstant, settleGame, ticketGate } from "./engine.js";
-import { makeRivals, makeSchedule, teamRating, quickSim, simSeries, seedOrder, runOffseason, ageRoster, seriesInfo } from "./season.js";
+import { makeRivals, makeSchedule, teamRating, quickSim, simSeries, seedOrder, runOffseason, careerWinter, seriesInfo } from "./season.js";
 import { genShipment, genItem, playerValue, GEAR, dealerTier, shipmentWeights, devCapFor, ovr } from "./gear.js";
 import { nextPrint, cardDraw } from "./cards.js";
 import { loadoutById, applyLoadout, sortRival } from "./lineup.js";
 import { teamPayroll, luxuryTax } from "./salary.js";
 import { checkUnlocks } from "./unlocks.js";
+import { MAX_RATING, ageOneYear, retireChance, rollTalent, drawAge, drawTier } from "./talent.js";
 import { everyone, mapRoster, starterFor, replaceSlot, ROTATION } from "./roster.js";
 import { progressBuilds } from "./construction.js";
 import { noteBeats } from "./beats.js";
@@ -125,6 +126,26 @@ function migrateStaff(S) {
   return changed;
 }
 
+// Saves from before careers: give every player an age, a career length and a
+// ceiling that fits his age. Better players lean toward their prime; nobody's
+// current ratings change. Old ceilings were wildly generous, so they're redrawn.
+function migrateCareers(S) {
+  const fix = (p) => {
+    if (!p || p.age != null) return;
+    const o = ovr(p);
+    let age = drawAge();
+    if (o >= 75 && (age < 25 || age > 33)) age = 26 + ((Math.random() * 6) | 0);
+    p.age = age;
+    p.years = Math.max(0, age - 22);
+    const keys = p.role === "bat" ? BAT_STATS : PIT_STATS;
+    const room = age <= 21 ? 9 : age <= 26 ? [6, 4, 3, 2, 1][age - 22] : 0;
+    p.pot = {};
+    for (const k of keys) p.pot[k] = Math.min(MAX_RATING, p[k] + (room ? room + ((Math.random() * 4) | 0) : 0));
+  };
+  [...everyone(S.roster), ...(S.rivals || []).flatMap((r) => everyone(r)), ...(S.draftClass || [])].forEach(fix);
+  (S.draftClass || []).forEach((p) => { if (p.age > 23) { p.age = 21; p.years = 0; } });
+}
+
 // Older saves: every one-time migration the game has ever needed
 export function loadState(saved) {
   const s = blankState();
@@ -134,6 +155,13 @@ export function loadState(saved) {
   const ids = [S.roster.batters, oldStaff(S.roster), ...(S.rivals || []).map((r) => [...r.batters, ...oldStaff(r)]), S.draftClass || []].flat();
   seedUid(Math.max(...ids.map((p) => p.id)) + 1);
   const staffed = migrateStaff(S);
+  migrateCareers(S);
+  // gear was rebalanced to about half strength: scale owned and shop items once
+  if ((S.gearScale ?? 1) < 2) {
+    const half = (item) => { if (item?.boosts) for (const k in item.boosts) item.boosts[k] = Math.round(item.boosts[k] * 0.55) || Math.sign(item.boosts[k]); };
+    [...everyone(S.roster), ...(S.draftClass || [])].forEach((p) => p.gear && Object.values(p.gear).forEach(half));
+    (S.shopItems || []).forEach(half);
+  }
 
   const oldScale = S.scale !== 100;
   const toNew = (v) => Math.min(LEAGUE.statCap, v * 4 + 41);
@@ -213,7 +241,7 @@ export function loadState(saved) {
 export function toSave(s) {
   if (!s.city) return null;
   return {
-    version: 3, scale: 100, names: 2, econ: 2, balance: 1, lastSeen: Date.now(),
+    version: 3, scale: 100, gearScale: 2, names: 2, econ: 2, balance: 1, lastSeen: Date.now(),
     city: s.city, money: s.money, fans: s.fans, roster: s.roster, merch: s.merch, tv: s.tv, stadium: s.stadium,
     seasonStats: s.seasonStats, careerStats: s.careerStats, gameLog: s.gameLog, lastBox: s.lastBox, hist: s.hist, shopItems: s.shopItems, draftClass: s.draftClass, form: s.form,
     year: s.year, phase: s.phase, rivals: s.rivals, schedule: s.schedule, rivalDays: s.rivalDays,
@@ -480,6 +508,18 @@ function stretchRun(s) {
   }
 }
 
+// A rival front office upgrades its weakest spot with a prime-age player
+function acquire(team) {
+  const all = everyone(team);
+  const weakest = all.reduce((a, b) => (ovr(b) < ovr(a) ? b : a));
+  const opts = { tier: drawTier(0.8), age: 26 + ((Math.random() * 5) | 0) };
+  const pos = weakest.pos;
+  const pitcher = weakest.role !== "bat";
+  const fresh = pitcher ? genPitcher(pos, 0, opts) : genBatter(pos, 0, opts);
+  if (ovr(fresh) <= ovr(weakest)) return team;
+  return sortRival(replaceSlot(team, weakest.id, { ...fresh, pos, gear: undefined }));
+}
+
 // New systems open as the club grows; each gets one news line
 export function openUnlocks(s) {
   for (const u of checkUnlocks(s)) {
@@ -517,7 +557,14 @@ export function advance(s) {
         restock(s, false);
         // rivals scout, sign and train between series; the further you're ahead, the harder they work
         const usR = teamRating(s.roster);
-        s.rivals = s.rivals.map((t) => creepRival(t, 1 + Math.round(Math.max(0, usR - teamRating(t)) * CREEP.seriesRubber), CREEP.seriesBump));
+        // only clubs well behind you push (toward you minus two, never past their players' ceilings);
+        // clubs far behind also go shopping: their weakest player is replaced by someone better
+        s.rivals = s.rivals.map((t) => {
+          const gap = usR - teamRating(t);
+          let team = creepRival(t, Math.round(Math.max(0, gap - 2) * CREEP.seriesRubber), CREEP.seriesBump);
+          if (gap > 4 && Math.random() < CREEP.acquire) team = acquire(team);
+          return team;
+        });
       }
     }
     return startNextGame(s);
@@ -613,7 +660,15 @@ function offseason(s, championIdx, playerCup) {
   }
   s.fans = Math.max(ECON.startFans, s.fans + off.fansDelta);
   s.rivals = off.rivals;
-  s.roster = ageRoster(s.roster);
+  // careers: a year older, some grow, some fade, some retire
+  const winter = careerWinter(s.roster, genCallUp);
+  s.roster = winter.team;
+  for (const r of winter.retired) {
+    pushLog(s, `${r.old.name} (${r.old.age}) retires after ${r.old.years} season${r.old.years === 1 ? "" : "s"}. ${r.next.name} (${r.next.age}) is called up to take his spot.`, "beat");
+  }
+  for (const r of (off.rivalRetired || []).filter((x) => ovr(x.old) >= 72).slice(0, 3)) {
+    pushLog(s, `Around the league: ${r.old.name} of the ${r.club} retires at ${r.old.age}.`, "sys");
+  }
   s.schedule = off.schedule;
   s.rivalDays = off.rivalDays;
   s.gameIndex = 0;
@@ -667,9 +722,10 @@ export function trainCost(s, p, key) {
   if (cityBonus(s, "train")) c *= 0.85;
   return Math.ceil(c);
 }
+// Training stops at the player's own ceiling; a franchise tag buys 4 more
 export const trainCeil = (s, p, key) => {
-  const pot = p.pot?.[key] ?? Infinity;
-  return p.franchise ? pot : Math.min(pot, devCapFor(s.trophies));
+  const pot = p.pot?.[key] ?? p[key];
+  return Math.min(MAX_RATING, pot + (p.franchise ? 4 : 0));
 };
 export function planTraining(s, p, keys, budget, maxPoints = Infinity) {
   const cur = {};

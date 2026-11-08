@@ -3,6 +3,8 @@
 import { FIRST, LAST, POSITIONS, TRAITS, BAT_STATS, PIT_STATS, PLAYER_TRAITS, LEAGUE, DRAFT, CREEP, CITY_POOL, NICKNAME_POOL } from "./constants.js";
 import { jitter } from "./utils.js";
 import { sortRival } from "./lineup.js";
+import { rollTalent, drawTier, TIERS, isPitcherRole } from "./talent.js";
+import { ovr } from "./gear.js";
 
 let uid = 1;
 // After loading a save, push the id counter past the saved players' ids
@@ -51,35 +53,38 @@ export const rollPot = (p, keys, min = 8, spread = 20) => {
 // Veterans acquired in trades have little left to learn: +4..+12
 export const vetPot = (p, keys) => rollPot(p, keys, 4, 9);
 
-export const genBatter = (pos, base) => {
-  const p = {
-    id: uid++, name: rname(), pos, role: "bat",
-    contact: jitter(base, 10), power: jitter(base, 10), eye: jitter(base, 10), speed: jitter(base, 10), defense: jitter(base, 10),
-    pull: (Math.random() * 1.2 - 0.6), // negative = pulls left, positive = slices right
-    trait: pickTrait("bat"),
-  };
-  p.pot = rollPot(p, BAT_STATS);
-  return p;
-};
-
-export const genPitcher = (pos, base) => {
-  const p = {
-    id: uid++, name: rname(), pos, role: pos,
-    stuff: jitter(base, 10), control: jitter(base, 10), stamina: jitter(base, 10), defense: jitter(base, 10),
-    trait: pickTrait("pit"),
-  };
-  p.pot = rollPot(p, PIT_STATS);
-  return p;
-};
-
-// Relievers throw harder for shorter stints
-const reliever = (p) => ({ ...p, stuff: Math.min(LEAGUE.statCap, p.stuff + 4), stamina: Math.max(40, p.stamina - 8) });
-
-// A pitching staff: an ace, four starters a step or two behind, a setup man and a closer
-export const genStaff = (base, make = genPitcher) => ({
-  rotation: [0, 2, 3, 4, 6].map((d) => make("SP", Math.max(40, base - d))),
-  pen: [reliever(make("RP", Math.max(40, base - 4))), reliever(make("CL", Math.max(40, base - 2)))],
+// Players come from talent.js: a tier (most are regulars, few are stars),
+// a shape, an age and a personal ceiling. `base` is kept for old callers.
+export const genBatter = (pos, base, opts = {}) => ({
+  id: uid++, name: rname(), pos, role: "bat",
+  pull: (Math.random() * 1.2 - 0.6), // negative = pulls left, positive = slices right
+  trait: pickTrait("bat"),
+  ...rollTalent("bat", opts),
 });
+
+export const genPitcher = (pos, base, opts = {}) => ({
+  id: uid++, name: rname(), pos, role: pos,
+  trait: pickTrait("pit"),
+  ...rollTalent(pos, opts),
+});
+
+// A pitching staff: five starters (best first), a setup man and a closer
+export const genStaff = (base, make = genPitcher) => ({
+  rotation: Array.from({ length: 5 }, () => make("SP", base)).sort((x, y) => ovr(y) - ovr(x)),
+  pen: [make("RP", base), make("CL", base)],
+});
+
+// A September call-up: young, cheap, replacement-to-regular level
+export const genCallUp = (pos) => {
+  const opts = { tier: Math.random() < 0.6 ? TIERS[0] : TIERS[1], age: 22 + ((Math.random() * 4) | 0) };
+  return isPitcherRole(pos) ? genPitcher(pos, 0, opts) : genBatter(pos, 0, opts);
+};
+// A rival's replacement for a retiree: mostly young, now and then a journeyman
+export const genReplacement = (pos, shift = 0) => {
+  const age = Math.random() < 0.75 ? 21 + ((Math.random() * 5) | 0) : 28 + ((Math.random() * 5) | 0);
+  const opts = { tier: drawTier(shift), age };
+  return isPitcherRole(pos) ? genPitcher(pos, 0, opts) : genBatter(pos, 0, opts);
+};
 
 export const genRoster = (base) => ({
   batters: POSITIONS.map((p) => genBatter(p, base)),
@@ -88,16 +93,7 @@ export const genRoster = (base) => ({
 
 // Every real club has a marquee name or two. Boost a player's core skills
 // so rival lineups carry genuine stars, not eleven league-average guys.
-export const seedRivalStars = (team) => {
-  const picks = [...team.batters].sort(() => Math.random() - 0.5).slice(0, 2);
-  for (const p of picks) for (const k of ["contact", "power", "eye", "speed"]) {
-    p[k] = Math.min(LEAGUE.statCap, p[k] + jitter(12, 4));
-  }
-  if (Math.random() < 0.5) for (const k of ["stuff", "control"]) {
-    team.rotation[0][k] = Math.min(LEAGUE.statCap, team.rotation[0][k] + jitter(12, 4));
-  }
-  return team;
-};
+export const seedRivalStars = (team) => team; // tiers make the stars now
 
 // A persistent rival club: fixed name, fixed team trait, roster that lives in
 // the save. Rival players get personality traits but no potentials — their
@@ -105,23 +101,20 @@ export const seedRivalStars = (team) => {
 export const genRivalTeam = (name, traitId, base) => {
   const trait = TRAITS.find((t) => t.id === traitId);
   const m = trait.mod;
-  const b = (k) => Math.min(LEAGUE.statCap, Math.max(40, jitter(base, 10) + (m[k] || 0)));
-  return sortRival(seedRivalStars({
+  // the club's identity nudges its players' shape (sluggers hit for power, aces pitch)
+  const flavor = (p) => {
+    const q = { ...p, pot: { ...p.pot } };
+    for (const k in m) if (q[k] != null) { q[k] = Math.min(LEAGUE.statCap, Math.max(35, q[k] + m[k])); q.pot[k] = Math.max(q[k], q.pot[k] + m[k]); }
+    return q;
+  };
+  const staff = genStaff(base);
+  return sortRival({
     name,
     traitId,
-    batters: POSITIONS.map((p) => ({
-      id: uid++, name: rname(), pos: p, role: "bat",
-      contact: b("contact"), power: b("power"), eye: b("eye"), speed: b("speed"), defense: b("defense"),
-      pull: (Math.random() * 1.2 - 0.6),
-      trait: pickTrait("bat"),
-    })),
-    ...genStaff(base, (pos, lvl) => ({
-      id: uid++, name: rname(), pos, role: pos,
-      stuff: Math.min(LEAGUE.statCap, Math.max(40, jitter(lvl, 10) + (m.stuff || 0))),
-      control: Math.min(LEAGUE.statCap, Math.max(40, jitter(lvl, 10) + (m.control || 0))),
-      stamina: jitter(lvl, 10), defense: b("defense"), trait: pickTrait("pit"),
-    })),
-  }));
+    batters: POSITIONS.map((pos) => flavor(genBatter(pos, base))),
+    rotation: staff.rotation.map(flavor),
+    pen: staff.pen.map(flavor),
+  });
 };
 
 // Rival development: spread `points` random +bump boosts across the club.
@@ -138,10 +131,12 @@ export const creepRival = (team, points, bump = CREEP.bump) => {
   const tSpots = [];
   for (const p of t.batters) for (const k of BAT_STATS) tSpots.push([p, k]);
   for (const p of [...t.rotation, ...t.pen]) for (const k of ["stuff", "control", "stamina", "stuff", "control"]) tSpots.push([p, k]);
+  // front offices can only develop what's there: nobody passes his own ceiling
   const n = Math.round(points * tSpots.length / 49);
   for (let i = 0; i < n; i++) {
     const [p, k] = tSpots[(Math.random() * tSpots.length) | 0];
-    p[k] = Math.min(LEAGUE.statCap, p[k] + bump);
+    const ceil = p.pot?.[k] ?? LEAGUE.statCap;
+    if (p[k] < ceil) p[k] = Math.min(ceil, p[k] + bump);
   }
   return sortRival(t);
 };
@@ -149,20 +144,18 @@ export const creepRival = (team, points, bump = CREEP.bump) => {
 // The winter draft class: raw rookies with big ceilings. The worse you
 // finished (finish 0 = champs, 7 = cellar), the better the prospects.
 export const genDraftClass = (finish) => {
-  const qBonus = Math.round(finish / 2) * 4; // worse finish = higher ceilings (new-unit spread)
-  const base = LEAGUE.statBase;
-  // guarantee at least one arm; the rest random field positions
+  // worse finish (higher index) = better picks: the tier draw leans up
+  const shift = finish / 7 - 0.2;
   const slots = [Math.random() < 0.6 ? "SP" : Math.random() < 0.5 ? "RP" : "CL"];
   const shuffled = [...POSITIONS].sort(() => Math.random() - 0.5);
   while (slots.length < DRAFT.classSize) slots.push(shuffled[slots.length - 1]);
   return slots.map((pos) => {
-    const isPit = pos === "SP" || pos === "RP" || pos === "CL";
-    const p = isPit ? genPitcher(pos, base - 4) : genBatter(pos, base - 4);
-    // rookies re-roll ceilings HIGH: +16..(+31+quality), capped at 97
-    p.pot = rollPot(p, isPit ? PIT_STATS : BAT_STATS, 16, 16 + qBonus);
-    const keys = isPit ? PIT_STATS : BAT_STATS;
-    const headroom = keys.reduce((n, k) => n + (p.pot[k] - base), 0) / keys.length;
-    p.signCost = Math.max(DRAFT.signBase, Math.round(DRAFT.signBase + headroom * DRAFT.signPerPot));
+    const opts = { tier: drawTier(shift + 0.6), age: 20 + ((Math.random() * 3) | 0) };
+    const p = isPitcherRole(pos) ? genPitcher(pos, 0, opts) : genBatter(pos, 0, opts);
+    p.years = 0;
+    const keys = isPitcherRole(pos) ? PIT_STATS : BAT_STATS;
+    const ceiling = keys.reduce((n, k) => n + p.pot[k], 0) / keys.length;
+    p.signCost = Math.max(DRAFT.signBase, Math.round(DRAFT.signBase + Math.max(0, ceiling - LEAGUE.statBase) * DRAFT.signPerPot));
     return p;
   });
 };

@@ -44,7 +44,7 @@ export const genItem = (rarity, slotDef) => {
     const pool = (def.role === "bat" ? BAT_STATS : PIT_STATS).filter((s) => s !== def.stat);
     const stat = pick(pool);
     const plus = Math.random() < 0.6;
-    boosts[stat] = plus ? 4 : -4;
+    boosts[stat] = plus ? 2 : -2;
     costMult = plus ? 1.2 : 0.8;
   }
   return {
