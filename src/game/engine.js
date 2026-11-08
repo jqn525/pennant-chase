@@ -282,10 +282,14 @@ export function playGameInstant(g, ctx) {
 // Ticket gate for a game in progress or done. Attendance is a share of the
 // fan base: 30% for a cold club up to 60% when the form is hot; playoffs sell
 // out. Used by the live half-inning drip AND by settleGame, so they agree.
+export const demandPremium = (fans, attCap) => 1 + 0.6 * Math.min(1, Math.max(0, fans / attCap - 1));
+
 export function ticketGate({ fans, playoff, formWins = 0, attCap = ECON.attCap, rateBonus = 0, gateBonus, gateMult = 1 }) {
   const rate = playoff ? 1 : Math.min(0.6 + rateBonus, 0.3 + rateBonus + 0.03 * formWins);
   const attendance = Math.round(Math.min(fans, attCap) * rate);
-  return { attendance, gate: attendance * ECON.ticketPrice * (gateBonus ? 1.25 : 1) * gateMult };
+  // more fans than seats: tickets sell at a premium (up to +60% at double demand)
+  const premium = demandPremium(fans, attCap);
+  return { attendance, premium, gate: attendance * ECON.ticketPrice * premium * (gateBonus ? 1.25 : 1) * gateMult };
 }
 
 // Money and fans for a finished game. Pure — caller applies the deltas.

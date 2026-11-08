@@ -1,6 +1,7 @@
 // ── Overview (home): club health, the race, the last game, leaders and the ledger. View only. ──
 import { useState } from "react";
 import { SALARY, LEAGUE, stadiumFx } from "../game/constants.js";
+import { demandPremium } from "../game/engine.js";
 import { LEDGER_LINES, ledgerNet, stat, tn, seriesNow } from "../game/franchise.js";
 import { seedOrder, teamRating, gamesBehind } from "../game/season.js";
 import { avg, ops, era } from "../game/statline.js";
@@ -181,7 +182,7 @@ export default function OverviewView({ f, goTo, openPlayer }) {
         <div className="kpi"><span>Payroll</span><b>{money(payroll(s))}</b><small className={share > 1 ? "down" : share > 0.8 ? "warn" : ""}>{Math.round(share * 100)}% of {money(SALARY.cap)} cap</small>
           <div className="bar"><i className={share > 1 ? "over" : share > 0.8 ? "hot" : ""} style={{ width: `${Math.min(100, share * 100)}%` }} /></div></div>
       </div>
-      <p className="note">{status(s)} Crowd {count(attendance(s))} a game · the park counts up to {count(cap)} fans toward ticket sales{s.fans > cap ? <span className="warn"> · you've outgrown it</span> : ""}.{s.autoDev && <> Auto-develop {s.autoDev.on ? `on · ${Math.round(s.autoDev.share * 100)}% of earnings · ${money(s.autoDev.allowance)} banked` : "off"}.</>}</p>
+      <p className="note">{status(s)} Crowd {count(attendance(s))} a game · {s.fans > cap ? <> sold out ({count(cap)} seats) · <span className="up">demand +{Math.round((demandPremium(s.fans, cap) - 1) * 100)}% on ticket prices</span></> : <>the park holds {count(cap)}</>}.{Object.keys(s.builds || {}).length > 0 && <> {Object.keys(s.builds).length} project{Object.keys(s.builds).length === 1 ? "" : "s"} under construction.</>}{s.autoDev && <> Auto-develop {s.autoDev.on ? `on · ${Math.round(s.autoDev.share * 100)}% of earnings · ${money(s.autoDev.allowance)} banked` : "off"}.</>}</p>
 
       <NowPlaying s={s} />
 

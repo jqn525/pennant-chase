@@ -14,8 +14,15 @@ export function OptionRow({ o, f }) {
           <span> · {o.detail}</span>
         </div>
       </div>
-      <button className="btn btn--sm" disabled={locked} onClick={() => f.act(apply, o)}
-        aria-label={`${o.kind} ${o.title} for ${money(o.cost)}`}>{money(o.cost)}</button>
+      {o.kind === "Build" ? (
+        <button className="btn btn--sm" disabled={locked} onClick={() => f.act(apply, o)}
+          aria-label={`Start building ${o.title}: ${o.games} games at ${money(o.perGame)} a game`}>
+          Start<small>{money(o.perGame)} × {o.games}</small>
+        </button>
+      ) : (
+        <button className="btn btn--sm" disabled={locked} onClick={() => f.act(apply, o)}
+          aria-label={`${o.kind} ${o.title} for ${money(o.cost)}`}>{money(o.cost)}</button>
+      )}
     </div>
   );
 }

@@ -47,7 +47,7 @@ export function AutoDevCard({ f }) {
         <div className="kpi"><span>Banked to spend</span><b>{money(banked)}</b><small>{a.avg ? `+${money(a.avg)} a game` : "fills after each game"}</small></div>
         <div className="kpi"><span>This season</span><b>{money(spent)}</b><small>{season.length} buys · +{pts.toFixed(1)} OVR</small></div>
       </div>
-      <button className="btn btn--quiet btn--sm" style={{ justifySelf: "start" }} disabled={a.allowance < 1}
+      <button className="btn btn--quiet btn--sm" style={{ justifySelf: "start" }} disabled={a.allowance < 1 || s.phase === "draft"}
         onClick={() => f.act(developNow)}>Develop now</button>
 
       {recent.length > 0 && (

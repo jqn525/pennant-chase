@@ -26,7 +26,9 @@ export function spendReport(s, { year = null } = {}) {
   const vWin = valueOfWin(s);
   const events = h.spend.filter((e) => year == null || e.y === year).map((e) => {
     const gain = eventGain(s, e, vWin);
-    const games = Math.max(0, h.n - e.n);
+    // a build earns from the day it opens; one still going (or cancelled) earns nothing yet
+    const from = e.proj ? (e.doneN ?? null) : e.n;
+    const games = from == null ? 0 : Math.max(0, h.n - from);
     const returned = gain * games;
     return { ...e, gainPerGame: gain, games, returned, progress: e.cost ? returned / e.cost : 0, paybackGames: gain > 0 ? e.cost / gain : Infinity };
   });

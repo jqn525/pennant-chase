@@ -23,6 +23,7 @@ export default function PlayerSheet({ f, pid, onClose }) {
   const p = allPlayers(s).find((x) => x.id === pid) || s.draftClass?.find((x) => x.id === pid);
   if (!p) return null;
   const own = allPlayers(s).some((x) => x.id === pid);
+  const winter = s.phase === "draft";
   const keys = p.role === "bat" ? BAT_STATS : PIT_STATS;
   const trait = PLAYER_TRAITS.find((t) => t.id === p.trait);
   const tier = CARD_TIERS[p.cardTier || 0];
@@ -41,6 +42,7 @@ export default function PlayerSheet({ f, pid, onClose }) {
       </div>
 
       {own && <Development s={s} p={p} />}
+      {own && winter && <p className="note">Winter: the season is over. Training, gear, promotions and trades reopen on opening day.</p>}
 
       <h2><span className="grow">Ratings</span>{own && <small>{p.franchise ? "franchise player · trains to his ceiling" : "stops at the league cap"}</small>}</h2>
       <div className="card card--m table-wrap">
@@ -59,8 +61,8 @@ export default function PlayerSheet({ f, pid, onClose }) {
                   <td className="n">{done ? "max" : money(trainCost(s, p, k))}</td>
                   {own && (
                     <td>
-                      <button className="btn btn--sm" disabled={done || s.money < trainCost(s, p, k)} onClick={() => f.act(train, p.id, k, 1)}>+1</button>{" "}
-                      <button className="btn btn--sm btn--ghost" disabled={done || !five.count} onClick={() => f.act(train, p.id, k, 5)}
+                      <button className="btn btn--sm" disabled={winter || done || s.money < trainCost(s, p, k)} onClick={() => f.act(train, p.id, k, 1)}>+1</button>{" "}
+                      <button className="btn btn--sm btn--ghost" disabled={winter || done || !five.count} onClick={() => f.act(train, p.id, k, 5)}
                         aria-label={`Train ${k} up to 5 points`} title={five.count ? money(five.total) : undefined}>+{five.count || 5}</button>
                     </td>
                   )}
@@ -71,7 +73,7 @@ export default function PlayerSheet({ f, pid, onClose }) {
         </table>
       </div>
       {own && (
-        <button className="btn btn--block" style={{ marginTop: 8 }} disabled={!all.count} onClick={() => f.act(trainAll, p.id)}>
+        <button className="btn btn--block" style={{ marginTop: 8 }} disabled={winter || !all.count} onClick={() => f.act(trainAll, p.id)}>
           {all.count ? `Train everything affordable: ${all.count} points for ${money(all.total)}` : "Nothing affordable to train"}
         </button>
       )}
@@ -101,12 +103,12 @@ export default function PlayerSheet({ f, pid, onClose }) {
           <div className="card card--m panel--pad stack">
             {isOpen(s, "star") && <div className="row">
               <div className="grow">{up ? <><b>{up.deal}</b>: {up.blurb}. Makes him a {up.name.toLowerCase()}, sells more merch, raises his trade value.</> : <>{tier.id ? `He is a ${tier.name.toLowerCase()}.` : "Nobody outside the ballpark knows him yet."} {CARD_TIERS[(p.cardTier || 0) + 1] ? `The next deal (${CARD_TIERS[(p.cardTier || 0) + 1].deal.toLowerCase()}) opens at ${CARD_TIERS[(p.cardTier || 0) + 1].at} OVR.` : "As famous as it gets."}</>}</div>
-              {up && <button className="btn btn--sm" disabled={s.money < up.cost} onClick={() => f.act(printCard, p.id)}>{money(up.cost)}</button>}
+              {up && <button className="btn btn--sm" disabled={winter || s.money < up.cost} onClick={() => f.act(printCard, p.id)}>{money(up.cost)}</button>}
             </div>}
             {!p.franchise && (
               <div className="row">
                 <div className="grow">Franchise tag: lets him train past the league cap to his natural ceiling. {franchiseUsed(s)} of {franchiseSlots(s)} used.</div>
-                <button className="btn btn--sm btn--ghost" disabled={franchiseUsed(s) >= franchiseSlots(s)} onClick={() => f.act(tagFranchise, p.id)}>Tag</button>
+                <button className="btn btn--sm btn--ghost" disabled={winter || franchiseUsed(s) >= franchiseSlots(s)} onClick={() => f.act(tagFranchise, p.id)}>Tag</button>
               </div>
             )}
           </div>
@@ -127,7 +129,7 @@ export default function PlayerSheet({ f, pid, onClose }) {
                       <td className="n">{money(salaryOf(q.them))}</td>
                       <td className={`n ${pay ? "down" : "up"}`}>{pay ? money(-q.cash) : money(-q.cash, { sign: true })}</td>
                       <td>
-                        <button className={`btn btn--sm ${armed === i ? "btn--danger" : "btn--quiet"}`} disabled={pay && s.money < q.cash}
+                        <button className={`btn btn--sm ${armed === i ? "btn--danger" : "btn--quiet"}`} disabled={winter || (pay && s.money < q.cash)}
                           onBlur={() => setArmed(null)}
                           onClick={() => (armed === i ? (f.act(makeTrade, p.id, i), setArmed(null), onClose()) : setArmed(i))}>
                           {armed === i ? "Confirm" : "Trade"}

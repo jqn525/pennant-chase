@@ -124,31 +124,31 @@ export const FRANCHISE = { slots: 2, devCap: 76, devPerCup: 2 };
 export const STADIUM = [
   {
     id: "parking", title: "PARKING", tiers: [
-      { name: "Gravel Lot", cost: 2500, fans: 2500, label: "+5% attendance", value: 0.05 },
-      { name: "Paved Lot", cost: 10000, fans: 12000, label: "+10% attendance", value: 0.10 },
-      { name: "Parking Garage", cost: 30000, fans: 50000, label: "+15% attendance", value: 0.15 },
+      { name: "Gravel Lot", games: 2, cost: 2500, fans: 2500, label: "+5% attendance", value: 0.05 },
+      { name: "Paved Lot", games: 12, cost: 10000, fans: 12000, label: "+10% attendance", value: 0.10 },
+      { name: "Parking Garage", games: 40, cost: 30000, fans: 50000, label: "+15% attendance", value: 0.15 },
     ],
   },
   {
     id: "seats", title: "SEATS", tiers: [
-      { name: "Bleachers", cost: 4000, fans: 10000, label: "holds 15,000", value: 15000 },
-      { name: "Grandstand", cost: 12000, fans: 30000, label: "holds 25,000", value: 25000 },
-      { name: "Upper Deck", cost: 35000, fans: 75000, label: "holds 40,000", value: 40000 },
-      { name: "Second Deck", cost: 100000, fans: 150000, label: "holds 60,000", value: 60000 },
+      { name: "Bleachers", games: 12, cost: 4000, fans: 10000, label: "holds 15,000", value: 15000 },
+      { name: "Grandstand", games: 45, cost: 12000, fans: 30000, label: "holds 25,000", value: 25000 },
+      { name: "Upper Deck", games: 60, cost: 35000, fans: 75000, label: "holds 40,000", value: 40000 },
+      { name: "Second Deck", games: 80, cost: 100000, fans: 150000, label: "holds 60,000", value: 60000 },
     ],
   },
   {
     id: "conc", title: "CONCESSIONS", tiers: [
-      { name: "Hot Dog Cart", cost: 2000, fans: 2000, label: "+15% gate", value: 0.15 },
-      { name: "Food Court", cost: 6000, fans: 8000, label: "+30% gate", value: 0.30 },
-      { name: "Restaurant Row", cost: 18000, fans: 25000, label: "+45% gate", value: 0.45 },
+      { name: "Hot Dog Cart", games: 2, cost: 2000, fans: 2000, label: "+15% gate", value: 0.15 },
+      { name: "Food Court", games: 15, cost: 6000, fans: 8000, label: "+30% gate", value: 0.30 },
+      { name: "Restaurant Row", games: 40, cost: 18000, fans: 25000, label: "+45% gate", value: 0.45 },
     ],
   },
   {
     id: "lights", title: "LIGHTS", tiers: [
-      { name: "Floodlights", cost: 1500, fans: 1500, label: "+10% fan growth", value: 0.10 },
-      { name: "Full Rig", cost: 5000, fans: 6000, label: "+25% fan growth", value: 0.25 },
-      { name: "Prime Time", cost: 14000, fans: 20000, label: "+50% fan growth", value: 0.50 },
+      { name: "Floodlights", games: 3, cost: 1500, fans: 1500, label: "+10% fan growth", value: 0.10 },
+      { name: "Full Rig", games: 20, cost: 5000, fans: 6000, label: "+25% fan growth", value: 0.25 },
+      { name: "Prime Time", games: 45, cost: 14000, fans: 20000, label: "+50% fan growth", value: 0.50 },
     ],
   },
 ];
@@ -159,16 +159,16 @@ export const STADIUM = [
 export const REVENUE = [
   {
     id: "merch", title: "MERCH", tiers: [
-      { name: "Merch Stand", cost: 250, fans: 1500, label: "jersey sales · away 8h", value: 1, offline: 8 },
-      { name: "Team Store", cost: 2500, fans: 8000, label: "sales +75% · away 12h", value: 1.75, offline: 12 },
-      { name: "Flagship Store", cost: 10000, fans: 30000, label: "sales +150% · away 24h", value: 2.5, offline: 24 },
+      { name: "Merch Stand", games: 2, cost: 250, fans: 1500, label: "jersey sales · away 8h", value: 1, offline: 8 },
+      { name: "Team Store", games: 15, cost: 2500, fans: 8000, label: "sales +75% · away 12h", value: 1.75, offline: 12 },
+      { name: "Flagship Store", games: 50, cost: 10000, fans: 30000, label: "sales +150% · away 24h", value: 2.5, offline: 24 },
     ],
   },
   {
     id: "tv", title: "MEDIA", tiers: [
-      { name: "Regional TV", cost: 4000, fans: 6000, label: "sales ×2", value: 2 },
-      { name: "National TV", cost: 14000, fans: 20000, label: "sales ×3", value: 3 },
-      { name: "Coast-to-Coast", cost: 40000, fans: 60000, label: "sales ×4", value: 4 },
+      { name: "Regional TV", games: 15, cost: 4000, fans: 6000, label: "sales ×2", value: 2 },
+      { name: "National TV", games: 50, cost: 14000, fans: 20000, label: "sales ×3", value: 3 },
+      { name: "Coast-to-Coast", games: 80, cost: 40000, fans: 60000, label: "sales ×4", value: 4 },
     ],
   },
 ];

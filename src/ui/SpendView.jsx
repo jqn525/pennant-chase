@@ -7,6 +7,7 @@ import { money } from "./fmt.js";
 import { OptionList } from "./Options.jsx";
 import { AutoDevCard } from "./Automation.jsx";
 import { isOpen, nextUnlockNote } from "../game/unlocks.js";
+import Construction from "./Construction.jsx";
 
 const KINDS = ["Yours", "All", "Train", "Gear", "Build", "Promote"];
 const match = (k, o) => k === "All" || (k === "Yours" ? o.kind === "Build" || o.kind === "Promote" : o.kind === k);
@@ -24,6 +25,9 @@ export default function SpendView({ f }) {
     <>
       <h1>Spend</h1>
       <p className="lede">{money(s.money)} available. Every option is valued in dollars per game and sorted by how fast it pays for itself.</p>
+      {s.phase === "draft" && <p className="alert" role="status">Winter: the season is over. Spending reopens on opening day; the draft is the only decision left this year.</p>}
+      <Construction f={f} />
+
       <h2>Player development</h2>
       {isOpen(s, "autodev") ? <AutoDevCard f={f} /> : <p className="note">{nextUnlockNote.autodev} Until then, train players by hand from the list below or the Roster tab.</p>}
 
@@ -35,7 +39,7 @@ export default function SpendView({ f }) {
           </button>
         ))}
       </div>
-      <OptionList list={buyable} f={f} empty="Nothing in this group right now." />
+      <OptionList list={buyable} f={f} empty={s.phase === "draft" ? "Nothing to buy in winter." : "Nothing in this group right now."} />
 
       {(kind === "All" || kind === "Gear") && isOpen(s, "gear") && (
         <>

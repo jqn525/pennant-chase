@@ -14,6 +14,7 @@ import { nextPrint, cardDraw } from "./cards.js";
 import { loadoutById, applyLoadout, sortRival } from "./lineup.js";
 import { teamPayroll, luxuryTax } from "./salary.js";
 import { checkUnlocks } from "./unlocks.js";
+import { progressBuilds } from "./construction.js";
 import { noteBeats } from "./beats.js";
 import { emptyHist, loadHist, noteGame, noteSpend, trackOvr, noteGameRecords, noteSeasonRecords, closeSeason } from "./history.js";
 
@@ -23,8 +24,10 @@ const HOME_BO5 = [1, 1, 0, 0, 1];
 const HOME_BO7 = [1, 1, 0, 0, 0, 1, 1];
 
 // Jersey sales per second (see the economy notes in constants.js)
+// Merch sold per game played: grows with the fan base and the roster's star power
 export const merchRate = (fansN, draw, merchMult, tvMult, merchCity) =>
-  0.03 * Math.pow(fansN, 0.35) * (1 + draw) * merchMult * tvMult * (merchCity ? 1.3 : 1);
+  0.6 * Math.pow(Math.max(0, fansN), 0.5) * (1 + draw) * merchMult * tvMult * (merchCity ? 1.3 : 1);
+export const AWAY_SECONDS_PER_GAME = 20; // away from the app, the store sells one game's worth every 20 seconds
 // Away selling tapers: the first hour at full speed, the rest at 15%
 export const awaySeconds = (ms) => { const sec = ms / 1000; return Math.min(sec, 3600) + Math.max(0, sec - 3600) * 0.15; };
 export const lvlOf = (v) => (typeof v === "number" ? v : v ? 1 : 0);
@@ -53,6 +56,10 @@ export function migrateAutoDev(saved, rules) {
   const res = (rules || []).filter((r) => r?.type === "reserve" && !r.off).map((r) => r.n || 0);
   return res.length ? { ...d, reserve: Math.max(...res) } : d;
 }
+
+// Winter is view-only: the season is over, only the draft is open
+export const inWinter = (s) => s.phase === "draft";
+export const WINTER_NOTE = "Winter: the season is over. Close the draft to start the new year.";
 
 // ── Small helpers ──
 export const tn = (c) => c?.nickname ?? c?.name ?? "";
@@ -89,7 +96,7 @@ export function blankState() {
     draftClass: null, form: [], year: 1, phase: "regular", rivals: null, schedule: null, rivalDays: null,
     gameIndex: 0, standings: Array.from({ length: 8 }, () => ({ w: 0, l: 0 })), playoffs: null,
     history: [], trophies: 0, allTime: {}, capYears: 0, lineupLoadout: "numbers", autoLineup: true,
-    speed: 1, sound: true, autoDev: defaultAutoDev(), unlocked: [], ledger: emptyLedger(), results: [],
+    speed: 1, sound: true, autoDev: defaultAutoDev(), unlocked: [], builds: {}, ledger: emptyLedger(), results: [],
     live: null, ctx: null, rest: 0, log: [], logId: 1, events: [], lastSeen: Date.now(),
   };
 }
@@ -168,7 +175,7 @@ export function loadState(saved) {
     trophies: S.trophies ?? 0, allTime, capYears: S.capYears ?? 0,
     lineupLoadout: S.lineupLoadout ?? null, autoLineup: S.autoLineup ?? !!S.lineupLoadout,
     speed: S.speed ?? 1, sound: S.sound ?? true,
-    autoDev: migrateAutoDev(S.autoDev, S.rules), unlocked: Array.isArray(S.unlocked) ? S.unlocked : null, ledger: S.ledger ? { ...emptyLedger(), ...S.ledger } : emptyLedger(),
+    autoDev: migrateAutoDev(S.autoDev, S.rules), unlocked: Array.isArray(S.unlocked) ? S.unlocked : null, builds: S.builds ?? {}, yearEnd: S.yearEnd ?? null, ledger: S.ledger ? { ...emptyLedger(), ...S.ledger } : emptyLedger(),
     results: S.results ?? [], live: S.liveGame ?? null, ctx: S.liveContext ?? null,
     lastSeen: S.lastSeen ?? Date.now(),
   });
@@ -184,7 +191,7 @@ export function toSave(s) {
     year: s.year, phase: s.phase, rivals: s.rivals, schedule: s.schedule, rivalDays: s.rivalDays,
     gameIndex: s.gameIndex, standings: s.standings, playoffs: s.playoffs, history: s.history,
     trophies: s.trophies, allTime: s.allTime, capYears: s.capYears, speed: s.speed, sound: s.sound,
-    lineupLoadout: s.lineupLoadout ?? null, autoLineup: s.autoLineup, autoDev: s.autoDev, unlocked: s.unlocked, ledger: s.ledger,
+    lineupLoadout: s.lineupLoadout ?? null, autoLineup: s.autoLineup, autoDev: s.autoDev, unlocked: s.unlocked, builds: s.builds, yearEnd: s.yearEnd, ledger: s.ledger,
     results: s.results.slice(0, 30), liveGame: s.live, liveContext: s.ctx,
   };
 }
@@ -201,15 +208,22 @@ export function found(s, c) {
 }
 
 // ── Passive income ──
-export function merchPerSecond(s, { away = false } = {}) {
+export function merchPerGame(s) {
   if (!s.merch || !s.roster) return 0;
   const fx = revenueFx(s.merch, s.tv);
-  return merchRate(s.fans, cardDraw(allPlayers(s)), fx.merchMult, away ? 1 : fx.tvMult, cityBonus(s, "merch"));
+  return merchRate(s.fans, cardDraw(allPlayers(s)), fx.merchMult, fx.tvMult, cityBonus(s, "merch"));
 }
-export function merchTick(s, seconds = 1) {
+// Away selling (TV off-air): base merch only
+export function merchPerSecond(s) {
+  if (!s.merch || !s.roster) return 0;
+  const fx = revenueFx(s.merch, s.tv);
+  return merchRate(s.fans, cardDraw(allPlayers(s)), fx.merchMult, 1, cityBonus(s, "merch")) / AWAY_SECONDS_PER_GAME;
+}
+// Merch for `games` games played (the TV uplift is booked on its own line)
+export function merchTick(s, games = 1) {
   if (!s.merch || !s.roster) return;
   const fx = revenueFx(s.merch, s.tv);
-  const base = merchRate(s.fans, cardDraw(allPlayers(s)), fx.merchMult, 1, cityBonus(s, "merch")) * seconds;
+  const base = merchRate(s.fans, cardDraw(allPlayers(s)), fx.merchMult, 1, cityBonus(s, "merch")) * games;
   credit(s, "merch", base);
   if (fx.tvMult > 1) credit(s, "tv", base * (fx.tvMult - 1));
 }
@@ -218,7 +232,7 @@ export function welcomeBack(s, now = Date.now()) {
   const fx = revenueFx(s.merch, s.tv);
   const elapsed = Math.min(Math.max(0, now - (s.lastSeen || now)), fx.offlineHours * 3600e3);
   if (fx.merchMult && elapsed > 60e3) {
-    const gain = merchPerSecond(s, { away: true }) * awaySeconds(elapsed) * ECON.offlineRate;
+    const gain = merchPerSecond(s) * awaySeconds(elapsed) * ECON.offlineRate;
     credit(s, "away", gain);
     const h = Math.floor(elapsed / 3600e3), m = Math.floor((elapsed % 3600e3) / 60e3);
     pushLog(s, `While you were away (${h}h ${m}m) the store sold $${fmt(gain)}.`, "win");
@@ -333,6 +347,8 @@ export function settle(s, g) {
     credit(s, "payroll", -Math.min(wage, Math.max(0, s.money)));
   }
   addAT(s, { g: 1, [res.won ? "w" : "l"]: 1, tickets: res.attendance });
+  merchTick(s, 1);
+  progressBuilds(s);
   if (res.fansDelta) s.fans += res.fansDelta;
   flushStats(s, g);
   logGame(s, g, res.won, playoffLabel);
@@ -354,6 +370,7 @@ export function settle(s, g) {
     }
     s.standings = next;
     s.gameIndex++;
+    stretchRun(s);
   } else {
     const p = { ...s.playoffs, wins: { ...s.playoffs.wins }, gameNo: s.playoffs.gameNo + 1 };
     res.won ? p.wins.us++ : p.wins.them++;
@@ -371,6 +388,62 @@ export function settle(s, g) {
   for (let i = s.form.length - 1; i >= 0 && s.form[i] === "W"; i--) run++;
   for (const line of noteBeats(s, { att: res.attendance, attCap: stadiumFx(s.stadium).attCap, streak: run, broken })) pushLog(s, line, "beat");
   openUnlocks(s);
+}
+
+// The year in one card, captured before winter wipes the season's stats
+function yearReview(s, { w, l, finish, champion, cup }) {
+  const players = allPlayers(s);
+  const ops = (x) => (x.ab ? (x.h + x.bb) / (x.ab + x.bb) + (x.h + x.d + 2 * x.t + 3 * x.hr) / x.ab : 0);
+  const hitters = s.roster.batters.map((p) => ({ p, st: s.seasonStats[p.id] })).filter((x) => x.st && x.st.ab >= 100);
+  const top = hitters.sort((a, b) => ops(b.st) - ops(a.st))[0];
+  const arms = [s.roster.sp, s.roster.rp].map((p) => ({ p, st: s.seasonStats[p.id] })).filter((x) => x.st && x.st.outsP >= 60);
+  const ace = arms.sort((a, b) => a.st.raP / a.st.outsP - b.st.raP / b.st.outsP)[0];
+  const h = s.hist;
+  const startN = (h.games.find((r) => r[1] === s.year)?.[0] ?? 1) - 1;
+  let riser = null;
+  for (const p of players) {
+    const pts = h.ovr[p.id] || [];
+    const before = [...pts].reverse().find((x) => x[0] <= startN) || pts[0];
+    const gain = pts.length && before ? (pts[pts.length - 1][1] - before[1]) / 10 : 0;
+    if (gain > 0 && (!riser || gain > riser.gain)) riser = { name: p.name, pos: p.pos, gain: Math.round(gain * 10) / 10 };
+  }
+  const buys = h.spend.filter((e) => e.y === s.year && e.gain > 0);
+  const best = buys.map((e) => ({ e, ret: e.gain * Math.max(0, h.n - (e.proj ? e.doneN ?? h.n : e.n)) / e.cost })).sort((a, b) => b.ret - a.ret)[0];
+  return {
+    y: s.year, w, l, finish, champion, cup, net: Math.round(ledgerNet(s.ledger.season)),
+    spent: Math.round(h.spend.filter((e) => e.y === s.year).reduce((t, e) => t + e.cost, 0)),
+    fans: Math.round(s.fans),
+    hitter: top && { name: top.p.name, pos: top.p.pos, ops: ops(top.st).toFixed(3).replace(/^0/, ""), hr: top.st.hr },
+    pitcher: ace && { name: ace.p.name, era: ((ace.st.raP * 27) / ace.st.outsP).toFixed(2), k: ace.st.kP },
+    riser,
+    bestBuy: best && best.ret > 0 ? { what: best.e.what, name: best.e.name, cost: best.e.cost, back: Math.round(best.ret * 100) } : null,
+  };
+}
+export function closeYearEnd(s) { s.yearEnd = null; }
+
+// The end of the regular season shouldn't sneak up on you
+export const gamesLeft = (s) => (s.phase === "regular" ? LEAGUE.seasonGames - s.gameIndex : 0);
+function slowDown(s, why) {
+  if (s.speed !== "max") return;
+  s.speed = 4;
+  pushLog(s, `Slowing to 4× ${why}. Tap MAX to speed back up.`, "beat");
+  emit(s, "slow");
+}
+function stretchRun(s) {
+  const left = gamesLeft(s);
+  const b = s.hist?.beats || (s.hist && (s.hist.beats = {}));
+  if (left === 10) pushLog(s, "10 games left in the regular season. Last chance to set up for the stretch run.", "beat");
+  if (left === 3) slowDown(s, "for the last three games of the season");
+  if (left === 0) pushLog(s, "That's the regular season.", "beat");
+  // clinched or out: nobody can catch you, or you can't catch 4th
+  if (b && left > 0 && b.raceY !== s.year) {
+    const ratings = ratingsNow(s);
+    const order = seedOrder(s.standings, ratings);
+    const me = s.standings[0].w, mySeed = order.indexOf(0);
+    const fifth = s.standings[order[LEAGUE.playoffTeams]], fourth = s.standings[order[LEAGUE.playoffTeams - 1]];
+    if (mySeed < LEAGUE.playoffTeams && me > fifth.w + left) { b.raceY = s.year; pushLog(s, `Clinched: the ${s.city.nickname} are in the playoffs.`, "beat"); }
+    else if (mySeed >= LEAGUE.playoffTeams && me + left < fourth.w) { b.raceY = s.year; pushLog(s, "Eliminated from the playoff race. Build for next year.", "beat"); }
+  }
 }
 
 // New systems open as the club grows; each gets one news line
@@ -454,6 +527,7 @@ function enterPlayoffs(s) {
     pushLog(s, `Playoffs: best-of-5 semifinal vs the ${name(oppIdx)}. The ${name(otherWinner)} win the other semi.`, "sys");
     s.playoffs = { round: "semi", opp: oppIdx, wins: { us: 0, them: 0 }, gameNo: 0, otherWinner, weAreHigherSeed: mySeed < order.indexOf(oppIdx) };
     s.phase = "playoffs";
+    slowDown(s, "for the playoffs");
     restock(s, false);
   } else {
     const top = order.slice(0, 4);
@@ -516,6 +590,7 @@ function offseason(s, championIdx, playerCup) {
   noteSeasonRecords(s.hist, s.year, s.seasonStats, Object.fromEntries(allPlayers(s).map((p) => [p.id, p.name])));
   closeSeason(s.hist, { y: s.year, w: final.w, l: final.l, finish: last.finish ?? mySeed + 1, cup: !!playerCup,
     champion: last.champion, ledger: s.ledger.season, fans: s.fans });
+  s.yearEnd = yearReview(s, { w: final.w, l: final.l, finish: last.finish ?? mySeed + 1, champion: last.champion, cup: !!playerCup });
   const bank = { ...(s.careerStats || {}) };
   for (const pid in s.seasonStats) bank[pid] = addCounts(bank[pid], s.seasonStats[pid]);
   s.careerStats = bank;
@@ -581,7 +656,7 @@ export function planTraining(s, p, keys, budget, maxPoints = Infinity) {
   return { points, total, count };
 }
 function applyTraining(s, pid, plan) {
-  if (!plan.count) return false;
+  if (!plan.count || inWinter(s)) return false;
   const before = findP(s, pid);
   credit(s, "training", -plan.total);
   addAT(s, { train: plan.count });
@@ -609,6 +684,7 @@ export function trainAll(s, pid, budget = s.money) {
 export const franchiseSlots = (s) => FRANCHISE.slots + s.trophies;
 export const franchiseUsed = (s) => allPlayers(s).filter((p) => p.franchise).length;
 export function tagFranchise(s, pid) {
+  if (inWinter(s)) return false;
   if (franchiseUsed(s) >= franchiseSlots(s)) return false;
   updatePlayer(s, pid, (o) => (o.franchise ? o : { ...o, franchise: true }));
   const p = allPlayers(s).find((x) => x.id === pid);
@@ -616,6 +692,7 @@ export function tagFranchise(s, pid) {
   return true;
 }
 export function printCard(s, pid) {
+  if (inWinter(s)) return false;
   const p = allPlayers(s).find((x) => x.id === pid);
   const up = p && nextPrint(p);
   if (!up || s.money < up.cost) return false;
@@ -652,6 +729,7 @@ export function chooseLoadout(s, id) {
 
 // ── Gear ──
 export function buyGear(s, pid, itemId) {
+  if (inWinter(s)) return false;
   const item = s.shopItems.find((i) => i.id === itemId);
   const def = item && GEAR.find((d) => d.slot === item.slot);
   const p = allPlayers(s).find((x) => x.id === pid);
@@ -682,6 +760,7 @@ export function tradeQuote(s, p, rivalIdx) {
   return { them: q, cash: Math.round((diff > 0 ? diff * TRADE.buyPremium : diff * TRADE.sellDiscount) + TRADE.fee) };
 }
 export function makeTrade(s, myPid, rivalIdx) {
+  if (inWinter(s)) return false;
   const p = allPlayers(s).find((x) => x.id === myPid);
   const quote = p && tradeQuote(s, p, rivalIdx);
   if (!p || !quote || s.money < quote.cash) return false;
@@ -737,19 +816,29 @@ export function buildLock(s, id) {
   if (s.money < next.cost) return `Needs $${fmt(next.cost - s.money)} more`;
   return null;
 }
+// Instant build (setup and tests); players build through construction.js
 export function build(s, id) {
   if (buildLock(s, id)) return false;
   const track = BALLPARK.find((t) => t.id === id);
   const lvl = trackLevel(s, id);
   const next = track.tiers[lvl];
   credit(s, "upgrades", -next.cost);
+  spent(s, "upgrades", next.cost, { what: `${next.name} (${track.title.charAt(0) + track.title.slice(1).toLowerCase()} ${lvl + 1})` });
+  completeBuild(s, id);
+  emit(s, "cash");
+  return true;
+}
+// Raise a track one level (construction finished)
+export function completeBuild(s, id) {
+  const track = BALLPARK.find((t) => t.id === id);
+  const lvl = trackLevel(s, id);
+  const next = track.tiers[lvl];
+  if (!next) return false;
   addAT(s, { upgrades: 1 });
   if (id === "merch") s.merch = lvl + 1;
   else if (id === "tv") s.tv = lvl + 1;
   else s.stadium = { ...s.stadium, [id]: lvl + 1 };
-  spent(s, "upgrades", next.cost, { what: `${next.name} (${track.title.charAt(0) + track.title.slice(1).toLowerCase()} ${lvl + 1})` });
   pushLog(s, `Built: ${next.name} (${next.label}).`, "win");
-  emit(s, "cash");
   return true;
 }
 

@@ -5,7 +5,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { SAVE_KEY, parseSave, decodeBackup, encodeBackup } from "../game/save.js";
-import { blankState, loadState, toSave, tick, merchTick, welcomeBack, openUnlocks } from "../game/franchise.js";
+import { blankState, loadState, toSave, tick, welcomeBack, openUnlocks } from "../game/franchise.js";
 import { sfx, play } from "../game/sfx.js";
 import { afterGame } from "../game/autodev.js";
 
@@ -77,17 +77,6 @@ export default function useFranchise() {
     }, PERIOD[s.speed] ?? 900);
     return () => clearInterval(iv);
   }, [s.city, s.speed, paused, refresh]);
-
-  // Merch sells every second the app is open
-  useEffect(() => {
-    if (!s.city) return undefined;
-    const iv = setInterval(() => {
-      if (document.hidden || !ref.current.merch) return;
-      merchTick(ref.current, 1);
-      refresh();
-    }, 1000);
-    return () => clearInterval(iv);
-  }, [s.city, refresh]);
 
   // Autosave heartbeat (actions also save immediately)
   useEffect(() => {

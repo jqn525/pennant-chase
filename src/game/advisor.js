@@ -18,6 +18,7 @@ import { ECON, LEAGUE, BAT_STATS, PIT_STATS, stadiumFx, revenueFx } from "./cons
 import { eff } from "./gear.js";
 import { CARD_TIERS, nextPrint, cardDraw } from "./cards.js";
 import { isOpen } from "./unlocks.js";
+import { startBuild, startLock } from "./construction.js";
 import { ticketGate } from "./engine.js";
 import {
   allPlayers, merchRate, trainCost, trainCeil, buildLock, build, BALLPARK, trackLevel,
@@ -32,7 +33,6 @@ export const HORIZON = 100; // games a new fan keeps paying, for valuing growth
 // playoff spot one regular-season win is worth in a typical race.
 export const PLAYOFF_PURSE = 0.5 * ECON.semisSeriesPay + 3 * ECON.playoffWinPay + 0.25 * ECON.cupPay;
 export const RACE_SHARE = 0.03;
-export const SECONDS_PER_GAME = { 1: 66, 4: 17, max: 1 };
 
 const statsOf = (p) => (p.role === "bat" ? BAT_STATS : PIT_STATS);
 const winPerPoint = (p) => (p.role === "bat" ? WIN_PER_BAT_POINT : WIN_PER_ARM_POINT);
@@ -78,7 +78,7 @@ export function valueOfWin(s) {
 function merchPerGame(s, merch, tv, fans = s.fans, draw = cardDraw(allPlayers(s))) {
   if (!merch) return 0;
   const fx = revenueFx(merch, tv);
-  return merchRate(fans, draw, fx.merchMult, fx.tvMult, s.city?.bonus === "merch") * (SECONDS_PER_GAME[s.speed] ?? 66);
+  return merchRate(fans, draw, fx.merchMult, fx.tvMult, s.city?.bonus === "merch");
 }
 const merchGap = (s, merch, tv, fans) => merchPerGame(s, merch, tv, fans) - merchPerGame(s, merch, tv);
 
@@ -135,9 +135,11 @@ function gearOptions(s, vWin) {
 
 function buildOptions(s, vWin) {
   return BALLPARK.flatMap((track) => {
+    if (s.builds?.[track.id]) return [];
     const lvl = trackLevel(s, track.id);
     const next = track.tiers[lvl];
     if (!next) return [];
+    const games = Math.max(1, next.games || 1), perGame = Math.ceil(next.cost / games);
     let gain = 0, why = next.label;
     if (["parking", "seats", "conc"].includes(track.id)) {
       gain = gameIncome(s, { ...s.stadium, [track.id]: lvl + 1 }) - gameIncome(s, s.stadium);
@@ -152,8 +154,10 @@ function buildOptions(s, vWin) {
     }
     return [{
       id: `build-${track.id}`, kind: "Build", cost: next.cost, gainPerGame: gain,
-      title: `${next.name}`, detail: `${track.title.charAt(0) + track.title.slice(1).toLowerCase()} ${lvl + 1} · ${why}`,
-      lock: buildLock(s, track.id), needFans: next.fans, action: { type: "build", id: track.id },
+      title: `${next.name}`,
+      detail: `${games} game${games === 1 ? "" : "s"} to build at $${perGame.toLocaleString("en-US")}/game · ${track.title.charAt(0) + track.title.slice(1).toLowerCase()} ${lvl + 1} · ${why}`,
+      lock: startLock(s, track.id), needFans: next.fans, games, perGame, startCost: perGame,
+      action: { type: "build", id: track.id },
     }];
   });
 }
@@ -176,12 +180,14 @@ function printOptions(s) {
 
 // Every option, best first: buyable by payback, then locked ones
 export function options(s) {
-  if (!s.roster) return [];
+  if (!s.roster || s.phase === "draft") return [];
   const vWin = valueOfWin(s);
   const all = [...trainOptions(s, vWin), ...(isOpen(s, "gear") ? gearOptions(s, vWin) : []), ...(isOpen(s, "ballpark") ? buildOptions(s, vWin) : []), ...(isOpen(s, "star") ? printOptions(s) : [])]
     .map((o) => {
-      const pb = payback(o.cost, o.gainPerGame);
-      const lock = o.lock || (s.money < o.cost ? `Needs $${Math.ceil(o.cost - s.money).toLocaleString("en-US")} more` : null);
+      // a build only starts paying once it opens
+      const pb = payback(o.cost, o.gainPerGame) + (o.games || 0);
+      const need = o.startCost ?? o.cost;
+      const lock = o.lock || (s.money < need ? `Needs $${Math.ceil(need - s.money).toLocaleString("en-US")} more` : null);
       return { ...o, payback: pb, lock, affordable: !lock };
     });
   const rank = (o) => (o.lock && !/^Needs \$/.test(o.lock) ? 2 : 0) + (Number.isFinite(o.payback) ? 0 : 1);
@@ -191,7 +197,7 @@ export function options(s) {
 function run(s, a) {
   if (a.type === "train") return train(s, a.pid, a.key, 1);
   if (a.type === "gear") return buyGear(s, a.pid, a.itemId);
-  if (a.type === "build") return build(s, a.id);
+  if (a.type === "build") return startBuild(s, a.id);
   if (a.type === "print") return printCard(s, a.pid);
   return false;
 }

@@ -13,6 +13,8 @@ import StatsView, { STATS_KEY } from "./StatsView.jsx";
 import PlayerSheet from "./PlayerSheet.jsx";
 import DraftSheet from "./DraftSheet.jsx";
 import SettingsSheet from "./SettingsSheet.jsx";
+import YearEndSheet from "./YearEndSheet.jsx";
+import { gamesLeft } from "../game/franchise.js";
 
 const TABS = [["overview", "Overview"], ["spend", "Spend"], ["roster", "Roster"], ["stats", "Stats"]];
 
@@ -59,7 +61,8 @@ export default function Shell({ f }) {
   const cash = useTween(s.money);
   const trail = (s.hist?.games || []).slice(-30).map((r) => [r[0], r[8]]);
   const ready = options(s).filter((o) => o.affordable && Number.isFinite(o.payback) && (!s.autoDev?.on || o.kind === "Build" || o.kind === "Promote")).length;
-  const showDraft = s.phase === "draft" && !draftHidden;
+  const showDraft = s.phase === "draft" && !draftHidden && !s.yearEnd;
+  const left = gamesLeft(s);
   const views = { overview: OverviewView, spend: SpendView, roster: RosterView, stats: StatsView };
   const View = views[tab];
 
@@ -71,7 +74,7 @@ export default function Shell({ f }) {
             <TeamLogo city={s.city} size={34} />
             <span style={{ minWidth: 0 }}>
               <b>{s.city.name} {s.city.nickname}</b>
-              <small>{seasonLabel(s)}</small>
+              <small className={left > 0 && left <= 10 ? "warn" : ""}>{left > 0 && left <= 10 ? `Year ${s.year} · ${left} game${left === 1 ? "" : "s"} left` : seasonLabel(s)}</small>
             </span>
           </button>
           <div className="top__cash">
@@ -81,14 +84,20 @@ export default function Shell({ f }) {
         </div>
         <div className="top__in" style={{ paddingTop: 0 }}>
           <Pace f={f} />
-          {s.phase === "draft" && draftHidden && (
-            <button className="btn btn--sm" style={{ marginLeft: "auto" }} onClick={() => setDraftHidden(false)}>Draft is open</button>
+          {s.phase === "draft" && draftHidden && !s.yearEnd && (
+            <button className="btn btn--sm" style={{ marginLeft: "auto" }} onClick={() => setDraftHidden(false)}>Open draft</button>
           )}
         </div>
       </header>
       {f.saveError && <div className="view" style={{ paddingBottom: 0 }}><p className="alert" role="alert">{f.saveError}</p></div>}
 
       <main className="view">
+        {s.phase === "draft" && !s.yearEnd && (
+          <div className="alert winter row" role="status">
+            <span className="grow">Winter: view only. Close the draft to start year {s.year}.</span>
+            <button className="btn btn--sm" onClick={() => setDraftHidden(false)}>Open draft</button>
+          </div>
+        )}
         <View f={f} openPlayer={setPlayerId} goTo={(t, sec) => { if (sec) { try { sessionStorage.setItem(STATS_KEY, sec); } catch { /* private mode */ } } setTab(t); }} />
       </main>
 
@@ -105,6 +114,7 @@ export default function Shell({ f }) {
         </div>
       </nav>
 
+      {s.yearEnd && <YearEndSheet f={f} />}
       {showDraft && <DraftSheet f={f} onHide={() => setDraftHidden(true)} openPlayer={setPlayerId} />}
       {playerId != null && <PlayerSheet f={f} pid={playerId} onClose={() => setPlayerId(null)} />}
       {settings && <SettingsSheet f={f} onClose={() => setSettings(false)} />}

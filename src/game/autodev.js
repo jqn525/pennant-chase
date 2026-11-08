@@ -8,6 +8,7 @@
 import { options, apply } from "./advisor.js";
 import { pushLog } from "./franchise.js";
 import { isOpen } from "./unlocks.js";
+import { installments } from "./construction.js";
 
 export const AUTO_KINDS = ["Train", "Gear"];
 export const SHARES = [0.2, 0.4, 0.6, 0.8, 1];
@@ -30,13 +31,13 @@ export function earnAllowance(s) {
 // Spend the allowance: best payback first, training and gear only
 export function runAutoDev(s, { log = true } = {}) {
   const a = s.autoDev;
-  if (!a || !s.roster) return null;
+  if (!a || !s.roster || s.phase === "draft") return null;
   const out = { points: 0, gear: [], spent: 0 };
   const skip = new Set();
   for (let guard = 0; guard < 300; guard++) {
     const o = options(s).find((x) =>
       AUTO_KINDS.includes(x.kind) && !skip.has(x.id) && x.affordable && x.gainPerGame > 0 && Number.isFinite(x.payback) &&
-      x.cost <= a.allowance && s.money - x.cost >= a.reserve);
+      x.cost <= a.allowance && s.money - x.cost >= a.reserve + installments(s));
     if (!o) break;
     const before = s.money, n = s.hist?.spend.length ?? 0;
     if (apply(s, o) === false || s.money >= before) { skip.add(o.id); continue; }

@@ -258,3 +258,12 @@ th.sort.on { color: var(--fg); }
 .ticker .feed li { height: 48px; font-size: 13px; }
 .ticker__final { font-family: var(--num); font-weight: 600; font-size: 13px; }
 .ticker .feed li:last-child { border-bottom: 0; }
+
+/* construction */
+.build-list li { height: 72px !important; }
+.build-list li > .grow { display: block !important; -webkit-line-clamp: unset !important; }
+.build-list .sub { display: block !important; }
+.build-list .sub::before { content: none !important; }
+.build-bar { display: block; height: 6px; margin-top: 6px; border-radius: 3px; background: var(--well); overflow: hidden; }
+.build-bar i { display: block; height: 100%; background: var(--c3); border-radius: 0 3px 3px 0; }
+.alert.winter { background: var(--accent-soft); color: var(--fg); }
