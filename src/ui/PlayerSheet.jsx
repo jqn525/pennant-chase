@@ -43,7 +43,7 @@ export default function PlayerSheet({ f, pid, onClose }) {
       {own && <Development s={s} p={p} />}
 
       <h2><span className="grow">Ratings</span>{own && <small>{p.franchise ? "franchise player · trains to his ceiling" : "stops at the league cap"}</small>}</h2>
-      <div className="panel table-wrap">
+      <div className="card card--m table-wrap">
         <table>
           <thead><tr><th>Skill</th><th>Now</th><th>Gear</th><th>Max</th><th>Next pt</th>{own && <th />}</tr></thead>
           <tbody>
@@ -79,7 +79,7 @@ export default function PlayerSheet({ f, pid, onClose }) {
       {own && <PlayerStats s={s} p={p} span={span} setSpan={setSpan} />}
 
       <h2>Gear</h2>
-      <div className="panel table-wrap"><table>
+      <div className="card card--m table-wrap"><table>
         <tbody>
           {slots.map((g) => {
             const item = p.gear?.[g.slot];
@@ -98,7 +98,7 @@ export default function PlayerSheet({ f, pid, onClose }) {
       {own && (
         <>
           <h2>{isOpen(s, "star") ? "Star power and franchise tag" : "Franchise tag"}</h2>
-          <div className="panel panel--pad stack">
+          <div className="card card--m panel--pad stack">
             {isOpen(s, "star") && <div className="row">
               <div className="grow">{up ? <><b>{up.deal}</b>: {up.blurb}. Makes him a {up.name.toLowerCase()}, sells more merch, raises his trade value.</> : <>{tier.id ? `He is a ${tier.name.toLowerCase()}.` : "Nobody outside the ballpark knows him yet."} {CARD_TIERS[(p.cardTier || 0) + 1] ? `The next deal (${CARD_TIERS[(p.cardTier || 0) + 1].deal.toLowerCase()}) opens at ${CARD_TIERS[(p.cardTier || 0) + 1].at} OVR.` : "As famous as it gets."}</>}</div>
               {up && <button className="btn btn--sm" disabled={s.money < up.cost} onClick={() => f.act(printCard, p.id)}>{money(up.cost)}</button>}
@@ -113,7 +113,7 @@ export default function PlayerSheet({ f, pid, onClose }) {
 
           <h2><span className="grow">Trade</span><small>{isOpen(s, "trades") ? "same position, cash settles the difference" : ""}</small></h2>
           {!isOpen(s, "trades") ? <p className="note">{nextUnlockNote.trades}</p> : p.pos === "RP" ? <p className="note">Rival clubs don't carry relievers.</p> : (
-            <div className="panel table-wrap"><table>
+            <div className="card card--l table-wrap"><table>
               <thead><tr><th>Their player</th><th>OVR</th><th>Salary</th><th>Cash</th><th /></tr></thead>
               <tbody>
                 {s.rivals.map((team, i) => {
@@ -160,10 +160,10 @@ function PlayerStats({ s, p, span, setSpan }) {
         ))}
       </div>
       {span !== "log" ? (
-        <StatTable isBat={isBat} sortable={false}
+        <StatTable isBat={isBat} sortable={false} size="s"
           rows={[{ id: p.id, name: span === "career" ? "Career" : `Year ${s.year}`, stat: span === "career" ? careerOf(s, p.id) : stat(s, p.id) }]} />
       ) : (
-        <div className="panel table-wrap stat-table">
+        <div className="card card--l table-wrap stat-table">
           <table>
             <thead><tr><th>Game</th>{cols.map(([k]) => <th key={k}>{k}</th>)}</tr></thead>
             <tbody>
@@ -192,7 +192,7 @@ function Development({ s, p }) {
   const pts = buys.reduce((t, e) => t + (e.d > 0 ? e.d : 0), 0);
   const first = series.length ? series[0][1] / 10 : null;
   return (
-    <div className="panel panel--pad row" style={{ marginTop: 8 }}>
+    <div className="card card--s panel--pad row" style={{ marginTop: 8 }}>
       <Sparkline points={series} width={96} height={30} />
       <div className="grow" style={{ fontSize: 13 }}>
         {first != null ? <>Overall {first.toFixed(1)} → <b>{ovr(p).toFixed(1)}</b> since tracking began</> : "Development tracking starts with his next game."}

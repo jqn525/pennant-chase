@@ -19,7 +19,7 @@ export function AutoDevCard({ f }) {
   const banked = useTween(a.allowance);
 
   return (
-    <div className="panel panel--pad stack">
+    <div className="card card--l panel--pad stack">
       <div className="row">
         <div className="grow">
           <b>Auto-develop players</b>

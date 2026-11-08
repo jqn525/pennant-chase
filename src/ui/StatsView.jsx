@@ -57,7 +57,7 @@ function Team({ f, openPlayer }) {
       <BarList fmt={(v) => v.toFixed(1)} rows={rt.map((t) => ({ label: t.me ? `${t.name} (you)` : t.name, value: t.r, color: t.me ? SERIES[0] : "var(--faint)" }))} />
 
       <h2>Splits</h2>
-      <div className="panel table-wrap">
+      <div className="card card--m table-wrap">
         <table>
           <thead><tr><th>Split</th><th>W</th><th>L</th><th>Pct</th></tr></thead>
           <tbody>
@@ -70,7 +70,7 @@ function Team({ f, openPlayer }) {
       {k.vs.length > 0 && (
         <>
           <h2>Head to head</h2>
-          <div className="panel table-wrap">
+          <div className="card card--l table-wrap">
             <table>
               <thead><tr><th>Opponent</th><th>W</th><th>L</th><th>RS</th><th>RA</th></tr></thead>
               <tbody>{k.vs.map((v) => <tr key={v.opp}><td>{v.opp}</td><td className="n">{v.w}</td><td className="n">{v.l}</td><td className="n">{v.rf}</td><td className="n">{v.ra}</td></tr>)}</tbody>
@@ -130,7 +130,7 @@ function MoneySection({ s }) {
       {s.hist.seasons.length > 0 && (
         <>
           <h2>Season by season</h2>
-          <div className="panel table-wrap stat-table">
+          <div className="card card--m table-wrap stat-table">
             <table>
               <thead><tr><th>Year</th><th>W–L</th><th>Finish</th><th>Income</th><th>Spent</th><th>Net</th><th>Fans</th></tr></thead>
               <tbody>
@@ -184,7 +184,7 @@ function Roi({ s }) {
         <Chips label="Sort" value={sort} set={setSort} items={[["recent", "Most recent"], ["best", "Best return"]]} />
         <Chips label="Bought by" value={who} set={setWho} items={[["all", "All"], ["auto", "Auto"], ["manual", "Yours"]]} />
       </div>
-      <div className="panel table-wrap wrap-first" style={{ marginTop: 8 }}>
+      <div className="card card--l table-wrap wrap-first" style={{ marginTop: 8 }}>
         <table>
           <thead><tr><th>Purchase</th><th>Cost</th><th>+/g</th><th>Paid</th></tr></thead>
           <tbody>
@@ -234,7 +234,7 @@ function Players({ s, openPlayer }) {
       <LineChart label="Team rating over time" series={[{ label: "Team rating", color: SERIES[6], points: teamTr }]} xFmt={(x) => `#${x}`} yFmt={(v) => v.toFixed(1)} />
 
       <h2><span className="grow">Development</span><small>tap a player</small></h2>
-      <div className="panel table-wrap stat-table">
+      <div className="card card--l table-wrap stat-table">
         <table>
           <thead><tr><th>Player</th><th>OVR</th><th>Season</th><th>Career</th><th>Invested</th><th>$/pt</th><th>Room</th><th>Trend</th></tr></thead>
           <tbody>
@@ -315,7 +315,7 @@ function Records({ s, openPlayer }) {
   return (
     <>
       <h2><span className="grow">Close to a milestone</span></h2>
-      <div className="panel">
+      <div className="card card--m">
         <ul className="feed">
           {ms.length === 0 && <li className="dim">No milestones within reach yet.</li>}
           {ms.map((m) => (
@@ -327,7 +327,7 @@ function Records({ s, openPlayer }) {
       </div>
 
       <h2>Single-game records</h2>
-      <div className="panel table-wrap">
+      <div className="card card--l table-wrap">
         <table>
           <tbody>
             {gameRows.length === 0 && <tr><td className="dim">Records start with the next game.</td></tr>}
@@ -339,7 +339,7 @@ function Records({ s, openPlayer }) {
       </div>
 
       <h2>Season records</h2>
-      <div className="panel table-wrap">
+      <div className="card card--l table-wrap">
         <table>
           <tbody>
             {Object.keys(rs).length === 0 && <tr><td className="dim">Season records are set when a season ends.</td></tr>}
@@ -349,7 +349,7 @@ function Records({ s, openPlayer }) {
       </div>
 
       <h2><span className="grow">Career leaders</span><small>current roster</small></h2>
-      <div className="panel table-wrap">
+      <div className="card card--m table-wrap">
         <table>
           <tbody>
             {lead.map(([l, x]) => (
@@ -362,7 +362,7 @@ function Records({ s, openPlayer }) {
       </div>
 
       <h2><span className="grow">Trophy case</span><small>{s.trophies} Pennant Cup{s.trophies === 1 ? "" : "s"}</small></h2>
-      <div className="panel table-wrap">
+      <div className="card card--m table-wrap">
         <table>
           <thead><tr><th>Year</th><th>Record</th><th>Finish</th><th>Champion</th></tr></thead>
           <tbody>

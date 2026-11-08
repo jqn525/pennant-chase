@@ -29,7 +29,7 @@ export default function SeasonView({ f, openPlayer }) {
       </p>
 
       <h2><span className="grow">Standings</span><small>top {LEAGUE.playoffTeams} make the playoffs</small></h2>
-      <div className="panel table-wrap">
+      <div className="card card--l table-wrap">
         <table>
           <thead><tr><th>Club</th><th>W</th><th>L</th><th>GB</th>{s.phase === "regular" && <th>Line</th>}</tr></thead>
           <tbody>
@@ -54,7 +54,7 @@ export default function SeasonView({ f, openPlayer }) {
       <BoxScore s={s} openPlayer={openPlayer} />
 
       <h2><span className="grow">Results</span><small>{thisYear.length ? `${thisYear.filter((r) => r.won).length}–${thisYear.filter((r) => !r.won).length} this year` : ""}</small></h2>
-      <div className="panel">
+      <div className="card card--l">
         <ul className="feed">
           {s.results.length === 0 && <li className="dim">No games played yet. Choose a pace to start the season.</li>}
           {s.results.slice(0, 15).map((r, i) => (
@@ -68,7 +68,7 @@ export default function SeasonView({ f, openPlayer }) {
       </div>
 
       <h2>Club news</h2>
-      <div className="panel">
+      <div className="card card--m">
         <ul className="feed">
           {s.log.filter((e) => e.kind !== "play").slice(0, 10).map((e) => <li key={e.id}><span className="grow">{e.text}</span></li>)}
         </ul>
@@ -77,7 +77,7 @@ export default function SeasonView({ f, openPlayer }) {
       {s.history.length > 0 && (
         <>
           <h2><span className="grow">History</span><small>{s.trophies} Pennant Cup{s.trophies === 1 ? "" : "s"}</small></h2>
-          <div className="panel table-wrap"><table>
+          <div className="card card--m table-wrap"><table>
             <thead><tr><th>Year</th><th>Record</th><th>Finish</th><th>Champion</th></tr></thead>
             <tbody>
               {[...s.history].reverse().map((h) => (

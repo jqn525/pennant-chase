@@ -23,7 +23,7 @@ function Ledger({ s }) {
           <button key={k} role="tab" aria-selected={view === k} className={view === k ? "on" : ""} onClick={() => setView(k)}>{l}</button>
         ))}
       </div>
-      <div className="panel table-wrap">
+      <div className="card card--l table-wrap">
         <table>
           <thead><tr><th>Line</th><th>{label}</th>{compare && Object.keys(compare).length > 0 && <th>Last season</th>}</tr></thead>
           <tbody>
@@ -80,7 +80,7 @@ function Race({ s, goTo }) {
   return (
     <>
       <h2><span className="grow">The race</span><button className="btn btn--quiet btn--sm" onClick={() => goTo("stats", "team")}>Full standings</button></h2>
-      <div className="panel table-wrap">
+      <div className="card card--m table-wrap">
         <table>
           <thead><tr><th>Club</th><th>W</th><th>L</th><th>GB</th></tr></thead>
           <tbody>
@@ -101,28 +101,52 @@ function Race({ s, goTo }) {
   );
 }
 
-// Live game: line score and the last few plays
+// The ticker card is always there, always the same height: live plays during a
+// game; the last final and the next matchup between games; a winter note in the draft.
+const ROWS = 5;
 function NowPlaying({ s }) {
-  const g = s.live;
-  if (!g || g.over) return null;
-  const me = tn(s.city), them = g.opp.name;
-  const away = g.home ? [them, g.them] : [me, g.us], home = g.home ? [me, g.us] : [them, g.them];
-  const bases = (g.bases || []).map((b) => (b ? "◆" : "◇"));
+  const g = s.live && !s.live.over ? s.live : null;
+  const me = tn(s.city);
+  let head, rows, label;
+  if (g) {
+    const them = g.opp.name;
+    const away = g.home ? [them, g.them] : [me, g.us], home = g.home ? [me, g.us] : [them, g.them];
+    const bases = (g.bases || []).map((x) => (x ? "◆" : "◇"));
+    label = `${g.half === "top" ? "Top" : "Bottom"} ${g.inning} · ${g.outs} out${g.outs === 1 ? "" : "s"}`;
+    head = (
+      <div className="ticker__score">
+        <div><span>{away[0]}</span><b>{away[1]}</b></div>
+        <div><span>{home[0]}</span><b>{home[1]}</b></div>
+        <div className="ticker__bases" aria-label="Runners on base"><i>{bases[1]}</i><i>{bases[2]}</i><i>{bases[0]}</i></div>
+      </div>
+    );
+    rows = (g.feed || []).slice(0, ROWS).map((e) => ({ tag: `${e.h === "top" ? "▲" : "▼"}${e.i}`, text: e.t, cls: `${e.k === "hr" || /score/.test(e.t) ? "big" : ""} ${e.k === "sys" ? "dim" : ""}` }));
+  } else {
+    const r = s.results[0];
+    label = s.phase === "draft" ? "Winter" : "Between games";
+    head = (
+      <div className="ticker__score">
+        {r ? <><div><span>{me}</span><b>{r.us}</b></div><div><span>{r.opp}</span><b>{r.them}</b></div><div className={`ticker__final ${r.won ? "up" : "down"}`}>{r.won ? "W" : "L"} · F</div></>
+          : <div className="dim" style={{ gridColumn: "1 / -1" }}>Opening day is coming.</div>}
+      </div>
+    );
+    const next = s.phase === "regular" && s.schedule?.[s.gameIndex];
+    const nextName = next ? s.rivals[next.opp - 1].name : null;
+    rows = [
+      s.phase === "draft" ? { tag: "", text: "The draft board is open. The season waits until you close it." }
+        : nextName ? { tag: "Next", text: `Game ${s.gameIndex + 1} of ${LEAGUE.seasonGames}: ${next.home ? `${nextName} at ${me}` : `${me} at ${nextName}`}.` } : null,
+      ...s.log.filter((e) => e.kind !== "play").slice(0, ROWS).map((e) => ({ tag: "", text: e.text, cls: e.kind === "beat" ? "beat" : "dim" })),
+    ].filter(Boolean).slice(0, ROWS);
+  }
+  while (rows.length < ROWS) rows.push({ tag: "", text: "", cls: "" });
   return (
     <>
-      <h2><span className="grow">Now playing</span><small>{g.half === "top" ? "Top" : "Bottom"} {g.inning} · {g.outs} out{g.outs === 1 ? "" : "s"}</small></h2>
-      <div className="panel ticker">
-        <div className="ticker__score">
-          <div><span>{away[0]}</span><b>{away[1]}</b></div>
-          <div><span>{home[0]}</span><b>{home[1]}</b></div>
-          <div className="ticker__bases" aria-label="Runners on base"><i>{bases[1]}</i><i>{bases[2]}</i><i>{bases[0]}</i></div>
-        </div>
+      <h2><span className="grow">{g ? "Now playing" : "Scoreboard"}</span><small>{label}</small></h2>
+      <div className="card card--m ticker">
+        {head}
         <ul className="feed">
-          {(g.feed || []).length === 0 && <li className="dim">Play ball.</li>}
-          {(g.feed || []).map((e, i) => (
-            <li key={i} className={`${e.k === "hr" || /score/.test(e.t) ? "big" : ""} ${e.k === "sys" ? "dim" : ""}`}>
-              <span className="ticker__inn">{e.h === "top" ? "▲" : "▼"}{e.i}</span><span className="grow">{e.t}</span>
-            </li>
+          {rows.map((e, i) => (
+            <li key={i} className={e.cls}><span className="ticker__inn">{e.tag}</span><span className="grow">{e.text || "\u00a0"}</span></li>
           ))}
         </ul>
       </div>
@@ -162,7 +186,7 @@ export default function OverviewView({ f, goTo, openPlayer }) {
       <NowPlaying s={s} />
 
       <h2>Club news</h2>
-      <div className="panel">
+      <div className="card card--m">
         <ul className="feed">
           {s.log.filter((e) => e.kind !== "play").slice(0, 5).map((e) => <li key={e.id} className={e.kind === "beat" ? "beat" : ""}><span className="grow">{e.text}</span></li>)}
         </ul>
@@ -174,7 +198,7 @@ export default function OverviewView({ f, goTo, openPlayer }) {
       <Race s={s} goTo={goTo} />
 
       <h2><span className="grow">Club leaders</span><small>this season</small></h2>
-      <div className="panel">
+      <div className="card card--m">
         <ul className="feed">
           {lead.map(([k, x]) => (
             <li key={k} className={x ? "link" : "dim"} onClick={x ? () => openPlayer(x.p.id) : undefined} style={x ? { cursor: "pointer" } : undefined}>

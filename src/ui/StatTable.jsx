@@ -3,7 +3,7 @@ import { useState } from "react";
 import { columns, sumStats } from "../game/statline.js";
 
 // rows: [{ id, name, sub, stat, onClick? }]
-export default function StatTable({ rows, isBat, totals = false, sortable = true, initial, cols: only }) {
+export default function StatTable({ rows, isBat, totals = false, sortable = true, initial, cols: only, size = "l", bare = false }) {
   const all = columns(isBat);
   const cols = only ? all.filter(([k]) => only.includes(k)) : all;
   const [sort, setSort] = useState(initial ? [initial, 1] : null);
@@ -13,7 +13,7 @@ export default function StatTable({ rows, isBat, totals = false, sortable = true
   const tot = totals && rows.length > 1 ? sumStats(rows.map((r) => r.stat)) : null;
 
   return (
-    <div className="panel table-wrap stat-table">
+     <div className={bare ? "table-wrap stat-table" : `card card--${size} table-wrap stat-table`}>
       <table>
         <thead>
           <tr>

@@ -44,7 +44,7 @@ export default function RosterView({ f, openPlayer, goTo }) {
       <p className="lede">Franchise tags {franchiseUsed(s)} of {franchiseSlots(s)} used. Tap a player to train, gear up, print or trade.</p>
 
       <h2><span className="grow">Lineup</span><small>{s.autoLineup ? "set automatically" : "custom order"}</small></h2>
-      <div className="panel panel--pad stack">
+      <div className="card card--m panel--pad stack">
         <label className="field">
           <span>Batting order philosophy</span>
           <select value={s.lineupLoadout || ""} onChange={(e) => e.target.value && f.act(chooseLoadout, e.target.value)}>
@@ -72,7 +72,7 @@ export default function RosterView({ f, openPlayer, goTo }) {
       </div>
 
       <h2><span className="grow">Players</span><button className="btn btn--quiet btn--sm" onClick={() => setSort(["order", 1])} disabled={sort[0] === "order"}>Batting order</button></h2>
-      <div className="panel table-wrap">
+      <div className="card card--l table-wrap">
         <table>
           <thead>
             <tr>

@@ -18,7 +18,7 @@ export default function DraftSheet({ f, onHide }) {
     <Sheet title={`Draft · year ${s.year}`} onClose={onHide} closeLabel="Later"
       actions={<button className="btn btn--sm" onClick={() => f.act(closeDraft)}>Start season</button>}>
       <p className="lede">Raw rookies with high ceilings. Signing one replaces your player at that position; the rookie keeps his gear. You have {money(s.money)}.</p>
-      <div className="panel table-wrap" style={{ marginTop: 12 }}>
+      <div className="card card--l table-wrap" style={{ marginTop: 12 }}>
         <table>
           <thead><tr><th>Rookie</th><th>Now</th><th>Ceiling</th><th>Replaces</th><th>Salary</th><th /></tr></thead>
           <tbody>

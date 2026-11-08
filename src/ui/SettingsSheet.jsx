@@ -21,7 +21,7 @@ export default function SettingsSheet({ f, onClose }) {
   return (
     <Sheet title="Club settings" onClose={onClose}>
       <h2>Identity</h2>
-      <div className="panel panel--pad stack">
+      <div className="card card--l panel--pad stack">
         <div className="row">
           <TeamLogo city={s.city} size={56} />
           <div className="grow"><b>{s.city.name} {s.city.nickname}</b><span className="sub">{s.city.label}</span></div>
@@ -49,13 +49,13 @@ export default function SettingsSheet({ f, onClose }) {
       </div>
 
       <h2>Sound</h2>
-      <div className="panel panel--pad row">
+      <div className="card card--s panel--pad row">
         <div className="grow">Crowd and cash-register sounds</div>
         <button className="btn btn--sm btn--ghost" aria-pressed={!!s.sound} onClick={() => f.act(toggleSound)}>{s.sound ? "On" : "Off"}</button>
       </div>
 
       <h2>Backup</h2>
-      <div className="panel panel--pad stack">
+      <div className="card card--l panel--pad stack">
         <p className="note" style={{ margin: 0 }}>Your franchise saves in this browser. Copy a backup code to move it or keep it safe.</p>
         <div className="row">
           <button className="btn btn--sm" onClick={() => {
@@ -75,7 +75,7 @@ export default function SettingsSheet({ f, onClose }) {
       </div>
 
       <h2>How the money works</h2>
-      <div className="panel panel--pad">
+      <div className="card card--l panel--pad">
         <ul className="feed" style={{ margin: 0 }}>
           <li><span className="grow"><b>Gate</b> — every game pays by attendance. Attendance can't exceed your seats, so fans above the cap add nothing until you build more.</span></li>
           <li><span className="grow"><b>Fans</b> grow with wins. Wins come from ratings: training, gear and trades.</span></li>
@@ -87,7 +87,7 @@ export default function SettingsSheet({ f, onClose }) {
       </div>
 
       <h2>New franchise</h2>
-      <div className="panel panel--pad row">
+      <div className="card card--s panel--pad row">
         <div className="grow">Erase this club and start over. This can't be undone.</div>
         <button className={`btn btn--sm ${erase ? "btn--danger" : "btn--quiet"}`} onBlur={() => setErase(false)}
           onClick={() => (erase ? f.eraseAndRestart() : setErase(true))}>{erase ? "Erase for good" : "Erase"}</button>

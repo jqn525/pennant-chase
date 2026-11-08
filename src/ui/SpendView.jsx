@@ -40,7 +40,7 @@ export default function SpendView({ f }) {
       {(kind === "All" || kind === "Gear") && isOpen(s, "gear") && (
         <>
           <h2><span className="grow">Gear shipment</span><small>{restockNote(s)}</small></h2>
-          <div className="panel table-wrap">
+          <div className="card card--l table-wrap">
             <table>
               <thead><tr><th>Item</th><th>Boosts</th><th>Price</th></tr></thead>
               <tbody>

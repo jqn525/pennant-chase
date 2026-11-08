@@ -42,7 +42,7 @@ export function Legend({ items }) {
 
 // Lines over an x of games. series: [{ label, color, points: [[x, y]] }]
 // markers: [{ x, color, title, detail }] drawn on the first series
-export function LineChart({ series, markers = [], height = 190, yFmt = String, xFmt = (x) => `G${x}`, refs = [], zero = false, legend = true, label }) {
+export function LineChart({ series, markers = [], height = 370, yFmt = String, xFmt = (x) => `G${x}`, refs = [], zero = false, legend = true, label }) {
   const [ref, w] = useWidth();
   const [hover, setHover] = useState(null);
   const pad = { l: 46, r: 12, t: 10, b: 24 };
@@ -71,7 +71,7 @@ export function LineChart({ series, markers = [], height = 190, yFmt = String, x
 
   return (
     <div className="chart" ref={ref}>
-      {legend && (series.length > 1 || markers.length > 0) && (
+      {legend && (
         <Legend items={[...series.map((s) => ({ label: s.label, color: s.color, line: true })), ...uniq(markers.map((m) => m.cat)).map((c) => ({ label: c.label, color: c.color }))]} />
       )}
       <svg width={W} height={H} role="img" aria-label={label} onPointerMove={onMove} onPointerDown={onMove} onPointerLeave={() => setHover(null)} style={{ touchAction: "pan-y" }}>
@@ -132,7 +132,7 @@ export function BarList({ rows, fmt = String, legend }) {
 }
 
 // Columns stacked around zero. cols: [{ x, parts: [{ key, v }] }]; keys: [{ key, label, color }]
-export function StackedBars({ cols, keys, height = 190, yFmt = String, xFmt = (x) => x, label }) {
+export function StackedBars({ cols, keys, height = 370, yFmt = String, xFmt = (x) => x, label }) {
   const [ref, w] = useWidth();
   const [hover, setHover] = useState(null);
   if (!cols.length) return <div ref={ref} className="chart-empty">Not enough games yet.</div>;
