@@ -161,9 +161,9 @@ export const STADIUM = [
 export const REVENUE = [
   {
     id: "merch", title: "MERCH", tiers: [
-      { name: "Merch Stand", games: 2, cost: 250, fans: 1500, label: "jersey sales · away 8h", value: 1, offline: 8 },
-      { name: "Team Store", games: 15, cost: 2500, fans: 8000, label: "sales +75% · away 12h", value: 1.75, offline: 12 },
-      { name: "Flagship Store", games: 50, cost: 10000, fans: 30000, label: "sales +150% · away 24h", value: 2.5, offline: 24 },
+      { name: "Merch Stand", games: 2, cost: 250, fans: 1500, label: "sells caps, at games and while you are away", value: 1 },
+      { name: "Team Store", games: 15, cost: 2500, fans: 8000, label: "sales +75% · adds jerseys", value: 1.75 },
+      { name: "Flagship Store", games: 50, cost: 10000, fans: 30000, label: "sales +150% · adds signed memorabilia", value: 2.5 },
     ],
   },
   {
@@ -179,7 +179,6 @@ export const REVENUE = [
 export const revenueFx = (merchLvl = 0, tvLvl = 0) => ({
   merchMult: merchLvl ? REVENUE[0].tiers[merchLvl - 1].value : 0,
   tvMult: tvLvl ? REVENUE[1].tiers[tvLvl - 1].value : 1,
-  offlineHours: merchLvl ? REVENUE[0].tiers[merchLvl - 1].offline : 0,
 });
 
 // Current stadium effects for a levels object like {parking:0..3, seats:0..3, ...}

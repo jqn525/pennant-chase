@@ -14,6 +14,7 @@ import { nextPrint, cardDraw } from "./cards.js";
 import { loadoutById, applyLoadout, sortRival } from "./lineup.js";
 import { teamPayroll, luxuryTax } from "./salary.js";
 import { checkUnlocks } from "./unlocks.js";
+import { rollAwaySales } from "./merch.js";
 import { MAX_RATING, ageOneYear, retireChance, rollTalent, drawAge, drawTier } from "./talent.js";
 import { everyone, mapRoster, starterFor, replaceSlot, ROTATION } from "./roster.js";
 import { progressBuilds } from "./construction.js";
@@ -29,9 +30,6 @@ const HOME_BO7 = [1, 1, 0, 0, 0, 1, 1];
 // Merch sold per game played: grows with the fan base and the roster's star power
 export const merchRate = (fansN, draw, merchMult, tvMult, merchCity) =>
   0.6 * Math.pow(Math.max(0, fansN), 0.5) * (1 + draw) * merchMult * tvMult * (merchCity ? 1.3 : 1);
-export const AWAY_SECONDS_PER_GAME = 20; // away from the app, the store sells one game's worth every 20 seconds
-// Away selling tapers: the first hour at full speed, the rest at 15%
-export const awaySeconds = (ms) => { const sec = ms / 1000; return Math.min(sec, 3600) + Math.max(0, sec - 3600) * 0.15; };
 export const lvlOf = (v) => (typeof v === "number" ? v : v ? 1 : 0);
 
 // ── Ledger ──
@@ -269,12 +267,6 @@ export function merchPerGame(s) {
   const fx = revenueFx(s.merch, s.tv);
   return merchRate(s.fans, cardDraw(allPlayers(s)), fx.merchMult, fx.tvMult, cityBonus(s, "merch"));
 }
-// Away selling (TV off-air): base merch only
-export function merchPerSecond(s) {
-  if (!s.merch || !s.roster) return 0;
-  const fx = revenueFx(s.merch, s.tv);
-  return merchRate(s.fans, cardDraw(allPlayers(s)), fx.merchMult, 1, cityBonus(s, "merch")) / AWAY_SECONDS_PER_GAME;
-}
 // Merch for `games` games played (the TV uplift is booked on its own line)
 export function merchTick(s, games = 1) {
   if (!s.merch || !s.roster) return;
@@ -285,13 +277,22 @@ export function merchTick(s, games = 1) {
 }
 export function welcomeBack(s, now = Date.now()) {
   if (!s.city) return;
-  const fx = revenueFx(s.merch, s.tv);
-  const elapsed = Math.min(Math.max(0, now - (s.lastSeen || now)), fx.offlineHours * 3600e3);
-  if (fx.merchMult && elapsed > 60e3) {
-    const gain = merchPerSecond(s) * awaySeconds(elapsed) * ECON.offlineRate;
-    credit(s, "away", gain);
-    const h = Math.floor(elapsed / 3600e3), m = Math.floor((elapsed % 3600e3) / 60e3);
-    pushLog(s, `While you were away (${h}h ${m}m) the store sold $${fmt(gain)}.`, "win");
+  // fans keep buying while you're gone: each item's buyers are rolled from the fan base
+  const hours = Math.max(0, now - (s.lastSeen || now)) / 3600e3;
+  if (s.merch && hours >= 1 / 60) {
+    const recent = s.form || [];
+    const sale = rollAwaySales({
+      fans: s.fans, store: s.merch, hours, tv: s.tv,
+      draw: cardDraw(allPlayers(s)), form: recent.length ? recent.filter((f) => f === "W").length / recent.length : 0.5,
+      merchCity: cityBonus(s, "merch"),
+    });
+    const gain = sale.total * ECON.offlineRate;
+    if (gain > 0) {
+      credit(s, "away", gain);
+      const h = Math.floor(hours), m = Math.floor((hours % 1) * 60);
+      const what = sale.items.filter((i) => i.count).map((i) => `${fmt(i.count)} ${i.count === 1 ? i.name : i.plural}`).join(", ");
+      pushLog(s, `While you were away (${h}h ${m}m) fans bought ${what}: $${fmt(gain)}.`, "beat");
+    }
   }
   s.lastSeen = now;
 }
