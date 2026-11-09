@@ -1,4 +1,5 @@
 // ── Season: the race, the results, and the club's history ──
+import { MarketTag } from "./MarketTag.jsx";
 import { LEAGUE } from "../game/constants.js";
 import { seedOrder, teamRating, gamesBehind } from "../game/season.js";
 import { tn, seriesNow } from "../game/franchise.js";
@@ -37,7 +38,7 @@ export default function SeasonView({ f, openPlayer }) {
               const t = s.standings[i];
               return (
                 <tr key={i} className={`${i === 0 ? "me" : ""} ${rank === LEAGUE.playoffTeams - 1 ? "cut" : ""}`}>
-                  <td>{rank + 1}. {names[i]}</td>
+                  <td>{rank + 1}. {names[i]}<MarketTag s={s} i={i} /></td>
                   <td className="n">{t.w}</td>
                   <td className="n">{t.l}</td>
                   <td className="n">{rank === 0 ? "—" : gamesBehind(leader, t).toFixed(1)}</td>

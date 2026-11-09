@@ -1,5 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { blankState, found, tick, train, buyGear, allPlayers, ledgerNet, toSave, loadState, careerOf } from "./franchise.js";
+import { blankState, found, tick, buyGear, allPlayers, ledgerNet, toSave, loadState, careerOf } from "./franchise.js";
+import { startProgram, progressTraining } from "./training.js";
+const finish = (s) => { for (let i = 0; i < 40 && s.training.lanes.some((l) => l.prog); i++) progressTraining(s); };
+
 import { spendReport, development, teamKpis, project, pythag, paceProjection, milestones, careerLeaders } from "./analytics.js";
 import { seasonRows, SPEND_CATS, field } from "./history.js";
 import { LEAGUE } from "./constants.js";
@@ -19,7 +22,8 @@ describe("history", () => {
     const p = s.roster.batters[0];
     p.pot = { ...p.pot, contact: p.contact + 10 };
     const before = s.hist.ovr[p.id].length;
-    train(s, p.id, "contact", 4);
+    expect(startProgram(s, p.id, "contact")).toBe(true);
+    finish(s);
     const item = s.shopItems.find((i) => i.slot !== "glove" || true);
     const target = allPlayers(s).find((x) => (x.role === "bat") === ["bat", "cleats", "batting gloves", "helmet"].some((k) => item.slot.toLowerCase().includes(k.split(" ")[0])));
     if (target) buyGear(s, target.id, item.id);
@@ -60,12 +64,14 @@ describe("analytics", () => {
 
   it("team KPIs add up and spend ROI matches spend", () => {
     const s = fresh();
+    // someone with room left to grow (no trait, so a single point can't round away)
+    const grow = s.roster.batters.find((p) => (p.pot?.power ?? 0) - p.power >= 3) || s.roster.batters[0];
+    delete grow.trait;
     for (let i = 0; i < 30; i++) tick(s, "max");
     s.money = 20000;
-    // someone with room left to grow
-    const grow = s.roster.batters.find((p) => (p.pot?.power ?? 0) - p.power >= 3) || s.roster.batters[0];
     if (grow.pot) grow.pot.power = Math.max(grow.pot.power, grow.power + 5);
-    train(s, grow.id, "power", 3);
+    expect(startProgram(s, grow.id, "power")).toBe(true);
+    finish(s);
     for (let i = 0; i < 10; i++) tick(s, "max");
     const k = teamKpis(s);
     expect(k.w).toBe(s.standings[0].w);

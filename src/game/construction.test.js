@@ -1,5 +1,6 @@
+import { startProgram } from "./training.js";
 import { describe, it, expect } from "vitest";
-import { blankState, found, tick, ledgerNet, toSave, loadState, train, buyGear, printCard, makeTrade, signRookie, merchTick, merchPerGame, build, allPlayers } from "./franchise.js";
+import { blankState, found, tick, ledgerNet, toSave, loadState, buyGear, printCard, makeTrade, signRookie, merchTick, merchPerGame, build, allPlayers } from "./franchise.js";
 import { options, apply } from "./advisor.js";
 import { startBuild, cancelBuild, startLock, installments } from "./construction.js";
 import { ticketGate } from "./engine.js";
@@ -95,7 +96,7 @@ describe("season end and winter", () => {
     expect(s.yearEnd).toMatchObject({ y: 1, w: expect.any(Number) });
     s.money = 1e6;
     const p = s.roster.batters[0];
-    expect(train(s, p.id, "power", 1)).toBe(false);
+    expect(startProgram(s, p.id, "power")).toBe(false);
     expect(buyGear(s, p.id, s.shopItems[0].id)).toBe(false);
     expect(printCard(s, p.id)).toBe(false);
     expect(makeTrade(s, p.id, 0)).toBe(false);

@@ -8,7 +8,7 @@ import { LEAGUE, ECON, TRADE, BAT_STATS, PIT_STATS, STADIUM, stadiumFx, REVENUE,
 import { fmt } from "./utils.js";
 import { genRoster, genPitcher, genBatter, genCallUp, seedUid, genDraftClass, vetPot, rollPot, pickTrait, freshName, seedNames, creepRival, seedRivalStars } from "./generators.js";
 import { newGame, stepAtBat, playGameInstant, settleGame, ticketGate } from "./engine.js";
-import { makeRivals, makeSchedule, teamRating, quickSim, simSeries, seedOrder, runOffseason, careerWinter, seriesInfo } from "./season.js";
+import { makeRivals, makeSchedule, teamRating, quickSim, simSeries, seedOrder, runOffseason, careerWinter, seriesInfo, assignMarkets, shiftPlayer, marketOffset } from "./season.js";
 import { genShipment, genItem, playerValue, GEAR, dealerTier, shipmentWeights, devCapFor, ovr } from "./gear.js";
 import { nextPrint, cardDraw } from "./cards.js";
 import { loadoutById, applyLoadout, sortRival } from "./lineup.js";
@@ -18,6 +18,7 @@ import { rollAwaySales } from "./merch.js";
 import { MAX_RATING, ageOneYear, retireChance, rollTalent, drawAge, drawTier } from "./talent.js";
 import { everyone, mapRoster, starterFor, replaceSlot, ROTATION } from "./roster.js";
 import { progressBuilds } from "./construction.js";
+import { progressTraining, defaultTraining, migrateTraining, rivalTraining } from "./training.js";
 import { noteBeats } from "./beats.js";
 import { emptyHist, loadHist, noteGame, noteSpend, trackOvr, noteGameRecords, noteSeasonRecords, closeSeason } from "./history.js";
 
@@ -36,7 +37,7 @@ export const lvlOf = (v) => (typeof v === "number" ? v : v ? 1 : 0);
 export const LEDGER_LINES = [
   ["gate", "Ticket gate", 1], ["winBonus", "Win bonus", 1], ["merch", "Merch", 1], ["tv", "TV share", 1],
   ["postseason", "Playoff & Cup pay", 1], ["trades", "Trades", 0], ["away", "Away sales", 1],
-  ["payroll", "Payroll", -1], ["training", "Training", -1], ["gear", "Gear", -1], ["upgrades", "Upgrades", -1],
+  ["payroll", "Payroll", -1], ["coaching", "Coaching staff", -1], ["training", "Training", -1], ["gear", "Gear", -1], ["upgrades", "Upgrades", -1],
   ["prints", "Promotions", -1], ["draft", "Draft signings", -1], ["tax", "Luxury tax", -1],
 ];
 const emptyLedger = () => ({ game: {}, lastGame: {}, season: {}, lastSeason: {}, life: {} });
@@ -96,7 +97,7 @@ export function blankState() {
     draftClass: null, form: [], year: 1, phase: "regular", rivals: null, schedule: null, rivalDays: null,
     gameIndex: 0, standings: Array.from({ length: 8 }, () => ({ w: 0, l: 0 })), playoffs: null,
     history: [], trophies: 0, allTime: {}, capYears: 0, lineupLoadout: "numbers", autoLineup: true,
-    speed: 1, sound: true, autoDev: defaultAutoDev(), unlocked: [], builds: {}, ledger: emptyLedger(), results: [],
+    speed: 1, sound: true, autoDev: defaultAutoDev(), training: defaultTraining(), unlocked: [], builds: {}, ledger: emptyLedger(), results: [],
     live: null, ctx: null, rest: 0, log: [], logId: 1, events: [], lastSeen: Date.now(),
   };
 }
@@ -222,16 +223,17 @@ export function loadState(saved) {
     city: S.city, money: S.money, fans: S.fans, roster: S.roster, merch: lvlOf(S.merch), tv: lvlOf(S.tv),
     stadium: S.stadium ?? s.stadium, seasonStats: S.seasonStats ?? {}, careerStats: S.careerStats ?? {}, gameLog: S.gameLog ?? {}, lastBox: S.lastBox ?? null, hist: loadHist(S.hist), shopItems: S.shopItems ?? s.shopItems,
     draftClass: S.draftClass ?? null, form: S.form ?? [], year: S.year ?? 1, phase: S.phase ?? "regular",
-    rivals: S.rivals, schedule: S.schedule, rivalDays: S.rivalDays, gameIndex: S.gameIndex ?? 0,
+    rivals: S.rivals ? assignMarkets(S.rivals) : S.rivals, schedule: S.schedule, rivalDays: S.rivalDays, gameIndex: S.gameIndex ?? 0,
     standings: S.standings ?? s.standings, playoffs: S.playoffs ?? null, history: S.history ?? [],
     trophies: S.trophies ?? 0, allTime, capYears: S.capYears ?? 0,
     lineupLoadout: S.lineupLoadout ?? null, autoLineup: S.autoLineup ?? !!S.lineupLoadout,
     speed: S.speed ?? 1, sound: S.sound ?? true,
-    autoDev: migrateAutoDev(S.autoDev, S.rules), unlocked: Array.isArray(S.unlocked) ? S.unlocked : null, builds: S.builds ?? {}, yearEnd: S.yearEnd ?? null, ledger: S.ledger ? { ...emptyLedger(), ...S.ledger } : emptyLedger(),
+    autoDev: migrateAutoDev(S.autoDev, S.rules), training: migrateTraining(S.training), unlocked: Array.isArray(S.unlocked) ? S.unlocked : null, builds: S.builds ?? {}, yearEnd: S.yearEnd ?? null, ledger: S.ledger ? { ...emptyLedger(), ...S.ledger } : emptyLedger(),
     results: S.results ?? [], live: S.liveGame ?? null, ctx: S.liveContext ?? null,
     lastSeen: S.lastSeen ?? Date.now(),
   });
   s.rotationTurn = S.rotationTurn ?? 0;
+  s.rivalTrainedAt = S.rivalTrainedAt ?? S.gameIndex ?? 0;
   if (staffed) pushLog(s, "The club signs four starters and a closer to fill out a real pitching staff.", "beat");
   return s;
 }
@@ -245,7 +247,7 @@ export function toSave(s) {
     year: s.year, phase: s.phase, rivals: s.rivals, schedule: s.schedule, rivalDays: s.rivalDays,
     gameIndex: s.gameIndex, standings: s.standings, playoffs: s.playoffs, history: s.history,
     trophies: s.trophies, allTime: s.allTime, capYears: s.capYears, speed: s.speed, sound: s.sound,
-    lineupLoadout: s.lineupLoadout ?? null, autoLineup: s.autoLineup, autoDev: s.autoDev, unlocked: s.unlocked, builds: s.builds, yearEnd: s.yearEnd, rotationTurn: s.rotationTurn ?? 0, ledger: s.ledger,
+    lineupLoadout: s.lineupLoadout ?? null, autoLineup: s.autoLineup, autoDev: s.autoDev, training: s.training, unlocked: s.unlocked, builds: s.builds, yearEnd: s.yearEnd, rotationTurn: s.rotationTurn ?? 0, rivalTrainedAt: s.rivalTrainedAt ?? 0, ledger: s.ledger,
     results: s.results.slice(0, 30), liveGame: s.live, liveContext: s.ctx,
   };
 }
@@ -253,10 +255,11 @@ export function toSave(s) {
 export function found(s, c) {
   s.city = c;
   s.rivals = makeRivals(LEAGUE.statBase, { tCity: c.name, name: c.nickname });
-  // a fair start: an expansion club sits a touch below the league's middle,
-  // so the season is decided by what you do, not by the opening roll
+  // an expansion club starts in the lower half: somewhere between the
+  // league's worst and its middle, and climbs from there
   const ratings = s.rivals.map(teamRating).sort((a, b) => a - b);
-  const target = (ratings[3] + ratings[4]) / 2 - 0.5;
+  const lo = ratings[0] - 1, hi = ratings[2];
+  const target = lo + Math.random() * Math.max(0, hi - lo);
   let best = null;
   for (let i = 0; i < 40; i++) {
     const r = genRoster(LEAGUE.statBase);
@@ -422,6 +425,7 @@ export function settle(s, g) {
   addAT(s, { g: 1, [res.won ? "w" : "l"]: 1, tickets: res.attendance });
   merchTick(s, 1);
   progressBuilds(s);
+  progressTraining(s);
   if (res.fansDelta) s.fans += res.fansDelta;
   flushStats(s, g);
   logGame(s, g, res.won, playoffLabel);
@@ -539,7 +543,7 @@ function acquire(team) {
   const opts = { tier: drawTier(0.8), age: 26 + ((Math.random() * 5) | 0) };
   const pos = weakest.pos;
   const pitcher = weakest.role !== "bat";
-  const fresh = pitcher ? genPitcher(pos, 0, opts) : genBatter(pos, 0, opts);
+  const fresh = shiftPlayer(pitcher ? genPitcher(pos, 0, opts) : genBatter(pos, 0, opts), marketOffset(team));
   if (ovr(fresh) <= ovr(weakest)) return team;
   return sortRival(replaceSlot(team, weakest.id, { ...fresh, pos, gear: undefined }));
 }
@@ -579,16 +583,16 @@ export function advance(s) {
       const prev = s.schedule[s.gameIndex - 1], next = s.schedule[s.gameIndex];
       if (prev.opp !== next.opp || prev.home !== next.home) {
         restock(s, false);
-        // rivals scout, sign and train between series; the further you're ahead, the harder they work
-        const usR = teamRating(s.roster);
-        // only clubs well behind you push (toward you minus two, never past their players' ceilings);
-        // clubs far behind also go shopping: their weakest player is replaced by someone better
+        // rivals train between series in their own coach lanes (sized by market), sign and shop;
+        // only clubs far behind the league's best get a little extra push
+        const games = Math.max(0, s.gameIndex - (s.rivalTrainedAt ?? 0));
+        s.rivalTrainedAt = s.gameIndex;
+        const rv = s.rivals.map(teamRating).sort((a, b) => a - b), mid = rv[3];
         s.rivals = s.rivals.map((t) => {
-          const gap = usR - teamRating(t);
-          // every front office develops its players a little each series (as auto-develop
-          // does for you); clubs well behind push harder. Nobody passes a player's ceiling.
-          let team = creepRival(t, CREEP.seriesBase + Math.round(Math.max(0, gap - 2) * CREEP.seriesRubber), CREEP.seriesBump);
-          if (gap > 4 && Math.random() < CREEP.acquire) team = acquire(team);
+          const gap = mid - teamRating(t);
+          let team = rivalTraining(t, games);
+          if (gap > CREEP.farBehind) team = creepRival(team, Math.round((gap - CREEP.farBehind) * CREEP.seriesRubber), CREEP.seriesBump);
+          if (gap > 2 && Math.random() < CREEP.acquire) team = acquire(team);
           if (Math.random() < CREEP.gear) team = equipRival(team);
           return team;
         });
@@ -699,6 +703,7 @@ function offseason(s, championIdx, playerCup) {
   s.schedule = off.schedule;
   s.rivalDays = off.rivalDays;
   s.gameIndex = 0;
+  s.rivalTrainedAt = 0;
   s.standings = off.standings;
   s.playoffs = null;
   s.history = off.history;
@@ -777,29 +782,23 @@ export function planTraining(s, p, keys, budget, maxPoints = Infinity) {
   }
   return { points, total, count };
 }
-function applyTraining(s, pid, plan) {
-  if (!plan.count || inWinter(s)) return false;
+// A finished training program: the point lands; its cost was paid game by game
+export function landTraining(s, pid, key, cost, auto) {
   const before = findP(s, pid);
-  credit(s, "training", -plan.total);
-  addAT(s, { train: plan.count });
-  updatePlayer(s, pid, (o) => { const q = { ...o }; for (const k in plan.points) q[k] += plan.points[k]; return q; });
+  if (!before) return null;
+  addAT(s, { train: 1 });
+  updatePlayer(s, pid, (o) => ({ ...o, [key]: Math.min(Math.max(o[key], trainCeil(s, o, key)), o[key] + 1) }));
   afterRosterChange(s);
-  spent(s, "training", plan.total, { pid, before, what: Object.entries(plan.points).filter(([, n]) => n).map(([k, n]) => `${k} +${n}`).join(", ") });
+  const ev = spent(s, "training", cost, { pid, before, what: `${key} +1` });
+  if (ev && auto) ev.auto = true;
   emit(s, "cash");
-  return true;
+  return ev;
 }
-export function train(s, pid, key, n = 1, budget = s.money) {
-  const p = allPlayers(s).find((x) => x.id === pid);
-  return p ? applyTraining(s, pid, planTraining(s, p, [key], budget, n)) : false;
-}
-export function trainAll(s, pid, budget = s.money) {
-  const p = allPlayers(s).find((x) => x.id === pid);
-  if (!p) return false;
-  const plan = planTraining(s, p, p.role === "bat" ? BAT_STATS : PIT_STATS, budget);
-  if (!plan.count) return false;
-  applyTraining(s, pid, plan);
-  pushLog(s, `${p.name} trains ${plan.count} point${plan.count > 1 ? "s" : ""} for $${fmt(plan.total)}.`, "win");
-  return true;
+// A stat moves outside training (rust); `extra` can stamp the player
+export function nudgeStat(s, pid, key, d, extra = (q) => q) {
+  updatePlayer(s, pid, (o) => extra({ ...o, [key]: o[key] + d }));
+  afterRosterChange(s);
+  if (s.hist && s.roster) trackOvr(s.hist, allPlayers(s));
 }
 
 // ── Franchise tags, cards ──

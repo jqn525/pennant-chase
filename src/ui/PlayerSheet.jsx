@@ -12,11 +12,12 @@ import { stage, ARCHETYPES } from "../game/talent.js";
 import { ordinal as ordinalSeason } from "./fmt.js";
 import { isOpen, nextUnlockNote } from "../game/unlocks.js";
 import {
-  allPlayers, stat, careerOf, trainCost, trainCeil, planTraining, train, trainAll, printCard,
+  allPlayers, stat, careerOf, trainCost, trainCeil, printCard,
   tagFranchise, franchiseUsed, franchiseSlots, tradeQuote, makeTrade,
 } from "../game/franchise.js";
 import { gearGain, winPerPointOf, valueOfWin } from "../game/advisor.js";
 import { money } from "./fmt.js";
+import { startProgram, startLock as trainLock, programFor, gamesFor, areaOf, AREAS } from "../game/training.js";
 import { Sheet } from "./Shell.jsx";
 
 export default function PlayerSheet({ f, pid, onClose }) {
@@ -31,7 +32,6 @@ export default function PlayerSheet({ f, pid, onClose }) {
   const trait = PLAYER_TRAITS.find((t) => t.id === p.trait);
   const tier = CARD_TIERS[p.cardTier || 0];
   const up = nextPrint(p);
-  const all = own ? planTraining(s, p, keys, s.money) : null;
   const perPoint = winPerPointOf(p) * valueOfWin(s);
   const slots = GEAR.filter((g) => (g.role === "bat") === (p.role === "bat"));
 
@@ -50,23 +50,25 @@ export default function PlayerSheet({ f, pid, onClose }) {
       <h2><span className="grow">Ratings</span>{own && <small>{p.franchise ? "franchise player · trains to his ceiling" : "stops at the league cap"}</small>}</h2>
       <div className="card card--m table-wrap">
         <table>
-          <thead><tr><th>Skill</th><th>Now</th><th>Gear</th><th>Max</th><th>Next pt</th>{own && <th />}</tr></thead>
+          <thead><tr><th>Skill</th><th>Now</th><th>Gear</th><th>Max</th><th>Next pt</th>{own && <th>Train</th>}</tr></thead>
           <tbody>
             {keys.map((k) => {
               const ceil = trainCeil(s, p, k), done = p[k] >= ceil, bonus = gearBonus(p, k);
-              const five = own ? planTraining(s, p, [k], s.money, 5) : null;
+              const prog = own ? programFor(s, p.id, k) : null;
+              const lock = own && !done ? trainLock(s, p.id, k) : null;
               return (
                 <tr key={k}>
                   <td style={{ textTransform: "capitalize" }}>{k}</td>
                   <td className="n">{p[k]}</td>
                   <td className={`n ${bonus > 0 ? "up" : bonus < 0 ? "down" : "dim"}`}>{bonus ? `${bonus > 0 ? "+" : ""}${bonus}` : "—"}</td>
                   <td className="n">{Number.isFinite(ceil) ? ceil : "—"}</td>
-                  <td className="n">{done ? "max" : money(trainCost(s, p, k))}</td>
+                  <td className="n">{done ? "max" : <>{money(trainCost(s, p, k))}<span className="sub">{gamesFor(s, p, k)} games</span></>}</td>
                   {own && (
                     <td>
-                      <button className="btn btn--sm" disabled={winter || done || s.money < trainCost(s, p, k)} onClick={() => f.act(train, p.id, k, 1)}>+1</button>{" "}
-                      <button className="btn btn--sm btn--ghost" disabled={winter || done || !five.count} onClick={() => f.act(train, p.id, k, 5)}
-                        aria-label={`Train ${k} up to 5 points`} title={five.count ? money(five.total) : undefined}>+{five.count || 5}</button>
+                      {prog ? <span className="dim">{prog.left} left</span> : done ? <span className="dim">—</span> : (
+                        <button className="btn btn--sm" disabled={!!lock} title={lock || `${AREAS[areaOf(p, k)].coach}: ${gamesFor(s, p, k)} games`}
+                          onClick={() => f.act(startProgram, p.id, k)}>+1</button>
+                      )}
                     </td>
                   )}
                 </tr>
@@ -75,11 +77,7 @@ export default function PlayerSheet({ f, pid, onClose }) {
           </tbody>
         </table>
       </div>
-      {own && (
-        <button className="btn btn--block" style={{ marginTop: 8 }} disabled={winter || !all.count} onClick={() => f.act(trainAll, p.id)}>
-          {all.count ? `Train everything affordable: ${all.count} points for ${money(all.total)}` : "Nothing affordable to train"}
-        </button>
-      )}
+      {own && <TrainNote s={s} p={p} keys={keys} />}
 
       {own && <PlayerStats s={s} p={p} span={span} setSpan={setSpan} />}
 
@@ -215,4 +213,16 @@ function Development({ s, p }) {
       </div>
     </>
   );
+}
+
+// Which coach lanes this player's training uses, and whether they're free
+function TrainNote({ s, p, keys }) {
+  const areas = [...new Set(keys.map((k) => areaOf(p, k)))];
+  const parts = areas.map((a) => {
+    const ls = s.training.lanes.filter((l) => l.area === a);
+    if (!ls.length) return `${AREAS[a].label}: no lane`;
+    const free = ls.filter((l) => !l.prog).length;
+    return `${AREAS[a].label}: ${free ? `${free} of ${ls.length} lane${ls.length > 1 ? "s" : ""} free` : `busy, next free in ${Math.min(...ls.map((l) => l.prog.left))} game${Math.min(...ls.map((l) => l.prog.left)) === 1 ? "" : "s"}`}`;
+  });
+  return <p className="note">Each point takes games with a coach and is paid game by game. {parts.join(" · ")}.</p>;
 }

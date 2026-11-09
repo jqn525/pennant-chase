@@ -1,4 +1,5 @@
 // ── Overview (home): club health, the race, the last game, leaders and the ledger. View only. ──
+import { MarketTag } from "./MarketTag.jsx";
 import { useState } from "react";
 import { SALARY, LEAGUE, stadiumFx } from "../game/constants.js";
 import { demandPremium } from "../game/engine.js";
@@ -90,7 +91,7 @@ function Race({ s, goTo }) {
               const rank = order.indexOf(i), t = s.standings[i];
               return (
                 <tr key={i} className={`${i === 0 ? "me" : ""} ${rank === LEAGUE.playoffTeams - 1 && me < LEAGUE.playoffTeams ? "cut" : ""}`}>
-                  <td>{rank + 1}. {names[i]}</td>
+                  <td>{rank + 1}. {names[i]}<MarketTag s={s} i={i} /></td>
                   <td className="n">{t.w}</td><td className="n">{t.l}</td>
                   <td className="n">{rank === 0 ? "—" : gamesBehind(leader, t).toFixed(1)}</td>
                 </tr>
@@ -184,7 +185,7 @@ export default function OverviewView({ f, goTo, openPlayer }) {
         <div className="kpi"><span>Payroll</span><b>{money(payroll(s))}</b><small className={share > 1 ? "down" : share > 0.8 ? "warn" : ""}>{Math.round(share * 100)}% of {money(SALARY.cap)} cap</small>
           <div className="bar"><i className={share > 1 ? "over" : share > 0.8 ? "hot" : ""} style={{ width: `${Math.min(100, share * 100)}%` }} /></div></div>
       </div>
-      <p className="note">{status(s)} Crowd {count(attendance(s))} a game · {s.fans > cap ? <> sold out ({count(cap)} seats) · <span className="up">demand +{Math.round((demandPremium(s.fans, cap) - 1) * 100)}% on ticket prices</span></> : <>the park holds {count(cap)}</>}.{Object.keys(s.builds || {}).length > 0 && <> {Object.keys(s.builds).length} project{Object.keys(s.builds).length === 1 ? "" : "s"} under construction.</>}{s.autoDev && <> Auto-develop {s.autoDev.on ? `on · ${Math.round(s.autoDev.share * 100)}% of earnings · ${money(s.autoDev.allowance)} banked` : "off"}.</>}</p>
+      <p className="note">{status(s)} Crowd {count(attendance(s))} a game · {s.fans > cap ? <> sold out ({count(cap)} seats) · <span className="up">demand +{Math.round((demandPremium(s.fans, cap) - 1) * 100)}% on ticket prices</span></> : <>the park holds {count(cap)}</>}.{Object.keys(s.builds || {}).length > 0 && <> {Object.keys(s.builds).length} project{Object.keys(s.builds).length === 1 ? "" : "s"} under construction.</>}{s.training && <> Coaching: {laneSummary(s)}.</>}</p>
 
       <NowPlaying s={s} />
 
@@ -216,4 +217,13 @@ export default function OverviewView({ f, goTo, openPlayer }) {
       <Ledger s={s} />
     </>
   );
+}
+
+// "3 lanes: 2 hitting, 1 pitching · 2 busy"
+function laneSummary(s) {
+  const ls = s.training.lanes;
+  const by = {};
+  for (const l of ls) by[l.area] = (by[l.area] || 0) + 1;
+  const names = { hit: "hitting", pitch: "pitching", field: "field" };
+  return `${ls.length} lanes (${Object.entries(by).map(([a, n]) => `${n} ${names[a]}`).join(", ")}) · ${ls.filter((l) => l.prog).length} busy`;
 }

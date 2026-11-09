@@ -41,7 +41,7 @@ describe("advisor", () => {
     s.money = 100;
     const o = options(s);
     expect(o.find((x) => x.id === "build-seats").lock).toMatch(/fans/);
-    expect(o.filter((x) => x.cost > 100).every((x) => x.lock)).toBe(true);
+    expect(o.filter((x) => (x.startCost ?? x.cost) > 100).every((x) => x.lock)).toBe(true);
   });
 
   it("applies an option and books it in the ledger", () => {
@@ -50,8 +50,9 @@ describe("advisor", () => {
     const start = s.money, life = ledgerNet(s.ledger.life);
     const top = options(s).find((x) => x.affordable);
     expect(apply(s, top)).toBe(true);
-    expect(s.money).toBeCloseTo(start - (top.kind === "Build" ? 0 : top.cost), 6);
-    expect(ledgerNet(s.ledger.life) - life).toBeCloseTo(-(top.kind === "Build" ? 0 : top.cost), 6);
+    const paid = top.kind === "Build" || top.kind === "Train" ? 0 : top.cost; // timed work is paid per game
+    expect(s.money).toBeCloseTo(start - paid, 6);
+    expect(ledgerNet(s.ledger.life) - life).toBeCloseTo(-paid, 6);
   });
 
   it("prices a win and gear sensibly", () => {

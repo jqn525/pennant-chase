@@ -1,7 +1,7 @@
 // ── Season machinery: rivals, schedule, standings, quick-sim, playoffs, offseason ──
 // Team index convention everywhere: 0 = the player's club, 1..7 = rivals.
 
-import { LEAGUE, TRAITS, CREEP, ECON } from "./constants.js";
+import { LEAGUE, TRAITS, CREEP, ECON, MARKETS } from "./constants.js";
 import { genRivalTeam, creepRival, genTeamIdentity, genCallUp, genReplacement } from "./generators.js";
 import { ageOneYear, retireChance } from "./talent.js";
 import { mapRoster } from "./roster.js";
@@ -18,12 +18,45 @@ export const makeRivals = (base = LEAGUE.statBase, playerIdentity = null) => {
   pool.push(traitIds[(Math.random() * traitIds.length) | 0]);
   const usedCities = new Set(playerIdentity ? [playerIdentity.tCity] : []);
   const usedNames = new Set(playerIdentity ? [playerIdentity.name] : []);
+  const markets = rollMarkets();
   return Array.from({ length: 7 }, (_, i) => {
     const id = genTeamIdentity(usedCities, usedNames);
-    const team = genRivalTeam(id.name, pool[i], base);
+    const team = shiftTeam(genRivalTeam(id.name, pool[i], base), MARKETS[markets[i]].offset);
     team.tCity = id.tCity;
+    team.market = markets[i];
     return team;
   });
+};
+
+// One or two powerhouses, two small markets, the rest in the middle
+export const rollMarkets = () => {
+  const power = Math.random() < 0.5 ? 1 : 2;
+  const list = Array.from({ length: 7 }, (_, i) => (i < power ? "power" : i < power + 2 ? "small" : "mid"));
+  return list.sort(() => Math.random() - 0.5);
+};
+// Move a whole club's ratings (and ceilings) up or down
+const SHIFT_KEYS = ["contact", "power", "eye", "speed", "defense", "stuff", "control", "stamina"];
+export const shiftPlayer = (p, d) => {
+  if (!d) return p;
+  const q = { ...p, pot: { ...p.pot } };
+  for (const k of SHIFT_KEYS) if (q[k] != null) {
+    q[k] = Math.max(30, Math.min(95, Math.round(q[k] + d)));
+    if (q.pot[k] != null) q.pot[k] = Math.max(q[k], Math.min(95, Math.round(q.pot[k] + d)));
+  }
+  return q;
+};
+export const shiftTeam = (team, d) => {
+  if (!d) return team;
+  const move = (p) => shiftPlayer(p, d);
+  return { ...team, batters: team.batters.map(move), rotation: team.rotation.map(move), pen: team.pen.map(move) };
+};
+// A market's scouting reach: big clubs land better replacements
+export const marketOffset = (team) => MARKETS[team.market || "mid"].offset;
+// Old saves: the best club is a powerhouse, the bottom two small markets
+export const assignMarkets = (rivals) => {
+  if (rivals.every((t) => t.market)) return rivals;
+  const order = rivals.map((t, i) => [teamRating(t), i]).sort((a, b) => b[0] - a[0]).map(([, i]) => i);
+  return rivals.map((t, i) => ({ ...t, market: t.market || (order.indexOf(i) === 0 ? "power" : order.indexOf(i) >= 5 ? "small" : "mid") }));
 };
 
 // Per rival: 6 series, 22 games, 11 home / 11 away
@@ -173,10 +206,11 @@ export const runOffseason = ({ year, rivals, standings, ratings, seedOrder: fina
   const newRivals = rivals.map((team, i) => {
     const idx = i + 1;
     const rank = order.indexOf(idx);
-    const aged = careerWinter(team, (pos) => genReplacement(pos, shift));
+    const aged = careerWinter(team, (pos) => shiftPlayer(genReplacement(pos, shift), marketOffset(team)));
     aged.retired.forEach((r) => rivalRetired.push({ ...r, club: team.name }));
-    // front-office work: worse clubs work harder; clubs well behind you work hardest (never past their ceilings)
-    const catchUp = Math.min(CREEP.rubberCap, Math.max(0, Math.round((ratings[0] - 2 - ratings[idx]) * CREEP.rubber)));
+    // front-office work: worse clubs work harder; only clubs far below the league's middle get a catch-up push
+    const mid = [...ratings.slice(1)].sort((a, b) => a - b)[3];
+    const catchUp = Math.min(CREEP.rubberCap, Math.max(0, Math.round((mid - CREEP.farBehind - ratings[idx]) * CREEP.rubber)));
     const points = CREEP.base + rank + (rank === 7 ? CREEP.cellarBonus : 0) + catchUp;
     return creepRival(aged.team, points);
   });

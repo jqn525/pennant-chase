@@ -19,10 +19,11 @@ import { eff } from "./gear.js";
 import { CARD_TIERS, nextPrint, cardDraw } from "./cards.js";
 import { isOpen } from "./unlocks.js";
 import { startBuild, startLock } from "./construction.js";
+import { AREAS, AREA_IDS, areaKeys, gamesFor, programFor, startProgram, startLock as trainLock } from "./training.js";
 import { ticketGate } from "./engine.js";
 import {
   allPlayers, merchRate, trainCost, trainCeil, buildLock, build, BALLPARK, trackLevel,
-  train, buyGear, printCard,
+  buyGear, printCard,
 } from "./franchise.js";
 
 // Win rate per rating point, from scripts/calibrate.mjs (40,000 games per run).
@@ -90,23 +91,26 @@ const payback = (cost, gain) => (gain > 0.005 ? cost / gain : Infinity);
 
 // ── Option builders ──
 function trainOptions(s, vWin) {
-  return allPlayers(s).flatMap((p) => {
-    // the cheapest next point on this player
+  // one option per player per coach: the cheapest next point in that area
+  return allPlayers(s).flatMap((p) => AREA_IDS.flatMap((area) => {
     let best = null;
-    for (const k of statsOf(p)) {
-      if (p[k] >= trainCeil(s, p, k)) continue;
+    for (const k of areaKeys(p, area)) {
+      if (p[k] >= trainCeil(s, p, k) || programFor(s, p.id, k)) continue;
       const c = trainCost(s, p, k);
       if (!best || c < best.cost) best = { k, cost: c };
     }
     if (!best) return [];
+    const games = gamesFor(s, p, best.k);
     const gain = winPerPoint(p) * vWin;
+    const lock = trainLock(s, p.id, best.k);
     return [{
-      id: `train-${p.id}`, kind: "Train", cost: best.cost, gainPerGame: gain,
+      id: `train-${p.id}-${area}`, kind: "Train", area, cost: best.cost, games, gainPerGame: gain,
+      startCost: Math.ceil(best.cost / games), lock: lock || undefined,
       title: `${p.name} · ${best.k} ${p[best.k]} → ${p[best.k] + 1}`,
-      detail: `$${best.cost} per point · ${p.pos}`,
+      detail: `${games} games · $${best.cost.toLocaleString("en-US")} · ${AREAS[area].coach.toLowerCase()}`,
       action: { type: "train", pid: p.id, key: best.k },
     }];
-  });
+  }));
 }
 
 // Effective rating points an item adds for a player (replacing his current one)
@@ -199,7 +203,7 @@ export function options(s) {
 }
 
 function run(s, a) {
-  if (a.type === "train") return train(s, a.pid, a.key, 1);
+  if (a.type === "train") return startProgram(s, a.pid, a.key);
   if (a.type === "gear") return buyGear(s, a.pid, a.itemId);
   if (a.type === "build") return startBuild(s, a.id);
   if (a.type === "print") return printCard(s, a.pid);

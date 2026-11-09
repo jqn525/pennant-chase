@@ -1,4 +1,4 @@
-// ── Auto-develop card: training and gear on autopilot; builds and promotions stay yours ──
+// ── Equipment manager: gear on autopilot from a share of earnings; builds and promotions stay yours ──
 import { useState } from "react";
 import { setAutoDev, developNow, SHARES } from "../game/autodev.js";
 import { CAT_LABEL } from "../game/analytics.js";
@@ -22,8 +22,8 @@ export function AutoDevCard({ f }) {
     <div className="card card--l panel--pad stack">
       <div className="row">
         <div className="grow">
-          <b>Auto-develop players</b>
-          <span className="sub">Training and gear buy themselves after every game, best payback first.</span>
+          <b>Equipment manager</b>
+          <span className="sub">Buys gear after every game, best payback first, from a share of earnings. Training runs in the coaches' lanes above.</span>
         </div>
         <button className={`btn btn--sm ${a.on ? "" : "btn--ghost"}`} role="switch" aria-checked={a.on}
           onClick={() => f.act(setAutoDev, { on: !a.on })}>{a.on ? "On" : "Off"}</button>
@@ -45,10 +45,10 @@ export function AutoDevCard({ f }) {
 
       <div className="kpis">
         <div className="kpi"><span>Banked to spend</span><b>{money(banked)}</b><small>{a.avg ? `+${money(a.avg)} a game` : "fills after each game"}</small></div>
-        <div className="kpi"><span>This season</span><b>{money(spent)}</b><small>{season.length} buys · +{pts.toFixed(1)} OVR</small></div>
+        <div className="kpi"><span>Auto this season</span><b>{money(spent)}</b><small>{season.length} buys · +{pts.toFixed(1)} OVR</small></div>
       </div>
       <button className="btn btn--quiet btn--sm" style={{ justifySelf: "start" }} disabled={a.allowance < 1 || s.phase === "draft"}
-        onClick={() => f.act(developNow)}>Develop now</button>
+        onClick={() => f.act(developNow)}>Shop now</button>
 
       {recent.length > 0 && (
         <ul className="feed" style={{ margin: 0 }}>

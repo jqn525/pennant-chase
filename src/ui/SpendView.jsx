@@ -6,6 +6,7 @@ import { RARITY } from "../game/constants.js";
 import { money } from "./fmt.js";
 import { OptionList } from "./Options.jsx";
 import { AutoDevCard } from "./Automation.jsx";
+import Coaching from "./Coaching.jsx";
 import { isOpen, nextUnlockNote } from "../game/unlocks.js";
 import Construction from "./Construction.jsx";
 
@@ -28,8 +29,9 @@ export default function SpendView({ f }) {
       {s.phase === "draft" && <p className="alert" role="status">Winter: the season is over. Spending reopens on opening day; the draft is the only decision left this year.</p>}
       <Construction f={f} />
 
-      <h2>Player development</h2>
-      {isOpen(s, "autodev") ? <AutoDevCard f={f} /> : <p className="note">{nextUnlockNote.autodev} Until then, train players by hand from the list below or the Roster tab.</p>}
+      <Coaching f={f} />
+      <h2>Equipment</h2>
+      {isOpen(s, "autodev") ? <AutoDevCard f={f} /> : <p className="note">{nextUnlockNote.autodev} Until then, start training from a player's sheet and buy gear from the list below.</p>}
 
       <h2><span className="grow">Your decisions</span><small>{kind === "Yours" ? "builds and promotions" : ""}</small></h2>
       <div className="chips" role="tablist" aria-label="Filter" style={{ margin: "0 0 12px" }}>

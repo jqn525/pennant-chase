@@ -202,7 +202,7 @@ export const stadiumFx = (levels = {}) => {
 // points (rubber × rating gap), so a dynasty gets hunted down within a few years.
 export const CREEP = { base: 4, cellarBonus: 4, rubber: 3, rubberCap: 40, bump: 3,
   // in season: every series change, rivals behind you scout, sign and train in proportion to the gap
-  seriesBase: 2, seriesRubber: 1.6, seriesBump: 2, acquire: 0.25, gear: 0.5 };
+  seriesBase: 2, farBehind: 6, seriesRubber: 0.8, seriesBump: 2, acquire: 0.25, gear: 0.5 };
 
 // One per player — a defined percentage shift on his ratings, like gear.
 // `mods` bake into effective stats everywhere; `sit` applies with runners on.
@@ -246,7 +246,25 @@ export const TRADE = { fee: 300, buyPremium: 1.6, sellDiscount: 0.5, valuePerOvr
 export const DRAFT = { classSize: 5, signBase: 700, signPerPot: 65 };
 
 export const POSITIONS = ["C", "1B", "2B", "3B", "SS", "LF", "CF", "RF", "DH"];
-export const BAT_STATS = ["contact", "power", "eye", "speed", "defense"];
+// Coaching staff: training runs in lanes. A lane works one point at a time,
+// takes games to finish and is paid game by game. More lanes cost assistants.
+export const TRAINING = {
+  lanes: 3, maxLanes: 6,
+  // assistant coaches for lanes 4, 5, 6: signing fee, then a wage every game
+  hire: [{ fee: 20000, wage: 120 }, { fee: 45000, wage: 250 }, { fee: 90000, wage: 450 }],
+  // games a point takes by the stat's level; +near within 5 of his ceiling
+  games: [[60, 2], [70, 3], [78, 5], [Infinity, 8]], near: 2,
+  rustAfter: 15, rustMax: 3, // an area without a lane rusts every 15 games; 3 points a player a season at most
+};
+
+// Rival front offices come in three sizes
+export const MARKETS = {
+  power: { label: "Powerhouse", short: "big market", offset: 4, lanes: 5 },
+  mid: { label: "Mid-market", short: "mid market", offset: 0, lanes: 4 },
+  small: { label: "Small-market", short: "small market", offset: -3.5, lanes: 3 },
+};
+
+export const BAT_STATS =["contact", "power", "eye", "speed", "defense"];
 export const PIT_STATS = ["stuff", "control", "stamina", "defense"];
 export const STAT_INFO = {
   contact: "Hit chance on any swing",

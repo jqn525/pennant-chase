@@ -60,7 +60,7 @@ export default function Shell({ f }) {
   const net = netPerGame(s);
   const cash = useTween(s.money);
   const trail = (s.hist?.games || []).slice(-30).map((r) => [r[0], r[8]]);
-  const ready = options(s).filter((o) => o.affordable && Number.isFinite(o.payback) && (!s.autoDev?.on || o.kind === "Build" || o.kind === "Promote")).length;
+  const ready = options(s).filter((o) => o.affordable && Number.isFinite(o.payback) && (o.kind === "Build" || o.kind === "Promote" || (o.kind === "Gear" && !s.autoDev?.on) || (o.kind === "Train" && !s.training?.auto?.[o.area]))).length;
   const showDraft = s.phase === "draft" && !draftHidden && !s.yearEnd;
   const left = gamesLeft(s);
   const views = { overview: OverviewView, spend: SpendView, roster: RosterView, stats: StatsView };

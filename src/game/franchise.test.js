@@ -1,5 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { careerOf, blankState, found, tick, closeDraft, ledgerNet, credit, merchTick, build, buildLock, train, toSave, loadState, trainCost, allPlayers } from "./franchise.js";
+import { careerOf, blankState, found, tick, closeDraft, ledgerNet, credit, merchTick, build, buildLock, toSave, loadState, trainCost, allPlayers } from "./franchise.js";
+import { startProgram, progressTraining } from "./training.js";
+const finish = (s) => { for (let i = 0; i < 40 && s.training.lanes.some((l) => l.prog); i++) progressTraining(s); };
+
 import { validateSave } from "./save.js";
 import { LEAGUE } from "./constants.js";
 
@@ -36,7 +39,9 @@ describe("franchise core", () => {
     expect(build(s, "merch")).toBe(true);
     merchTick(s, 10);
     const pid = s.roster.batters[0].id;
-    train(s, pid, "contact", 3);
+    s.roster.batters[0].pot.contact = s.roster.batters[0].contact + 8;
+    expect(startProgram(s, pid, "contact")).toBe(true);
+    finish(s);
     expect(s.money).toBeCloseTo(start + ledgerNet(s.ledger.life), 6);
     expect(s.ledger.life.gate).toBeGreaterThan(0);
     expect(s.ledger.life.payroll).toBeLessThan(0);
@@ -58,7 +63,9 @@ describe("franchise core", () => {
     expect(build(s, "seats")).toBe(false);
     const p = s.roster.batters[0];
     const before = s.money;
-    expect(train(s, p.id, "power", 1, 1)).toBe(false); // budget too small
+    s.money = 5;
+    expect(startProgram(s, p.id, "power")).toBe(false); // can't pay the first game
+    s.money = 100;
     expect(s.money).toBe(before);
     expect(trainCost(s, { power: 66 }, "power")).toBeGreaterThan(trainCost(s, { power: 60 }, "power"));
   });

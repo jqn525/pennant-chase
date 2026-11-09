@@ -2,6 +2,8 @@ import { describe, it, expect } from "vitest";
 import { blankState, found, tick, ledgerNet, toSave, loadState, allPlayers } from "./franchise.js";
 import { ovr } from "./gear.js";
 import { options } from "./advisor.js";
+import { progressTraining } from "./training.js";
+const finish = (s) => { for (let i = 0; i < 40 && s.training.lanes.some((l) => l.prog); i++) progressTraining(s); };
 import { earnAllowance, runAutoDev, afterGame, setAutoDev, operatingResult, ALLOWANCE_GAMES } from "./autodev.js";
 
 const club = { name: "Vancouver", nickname: "Suns", bonus: "fans", label: "HUNGRY MARKET" };
@@ -19,6 +21,9 @@ describe("auto-develop", () => {
     const before = teamOvr(s);
     const out = runAutoDev(s);
     expect(out.spent).toBeGreaterThan(0);
+    expect(out.points).toBe(3); // one program per coach lane
+    expect(s.training.lanes.every((l) => l.prog?.auto)).toBe(true);
+    finish(s);
     expect(teamOvr(s)).toBeGreaterThan(before);
     expect({ merch: s.merch, tv: s.tv, stadium: s.stadium }).toEqual(lvl);
     expect(allPlayers(s).map((p) => p.cardTier || 0)).toEqual(tiers);
@@ -30,10 +35,9 @@ describe("auto-develop", () => {
   it("respects the allowance and the reserve, best payback first", () => {
     const s = fresh();
     s.money = 5000; s.autoDev.allowance = 300; s.autoDev.reserve = 0;
-    const first = options(s).find((o) => (o.kind === "Train" || o.kind === "Gear") && o.affordable && o.gainPerGame > 0 && o.cost <= 300);
+    s.training.auto = { hit: false, pitch: false, field: false }; // coaches run on lanes, not the allowance
     const out = runAutoDev(s);
     expect(out.spent).toBeLessThanOrEqual(300);
-    expect(s.hist.spend[0].pid).toBe(first.action.pid);
     const t = fresh();
     t.money = 1000; t.autoDev.allowance = 1e6; t.autoDev.reserve = 900;
     runAutoDev(t);
@@ -53,10 +57,12 @@ describe("auto-develop", () => {
   it("off means no buys; the books still reconcile with it on", () => {
     const s = fresh();
     setAutoDev(s, { on: false });
+    s.training.auto = { hit: false, pitch: false, field: false };
     const start = s.money;
     for (let i = 0; i < 20; i++) { tick(s, "max"); afterGame(s); }
     expect(s.hist.spend.length).toBe(0);
     setAutoDev(s, { on: true, reserve: 0 });
+    s.training.auto = { hit: true, pitch: true, field: true };
     for (let i = 0; i < 40; i++) { tick(s, "max"); afterGame(s); }
     expect(s.hist.spend.length).toBeGreaterThan(0);
     expect(s.money).toBeCloseTo(start + ledgerNet(s.ledger.life), 6);

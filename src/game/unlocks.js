@@ -10,7 +10,7 @@ const players = (s) => (s.roster ? [...s.roster.batters, ...s.roster.rotation, .
 export const UNLOCKS = [
   { id: "gear", when: (s) => games(s) >= 3, news: "A gear dealer starts calling. Shipments of bats, gloves and cleats arrive every series." },
   { id: "records", when: (s) => games(s) >= 5, news: "The club starts keeping a record book." },
-  { id: "autodev", when: (s) => games(s) >= 5, news: "A development coach joins the staff. Training and gear can now run on autopilot." },
+  { id: "autodev", when: (s) => games(s) >= 5, news: "Your coaches can now run on auto, and an equipment manager joins to buy gear." },
   { id: "ballpark", when: (s) => s.fans >= 1200 || games(s) >= 8, news: "The town is talking about the club. Time to think about the ballpark." },
   { id: "stats-money", when: (s) => games(s) >= 10, news: "The accountant hands over the first money charts." },
   { id: "stats-players", when: (s) => games(s) >= 10, news: "Scouts start tracking every player's development." },
@@ -33,7 +33,7 @@ export function checkUnlocks(s) {
 // What opens next, for teasers
 export const nextUnlockNote = {
   gear: "Gear shipments start after game 3.",
-  autodev: "A development coach joins after game 5.",
+  autodev: "Coaches on auto and an equipment manager arrive after game 5.",
   ballpark: "The ballpark opens up at 1,200 fans or after game 8.",
   star: "Star power opens when a player reaches 70 overall.",
   trades: "Trades open after game 30.",
