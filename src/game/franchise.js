@@ -6,10 +6,10 @@
 
 import { LEAGUE, ECON, TRADE, BAT_STATS, PIT_STATS, STADIUM, stadiumFx, REVENUE, revenueFx, SALARY, FRANCHISE, CREEP } from "./constants.js";
 import { fmt } from "./utils.js";
-import { genRoster, genPitcher, genBatter, genCallUp, seedUid, genDraftClass, vetPot, rollPot, pickTrait, freshName, seedNames, creepRival, seedRivalStars } from "./generators.js";
+import { genRoster, genPitcher, genBatter, genCallUp, seedUid, genDraftClass, vetPot, rollPot, pickTrait, freshName, seedNames, creepRival, seedRivalStars, genTeamIdentity } from "./generators.js";
 import { newGame, stepAtBat, playGameInstant, settleGame, ticketGate } from "./engine.js";
 import { makeRivals, makeSchedule, teamRating, quickSim, simSeries, seedOrder, runOffseason, careerWinter, seriesInfo, assignMarkets, shiftPlayer, marketOffset } from "./season.js";
-import { genShipment, genItem, playerValue, GEAR, dealerTier, shipmentWeights, devCapFor, ovr } from "./gear.js";
+import { genShipment, genItem, playerValue, GEAR, dealerTier, shipmentWeights, devCapFor, ovr, nameFor } from "./gear.js";
 import { nextPrint, cardDraw } from "./cards.js";
 import { loadoutById, applyLoadout, sortRival } from "./lineup.js";
 import { teamPayroll, luxuryTax } from "./salary.js";
@@ -88,6 +88,24 @@ const updatePlayer = (s, pid, fn) => {
   const upd = (o) => (o.id === pid ? fn(o) : o);
   s.roster = mapRoster(s.roster, upd);
 };
+
+// ── Saves that went through the short-lived Orbital reskin get their old names back ──
+// Only display names change; ids, ratings, markets and money are untouched.
+function undoLore(s) {
+  for (const [id, b] of Object.entries(s.builds || {})) {
+    const track = BALLPARK.find((t) => t.id === id);
+    const tier = track?.tiers[b.tier];
+    if (tier) s.builds[id] = { ...b, name: tier.name, area: track.title.charAt(0) + track.title.slice(1).toLowerCase() };
+  }
+  const rename = (it) => (it && it.slot ? { ...it, name: nameFor(it.slot, it.rarity, it.id) } : it);
+  s.shopItems = (s.shopItems || []).map(rename);
+  if (s.roster) s.roster = mapRoster(s.roster, (p) => (p.gear ? { ...p, gear: Object.fromEntries(Object.entries(p.gear).map(([k, it]) => [k, rename(it)])) } : p));
+  if (s.rivals) {
+    const cities = new Set(s.city ? [s.city.name] : []), names = new Set(s.city ? [s.city.nickname] : []);
+    s.rivals = s.rivals.map((t) => { const id = genTeamIdentity(cities, names); return { ...t, name: id.name, tCity: id.tCity }; });
+  }
+  delete s.lore;
+}
 
 // ── Creating and loading ──
 export function blankState() {
@@ -233,6 +251,7 @@ export function loadState(saved) {
     lastSeen: S.lastSeen ?? Date.now(),
   });
   s.rotationTurn = S.rotationTurn ?? 0;
+  if (S.lore) undoLore(s);
   s.rivalTrainedAt = S.rivalTrainedAt ?? S.gameIndex ?? 0;
   if (staffed) pushLog(s, "The club signs four starters and a closer to fill out a real pitching staff.", "beat");
   return s;

@@ -33,6 +33,15 @@ const NAMES = {
 
 const pick = (a) => a[(Math.random() * a.length) | 0];
 
+// A deterministic name from an item id (used to rename gear in saves that went through the Orbital reskin)
+export const nameFor = (slot, rarity, seed) => {
+  let h = 0;
+  for (const ch of String(seed)) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  const [pre, post] = NAMES[slot] || NAMES.bat;
+  const name = `${pre[h % pre.length]} ${post[(h >>> 8) % post.length]}`;
+  return rarity === 3 ? `The ${name}` : name;
+};
+
 export const genItem = (rarity, slotDef) => {
   const def = slotDef || GEAR[(Math.random() * GEAR.length) | 0];
   const [pre, post] = NAMES[def.slot];
