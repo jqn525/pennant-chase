@@ -25,7 +25,7 @@ export default function SeasonView({ f, openPlayer }) {
       <h2>Year {s.year}</h2>
       <p className="lede" style={{ marginTop: 0 }}>
         {s.phase === "regular" && <>{left} games left{sr ? ` · this series ${sr.w}–${sr.l}, ${sr.gamesLeft} to play vs ${s.rivals[s.schedule[s.gameIndex].opp - 1].name}` : ""}{pace != null ? ` · on pace for ${pace} wins` : ""}</>}
-        {s.phase === "playoffs" && p && <>{p.round === "final" ? "Zenith Pennant final" : "Semifinal"} vs the {s.rivals[p.opp - 1].name}: {p.wins.us}–{p.wins.them} (first to {p.round === "final" ? 4 : 3})</>}
+        {s.phase === "playoffs" && p && <>{p.round === "final" ? "Pennant Cup final" : "Semifinal"} vs the {s.rivals[p.opp - 1].name}: {p.wins.us}–{p.wins.them} (first to {p.round === "final" ? 4 : 3})</>}
         {s.phase === "draft" && <>Winter. The season waits until you close the draft board.</>}
       </p>
 
@@ -77,7 +77,7 @@ export default function SeasonView({ f, openPlayer }) {
 
       {s.history.length > 0 && (
         <>
-          <h2><span className="grow">History</span><small>{s.trophies} Zenith Pennant{s.trophies === 1 ? "" : "s"}</small></h2>
+          <h2><span className="grow">History</span><small>{s.trophies} Pennant Cup{s.trophies === 1 ? "" : "s"}</small></h2>
           <div className="card card--m table-wrap"><table>
             <thead><tr><th>Year</th><th>Record</th><th>Finish</th><th>Champion</th></tr></thead>
             <tbody>

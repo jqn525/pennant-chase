@@ -10,7 +10,7 @@ export default function YearEndSheet({ f }) {
   return (
     <Sheet title={`Year ${r.y} in review`} onClose={done} closeLabel="Draft"
       actions={null}>
-      <p className="lede">{r.cup ? "Zenith Pennant champions." : `${r.champion || "Another club"} won the Zenith Pennant.`} The season is over: from here until opening day, the draft is the only decision.</p>
+      <p className="lede">{r.cup ? "Pennant Cup champions." : `${r.champion || "Another club"} won the Pennant Cup.`} The season is over: from here until opening day, the draft is the only decision.</p>
       <div className="kpis" style={{ marginTop: 12 }}>
         <div className="kpi"><span>Record</span><b>{r.w}–{r.l}</b><small>{ordinal(r.finish)} place</small></div>
         <div className="kpi"><span>Season net</span><b className={r.net >= 0 ? "up" : "down"}>{money(r.net, { sign: true })}</b><small>{money(r.spent)} invested</small></div>

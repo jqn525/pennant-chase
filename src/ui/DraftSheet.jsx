@@ -6,7 +6,6 @@ import { signRookie, closeDraft, rookieReplaces } from "../game/franchise.js";
 import { slotOf } from "../game/roster.js";
 import { money } from "./fmt.js";
 import { Sheet } from "./Shell.jsx";
-import HoloCard from "./HoloCard.jsx";
 
 const potOvr = (p) => {
   const keys = p.role === "bat" ? BAT_STATS : PIT_STATS;
@@ -20,11 +19,6 @@ export default function DraftSheet({ f, onHide }) {
     <Sheet title={`Draft · year ${s.year}`} onClose={onHide} closeLabel="Later"
       actions={<button className="btn btn--sm" onClick={() => f.act(closeDraft)}>Start season</button>}>
       <p className="lede">Raw rookies with high ceilings. Signing one replaces your player at that position; the rookie keeps his gear. You have {money(s.money)}.</p>
-      {(s.draftClass || []).length > 0 && (
-        <div className="holo-strip deal-in" style={{ marginTop: 12 }}>
-          {s.draftClass.map((r, i) => <div key={r.id} style={{ "--i": i }}><HoloCard p={r} slot={`${r.pos} · ceiling ${potOvr(r).toFixed(0)}`} mini /></div>)}
-        </div>
-      )}
       <div className="card card--l table-wrap" style={{ marginTop: 12 }}>
         <table>
           <thead><tr><th>Rookie</th><th>Now</th><th>Ceiling</th><th>Replaces</th><th>Salary</th><th /></tr></thead>

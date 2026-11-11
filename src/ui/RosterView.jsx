@@ -10,7 +10,6 @@ import { CARD_TIERS, nextPrint } from "../game/cards.js";
 import { isOpen } from "../game/unlocks.js";
 import { slotOf, starterFor } from "../game/roster.js";
 import { money } from "./fmt.js";
-import HoloCard, { crestFor } from "./HoloCard.jsx";
 
 // Cheapest next training point and the points left before the ceiling
 export function trainRoom(s, p) {
@@ -46,13 +45,6 @@ export default function RosterView({ f, openPlayer, goTo }) {
     <>
       <h1>Roster</h1>
       <p className="lede">Franchise tags {franchiseUsed(s)} of {franchiseSlots(s)} used. Tap a player to train, gear up, promote or trade.</p>
-
-      <h2><span className="grow">Headliners</span><small>top four by overall</small></h2>
-      <div className="holo-strip">
-        {[...order].sort((a, b) => ovr(b) - ovr(a)).slice(0, 4).map((p) => (
-          <HoloCard key={p.id} p={p} slot={slotOf(s.roster, p.id)} mini onClick={() => openPlayer(p.id)} />
-        ))}
-      </div>
 
       <h2><span className="grow">Lineup</span><small>{s.autoLineup ? "set automatically" : "custom order"}</small></h2>
       <div className="card card--m panel--pad stack">
@@ -106,7 +98,7 @@ export default function RosterView({ f, openPlayer, goTo }) {
                 {head && <tr className="group"><td colSpan={6}>{head}</td></tr>}
                 <tr className="link" onClick={() => openPlayer(p.id)} tabIndex={0} onKeyDown={(e) => e.key === "Enter" && openPlayer(p.id)}>
                   <td>
-                    <i className={`crest crest--${Math.min(3, p.cardTier || 0)}`} aria-hidden="true">{crestFor(p)}</i><b>{p.name}</b>{p.franchise && <> <span className="tag tag--accent">F</span></>}{p.age >= 34 && <> <span className="tag tag--warn">final years</span></>}{nextPrint(p) && isOpen(s, "star") && <> <span className="tag tag--warn">promo ready</span></>}
+                    <b>{p.name}</b>{p.franchise && <> <span className="tag tag--accent">F</span></>}{p.age >= 34 && <> <span className="tag tag--warn">final years</span></>}{nextPrint(p) && isOpen(s, "star") && <> <span className="tag tag--warn">promo ready</span></>}
                     <span className="sub">{slotOf(s.roster, p.id)}{p.age ? ` · ${p.age}` : ""}{p.id === nextUp ? " · starts next" : ""}{tier.id > 0 ? ` · ★ ${tier.name.toLowerCase()}` : ""}</span>
                   </td>
                   <td className="n">{ovr(p).toFixed(0)}</td>

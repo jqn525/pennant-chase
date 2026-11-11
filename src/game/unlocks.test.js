@@ -55,6 +55,6 @@ describe("beats and ticker", () => {
 
   it("star power keeps the old card economics", () => {
     expect(CARD_TIERS.map((t) => [t.at, t.cost, t.draw])).toEqual([[0, 0, 0], [70, 750, 0.1], [80, 10000, 0.3], [88, 50000, 0.6]]);
-    expect(nextPrint({ role: "bat", contact: 90, power: 90, eye: 90, speed: 90, defense: 90, cardTier: 1 }).deal).toBe("Hologram night");
+    expect(nextPrint({ role: "bat", contact: 90, power: 90, eye: 90, speed: 90, defense: 90, cardTier: 1 }).deal).toBe("Bobblehead night");
   });
 });

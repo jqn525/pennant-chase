@@ -1,7 +1,6 @@
 // ── The shell: club header with cash and pace, four tabs, overlay sheets ──
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import TeamLogo from "./TeamLogo.jsx";
-import Fx from "./Fx.jsx";
 import { money } from "./fmt.js";
 import { useTween } from "./motion.js";
 import { Sparkline } from "./charts.jsx";
@@ -17,7 +16,7 @@ import SettingsSheet from "./SettingsSheet.jsx";
 import YearEndSheet from "./YearEndSheet.jsx";
 import { gamesLeft } from "../game/franchise.js";
 
-const TABS = [["overview", "Overview", "◉"], ["spend", "Spend", "◇"], ["roster", "Roster", "⬢"], ["stats", "Stats", "▣"]];
+const TABS = [["overview", "Overview"], ["spend", "Spend"], ["roster", "Roster"], ["stats", "Stats"]];
 
 export function Pace({ f }) {
   const { s, paused, setPaused, setSpeed } = f;
@@ -104,9 +103,8 @@ export default function Shell({ f }) {
 
       <nav className="tabs" aria-label="Sections">
         <div className="tabs__in">
-          {TABS.map(([id, label, glyph]) => (
+          {TABS.map(([id, label]) => (
             <button key={id} className={tab === id ? "on" : ""} aria-current={tab === id ? "page" : undefined} onClick={() => setTab(id)}>
-              <span className="tabs__glyph" aria-hidden="true">{glyph}</span>
               <span className="tabs__label">
                 {label}
                 {id === "spend" && ready > 0 && <i aria-label={`${ready} worthwhile buys`}>{ready > 99 ? "99+" : ready}</i>}
@@ -116,7 +114,6 @@ export default function Shell({ f }) {
         </div>
       </nav>
 
-      <Fx />
       {s.yearEnd && <YearEndSheet f={f} />}
       {showDraft && <DraftSheet f={f} onHide={() => setDraftHidden(true)} openPlayer={setPlayerId} />}
       {playerId != null && <PlayerSheet f={f} pid={playerId} onClose={() => setPlayerId(null)} />}

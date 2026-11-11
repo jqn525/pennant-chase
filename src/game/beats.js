@@ -29,7 +29,7 @@ export function noteBeats(s, { att, attCap, streak, broken = [] }) {
   }
   if (!b.sellout && attCap && att >= attCap) {
     b.sellout = true;
-    out.push(`Sold out: all ${fmt(attCap)} seats full. Time to think about a bigger stadium ring.`);
+    out.push(`Sold out: all ${fmt(attCap)} seats full. Time to think about a bigger ballpark.`);
   }
   if (STREAKS.includes(streak) && streak > (b.streak || 0)) {
     out.push(`${streak} wins in a row. The ${s.city.nickname} are the hottest club in the league.`);

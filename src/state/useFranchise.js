@@ -7,7 +7,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { SAVE_KEY, parseSave, decodeBackup, encodeBackup } from "../game/save.js";
 import { blankState, loadState, toSave, tick, welcomeBack, openUnlocks } from "../game/franchise.js";
 import { sfx, play } from "../game/sfx.js";
-import { pushFx } from "../ui/fxbus.js";
 import { afterGame } from "../game/autodev.js";
 
 const PERIOD = { 1: 900, 4: 220, max: 1000 };
@@ -48,7 +47,6 @@ export default function useFranchise() {
     const st = ref.current;
     sfx.enabled = st.sound;
     for (const e of st.events.splice(0)) {
-      pushFx(e, st.speed === "max");
       if (st.speed === "max" && (e.type === "final" || e.type === "homer")) continue;
       if (e.type === "cash") play.cash();
       else if (e.type === "cup") play.fanfare();

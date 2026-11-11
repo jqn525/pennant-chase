@@ -6,11 +6,11 @@
 
 // Item, price, base chance that one fan buys it on a given day, store level needed
 export const CATALOG = [
-  { id: "cap", name: "crew patch", plural: "crew patches", price: 20, chance: 0.005, store: 1, star: false },
-  { id: "jersey", name: "flight jacket", plural: "flight jackets", price: 100, chance: 0.0006, store: 2, star: true },
-  { id: "memo", name: "holo-signed card", plural: "holo-signed cards", price: 250, chance: 0.0001, store: 3, star: true },
+  { id: "cap", name: "cap", plural: "caps", price: 20, chance: 0.005, store: 1, star: false },
+  { id: "jersey", name: "jersey", plural: "jerseys", price: 100, chance: 0.0006, store: 2, star: true },
+  { id: "memo", name: "signed item", plural: "signed items", price: 250, chance: 0.0001, store: 3, star: true },
 ];
-export const STORE_SELLS = { 1: "sells crew patches", 2: "adds flight jackets", 3: "adds holo-signed cards" };
+export const STORE_SELLS = { 1: "sells caps", 2: "adds jerseys", 3: "adds signed memorabilia" };
 
 // Interest fades while you're away: day 1 counts fully, day 2 half, day 3 a quarter...
 // Effective selling days for `hours` away (tends to 2 days however long you're gone)
