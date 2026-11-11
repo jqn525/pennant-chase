@@ -122,7 +122,7 @@ function MoneySection({ s }) {
       <h2><span className="grow">Where the money comes from</span><small>{bucket > 1 ? `per ${bucket} games` : "per game"}</small></h2>
       <StackedBars label="Income and payroll by game" cols={cols} yFmt={usd} xFmt={xFmt} keys={[
         { key: "gate", label: "Gate", color: SERIES[0] }, { key: "win", label: "Win bonus", color: SERIES[1] },
-        { key: "merch", label: "Merch", color: SERIES[2] }, { key: "tv", label: "TV", color: SERIES[3] },
+        { key: "merch", label: "Merch", color: SERIES[2] }, { key: "tv", label: "Broadcast", color: SERIES[3] },
         { key: "post", label: "Playoffs", color: SERIES[4] }, { key: "pay", label: "Payroll", color: SERIES[6] }]} />
 
       <h2><span className="grow">Spending by category</span><small>{money(rep.total)}</small></h2>
@@ -281,8 +281,8 @@ function Projections({ s }) {
       <h2><span className="grow">Odds</span><small>1,000 simulated finishes</small></h2>
       <div className="barlist">
         <Meter label="Make the playoffs" pct={pr.playoffPct} />
-        <Meter label="Reach the Pennant Cup final" pct={pr.finalPct} />
-        <Meter label="Win the Pennant Cup" pct={pr.cupPct} />
+        <Meter label="Reach the Zenith Pennant final" pct={pr.finalPct} />
+        <Meter label="Win the Zenith Pennant" pct={pr.cupPct} />
       </div>
       {reg && (
         <>
@@ -363,7 +363,7 @@ function Records({ s, openPlayer }) {
         </table>
       </div>
 
-      <h2><span className="grow">Trophy case</span><small>{s.trophies} Pennant Cup{s.trophies === 1 ? "" : "s"}</small></h2>
+      <h2><span className="grow">Trophy case</span><small>{s.trophies} Zenith Pennant{s.trophies === 1 ? "" : "s"}</small></h2>
       <div className="card card--m table-wrap">
         <table>
           <thead><tr><th>Year</th><th>Record</th><th>Finish</th><th>Champion</th></tr></thead>

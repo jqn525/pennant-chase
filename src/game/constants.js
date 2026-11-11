@@ -49,34 +49,34 @@ export const EDGES = [
 
 // Team identity pools: minor-league flavored towns and nicknames
 export const CITY_POOL = [
-  "Toledo", "Fresno", "Duluth", "Butte", "Amarillo", "Pawtucket", "Chattanooga", "Spokane",
-  "Port Vale", "Cedar Falls", "Bison Ridge", "Sable Creek", "Harbor City", "Yucca Flats",
-  "Iron Bend", "Dry Gulch", "Millhaven", "Oak Hollow", "Red Mesa", "Saltwater",
-  "Gravel Point", "Copper Junction", "Twin Forks", "Palmetto", "Frostburg", "El Dorado",
-  "Kingsport", "Blue Ash", "Tarrytown", "Mudflat", "Sunbury", "Cannon Falls",
-  "Whistler's Gap", "Bakersfield", "Owl Creek", "Rock Bottom", "Grover's Mill", "Lantern Hill",
+  "Ceres", "Titan Port", "Europa Deep", "Kepler Station", "New Tharsis", "Io Forge", "Luna City",
+  "Vesta Yards", "Triton Reach", "Ganymede", "Callisto", "Phobos", "Olympus Mons", "Hygiea",
+  "Oberon", "Miranda", "Enceladus", "Pallas", "Rhea Dock", "Nereid", "Halley Gate", "Tycho",
+  "Copernicus", "Hellas Basin", "Elysium", "Proxima Ring", "Barnard's Rest", "Vega Hold",
+  "Sirius Yards", "Lagrange Five", "Arcadia Dome", "Polaris Deep", "Cygnus Gate", "Kuiper Post",
+  "Aldrin Base", "Shackleton", "Mariner Rift", "Juno Spire",
 ];
 export const NICKNAME_POOL = [
-  "River Cats", "Mudhens", "Growlers", "Steel", "Bisons", "Copperheads", "Night Owls",
-  "Sandpipers", "Mudcats", "Ironbirds", "Thunderclaps", "Dusters", "Wolf Spiders", "Sod Busters",
-  "Haymakers", "Zephyrs", "Jackalopes", "Stevedores", "Linemen", "Moonshots",
-  "Prairie Dogs", "Green Sox", "Wranglers", "Coal Skinks", "Barnstormers", "Dirigibles",
-  "Leadoffs", "Spitfires", "Turkeys", "Cannoneers", "Swamp Foxes", "Boilermen",
-  "Knuckleballs", "Sluggos", "Rainmakers", "Longhorns", "Icehouse Cats", "Ragtops",
+  "Comets", "Voidrunners", "Pulsars", "Ion Hawks", "Ringriders", "Quasars", "Starhounds",
+  "Solar Sox", "Nebulas", "Drifters", "Mag Rails", "Rocketeers", "Gravity Kings", "Lunar Owls",
+  "Meteors", "Orbiters", "Stardogs", "Blackholes", "Photons", "Hyperions", "Moonshots",
+  "Dust Devils", "Ice Miners", "Rail Gunners", "Satellites", "Dark Matter", "Spacejacks",
+  "Asteroids", "Tachyons", "Ore Haulers", "Dockhands", "Flares", "Cosmonauts", "Radials",
+  "Thrusters", "Wayfarers", "Supernovas", "Warp Cats",
 ];
 
 export const TRAITS = [
-  { id: "sluggers", label: "HR Sluggers", desc: "big power, thin averages", mod: { power: 12, contact: -8 } },
-  { id: "gloves", label: "Defensive Wizards", desc: "weak bats, elite gloves", mod: { defense: 12, power: -8 } },
-  { id: "smallball", label: "Small Ball", desc: "speed and contact, no pop", mod: { speed: 12, contact: 4, power: -12 } },
-  { id: "aces", label: "Pitching Factory", desc: "nasty stuff on the mound", mod: { stuff: 12 } },
-  { id: "patient", label: "Grinders", desc: "they work every count", mod: { eye: 12, power: -4 } },
-  { id: "balanced", label: "Well Drilled", desc: "no weaknesses, no stars", mod: { contact: 4, defense: 4 } },
+  { id: "sluggers", label: "Mass Drivers", desc: "big power, thin averages", mod: { power: 12, contact: -8 } },
+  { id: "gloves", label: "Shield Wall", desc: "weak bats, elite gloves", mod: { defense: 12, power: -8 } },
+  { id: "smallball", label: "Skirmishers", desc: "speed and contact, no pop", mod: { speed: 12, contact: 4, power: -12 } },
+  { id: "aces", label: "Arm Foundry", desc: "nasty stuff on the mound", mod: { stuff: 12 } },
+  { id: "patient", label: "Long Haul", desc: "they work every count", mod: { eye: 12, power: -4 } },
+  { id: "balanced", label: "Drilled Crew", desc: "no weaknesses, no stars", mod: { contact: 4, defense: 4 } },
 ];
 
 // The one and only league. Everything is tuned around its statBase.
 export const LEAGUE = {
-  name: "The Bigs",
+  name: "The Orbital League",
   statBase: 65, // league-average rating on the 0-100 scale
   statCap: 99,  // nothing and no one passes 99
   innings: 9,
@@ -106,7 +106,7 @@ export const ECON = {
   fanLossPct: 0.002,      // every loss loses 0.2% of the fans above the founding base
   playoffWinPay: 2000,    // per playoff game won
   semisSeriesPay: 6000,   // winning a semifinal series
-  cupPay: 40000,          // winning the Pennant Cup
+  cupPay: 40000,          // winning the Zenith Pennant
   cupFansPct: 0.25,       // a Cup swells the fan base by a quarter
   playoffFansPct: 0.10,   // made the playoffs (missed = -5% fans)
   offlineRate: 1.0,       // tunable damper on away income
@@ -117,7 +117,7 @@ export const ECON = {
 };
 
 // Franchise players: only tagged players train past the development cap.
-// You start with `slots` tags; every Pennant Cup adds one slot and lifts the
+// You start with `slots` tags; every Zenith Pennant adds one slot and lifts the
 // cap by devPerCup. A tag stays on the man until he leaves the roster.
 export const FRANCHISE = { slots: 2, devCap: 76, devPerCup: 2 };
 
@@ -126,32 +126,32 @@ export const FRANCHISE = { slots: 2, devCap: 76, devPerCup: 2 };
 // conc: gate multiplier bonus; lights: win fan-growth multiplier.
 export const STADIUM = [
   {
-    id: "parking", title: "PARKING", tiers: [
-      { name: "Gravel Lot", games: 2, cost: 2500, fans: 2500, label: "+5% attendance", value: 0.05 },
-      { name: "Paved Lot", games: 12, cost: 10000, fans: 12000, label: "+10% attendance", value: 0.10 },
-      { name: "Parking Garage", games: 40, cost: 30000, fans: 50000, label: "+15% attendance", value: 0.15 },
+    id: "parking", title: "DOCKING", tiers: [
+      { name: "Shuttle Pad", games: 2, cost: 2500, fans: 2500, label: "+5% attendance", value: 0.05 },
+      { name: "Docking Bay", games: 12, cost: 10000, fans: 12000, label: "+10% attendance", value: 0.10 },
+      { name: "Transit Ring", games: 40, cost: 30000, fans: 50000, label: "+15% attendance", value: 0.15 },
     ],
   },
   {
-    id: "seats", title: "SEATS", tiers: [
-      { name: "Bleachers", games: 12, cost: 4000, fans: 10000, label: "holds 15,000", value: 15000 },
-      { name: "Grandstand", games: 45, cost: 12000, fans: 30000, label: "holds 25,000", value: 25000 },
-      { name: "Upper Deck", games: 60, cost: 35000, fans: 75000, label: "holds 40,000", value: 40000 },
-      { name: "Second Deck", games: 80, cost: 100000, fans: 150000, label: "holds 60,000", value: 60000 },
+    id: "seats", title: "DECKS", tiers: [
+      { name: "Viewing Gallery", games: 12, cost: 4000, fans: 10000, label: "holds 15,000", value: 15000 },
+      { name: "Ring Stands", games: 45, cost: 12000, fans: 30000, label: "holds 25,000", value: 25000 },
+      { name: "Upper Ring", games: 60, cost: 35000, fans: 75000, label: "holds 40,000", value: 40000 },
+      { name: "Orbital Tier", games: 80, cost: 100000, fans: 150000, label: "holds 60,000", value: 60000 },
     ],
   },
   {
-    id: "conc", title: "CONCESSIONS", tiers: [
-      { name: "Hot Dog Cart", games: 2, cost: 2000, fans: 2000, label: "+15% gate", value: 0.15 },
-      { name: "Food Court", games: 15, cost: 6000, fans: 8000, label: "+30% gate", value: 0.30 },
-      { name: "Restaurant Row", games: 40, cost: 18000, fans: 25000, label: "+45% gate", value: 0.45 },
+    id: "conc", title: "GALLEY", tiers: [
+      { name: "Ration Cart", games: 2, cost: 2000, fans: 2000, label: "+15% gate", value: 0.15 },
+      { name: "Mess Hall", games: 15, cost: 6000, fans: 8000, label: "+30% gate", value: 0.30 },
+      { name: "Promenade", games: 40, cost: 18000, fans: 25000, label: "+45% gate", value: 0.45 },
     ],
   },
   {
-    id: "lights", title: "LIGHTS", tiers: [
-      { name: "Floodlights", games: 3, cost: 1500, fans: 1500, label: "+10% fan growth", value: 0.10 },
-      { name: "Full Rig", games: 20, cost: 5000, fans: 6000, label: "+25% fan growth", value: 0.25 },
-      { name: "Prime Time", games: 45, cost: 14000, fans: 20000, label: "+50% fan growth", value: 0.50 },
+    id: "lights", title: "ARC LIGHTS", tiers: [
+      { name: "Floodlamps", games: 3, cost: 1500, fans: 1500, label: "+10% fan growth", value: 0.10 },
+      { name: "Ion Rig", games: 20, cost: 5000, fans: 6000, label: "+25% fan growth", value: 0.25 },
+      { name: "Starfield Show", games: 45, cost: 14000, fans: 20000, label: "+50% fan growth", value: 0.50 },
     ],
   },
 ];
@@ -161,17 +161,17 @@ export const STADIUM = [
 // passive income (tier 1 of each is the original merch stand / TV deal).
 export const REVENUE = [
   {
-    id: "merch", title: "MERCH", tiers: [
-      { name: "Merch Stand", games: 2, cost: 250, fans: 1500, label: "sells caps, at games and while you are away", value: 1 },
-      { name: "Team Store", games: 15, cost: 2500, fans: 8000, label: "sales +75% · adds jerseys", value: 1.75 },
-      { name: "Flagship Store", games: 50, cost: 10000, fans: 30000, label: "sales +150% · adds signed memorabilia", value: 2.5 },
+    id: "merch", title: "OUTFITTER", tiers: [
+      { name: "Supply Kiosk", games: 2, cost: 250, fans: 1500, label: "sells crew patches, at games and while you are away", value: 1 },
+      { name: "Outfitter", games: 15, cost: 2500, fans: 8000, label: "sales +75% · adds flight jackets", value: 1.75 },
+      { name: "Flagship Bay", games: 50, cost: 10000, fans: 30000, label: "sales +150% · adds holo-signed cards", value: 2.5 },
     ],
   },
   {
-    id: "tv", title: "MEDIA", tiers: [
-      { name: "Regional TV", games: 15, cost: 4000, fans: 6000, label: "sales ×2", value: 2 },
-      { name: "National TV", games: 50, cost: 14000, fans: 20000, label: "sales ×3", value: 3 },
-      { name: "Coast-to-Coast", games: 80, cost: 40000, fans: 60000, label: "sales ×4", value: 4 },
+    id: "tv", title: "BROADCAST", tiers: [
+      { name: "Relay Feed", games: 15, cost: 4000, fans: 6000, label: "sales ×2", value: 2 },
+      { name: "System Net", games: 50, cost: 14000, fans: 20000, label: "sales ×3", value: 3 },
+      { name: "Hypercast", games: 80, cost: 40000, fans: 60000, label: "sales ×4", value: 4 },
     ],
   },
 ];
@@ -211,12 +211,12 @@ export const PLAYER_TRAITS = [
   { id: "clutch", label: "Clutch", role: "bat", sit: { contact: 9, eye: 9 } },
   { id: "freeSwinger", label: "Free Swinger", role: "bat", mods: { power: 9, contact: -9 } },
   { id: "contactArtist", label: "Contact Hitter", role: "bat", mods: { contact: 9, power: -6 } },
-  { id: "glovework", label: "Gold Glove", role: "bat", mods: { defense: 9 } },
+  { id: "glovework", label: "Gravity Glove", role: "bat", mods: { defense: 9 } },
   { id: "burner", label: "Burner", role: "bat", mods: { speed: 9 } },
   { id: "goodEye", label: "Good Eye", role: "bat", mods: { eye: 9 } },
-  { id: "fireballer", label: "Flamethrower", role: "pit", mods: { stuff: 9, control: -6 } },
+  { id: "fireballer", label: "Plasma Arm", role: "pit", mods: { stuff: 9, control: -6 } },
   { id: "painter", label: "Crafty", role: "pit", mods: { control: 9, stuff: -6 } },
-  { id: "iceman", label: "Escape Artist", role: "pit", sit: { stuff: 9 } },
+  { id: "iceman", label: "Cold Fusion", role: "pit", sit: { stuff: 9 } },
   { id: "workhorse", label: "Workhorse", role: "pit", mods: { stamina: 18 } },
 ];
 

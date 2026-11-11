@@ -220,7 +220,7 @@ export const runOffseason = ({ year, rivals, standings, ratings, seedOrder: fina
   else if (madePlayoffs) fansDelta = Math.round(fans * ECON.playoffFansPct);
   else fansDelta = -Math.round(fans * 0.05);
 
-  logs.push({ text: `— OFFSEASON, YEAR ${year} — ${championName} ${playerCup ? "— YOUR CLUB —" : ""} take${playerCup ? "" : "s"} the Pennant Cup.`, kind: playerCup ? "win" : "sys" });
+  logs.push({ text: `— OFFSEASON, YEAR ${year} — ${championName} ${playerCup ? "— YOUR CLUB —" : ""} take${playerCup ? "" : "s"} the Zenith Pennant.`, kind: playerCup ? "win" : "sys" });
   logs.push({ text: `Around the league, every front office reloads. The competition got better.`, kind: "sys" });
   logs.push({ text: `Scouts file their winter reports. Year ${year + 1} is around the corner.`, kind: "sys" });
 

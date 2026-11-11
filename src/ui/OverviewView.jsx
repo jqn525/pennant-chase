@@ -162,7 +162,7 @@ function status(s) {
   if (s.phase === "draft") return "Winter: the draft board is open.";
   if (s.phase === "playoffs" && s.playoffs) {
     const p = s.playoffs;
-    return `${p.round === "final" ? "Pennant Cup final" : "Semifinal"} vs the ${s.rivals[p.opp - 1].name}: ${p.wins.us}–${p.wins.them}, first to ${p.round === "final" ? 4 : 3}.`;
+    return `${p.round === "final" ? "Zenith Pennant final" : "Semifinal"} vs the ${s.rivals[p.opp - 1].name}: ${p.wins.us}–${p.wins.them}, first to ${p.round === "final" ? 4 : 3}.`;
   }
   const sr = seriesNow(s);
   return sr ? `Series vs ${s.rivals[s.schedule[s.gameIndex].opp - 1].name}: ${sr.w}–${sr.l}, ${sr.gamesLeft} to play.` : "";

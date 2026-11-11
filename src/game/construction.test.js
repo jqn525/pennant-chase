@@ -32,7 +32,7 @@ describe("construction", () => {
     expect(ev.cost).toBe(2000);
     expect(ev.doneN).toBe(s.hist.n);
     expect(-(s.ledger.life.upgrades || 0)).toBe(2000);
-    expect(s.log.some((e) => /Hot Dog Cart opens/.test(e.text))).toBe(true);
+    expect(s.log.some((e) => /Ration Cart opens/.test(e.text))).toBe(true);
   });
 
   it("stalls when cash runs short, can be cancelled, and survives a save", () => {

@@ -12,26 +12,35 @@ export const traitInfo = (id) => PLAYER_TRAITS.find((t) => t.id === id) || null;
 const traitPct = (p, stat) => traitInfo(p.trait)?.mods?.[stat] || 0;
 
 export const GEAR = [
-  { slot: "bat", label: "Bat", stat: "power", role: "bat", flavor: "More carry off the barrel" },
-  { slot: "batGloves", label: "Batting Gloves", stat: "contact", role: "bat", flavor: "Better feel, squarer contact" },
-  { slot: "cleats", label: "Cleats", stat: "speed", role: "bat", flavor: "First step and extra bases" },
-  { slot: "glove", label: "Fielding Glove", stat: "defense", role: "bat", flavor: "Turns hits into outs" },
-  { slot: "shades", label: "Shades", stat: "eye", role: "bat", flavor: "See the ball, spit on the bad ones" },
-  { slot: "sleeve", label: "Arm Sleeve", stat: "stuff", role: "pit", flavor: "Extra life on the fastball" },
-  { slot: "rosin", label: "Rosin Bag", stat: "control", role: "pit", flavor: "Grip it and hit the corner" },
+  { slot: "bat", label: "Mag-Bat", stat: "power", role: "bat", flavor: "A magnetised core puts more carry on the ball" },
+  { slot: "batGloves", label: "Grip Gauntlets", stat: "contact", role: "bat", flavor: "Haptic grip, squarer contact" },
+  { slot: "cleats", label: "Grav Boots", stat: "speed", role: "bat", flavor: "Low-grav push for the first step and extra bases" },
+  { slot: "glove", label: "Catch-Net", stat: "defense", role: "bat", flavor: "A field web that turns hits into outs" },
+  { slot: "shades", label: "Optic Visor", stat: "eye", role: "bat", flavor: "Tracks the spin, lays off the bad ones" },
+  { slot: "sleeve", label: "Servo Sleeve", stat: "stuff", role: "pit", flavor: "Servo-assisted whip on the fastball" },
+  { slot: "rosin", label: "Grip Resin", stat: "control", role: "pit", flavor: "Holds the seams, hits the corner" },
 ];
 
 const NAMES = {
-  bat: [["Ash", "Maple", "Birch", "Hickory", "Bamboo", "Corked"], ["Hammer", "Cannon", "Whisperer", "Thunderstick", "Toothpick", "Wand"]],
-  batGloves: [["Buttery", "Sticky", "Golden", "Broken-In", "Rodeo"], ["Grips", "Mitts", "Palms", "Handles", "Leathers"]],
-  cleats: [["Turbo", "Feather", "Dirt-Eater", "Lightning", "Greased"], ["Spikes", "Wheels", "Streaks", "Stompers", "Skates"]],
-  glove: [["Vacuum", "Basket", "Soft-Hand", "Web", "Flypaper"], ["Wizard", "Trap", "Net", "Scoop", "Magnet"]],
-  shades: [["Eagle-Eye", "Midnight", "Chrome", "Hawk", "X-Ray"], ["Shades", "Visors", "Lenses", "Specs", "Goggles"]],
-  sleeve: [["Rocket", "Iron", "Coiled", "Viper", "Piston"], ["Sleeve", "Wrap", "Spring", "Cannon-Arm", "Compressor"]],
-  rosin: [["Sticky", "Chalky", "Lucky", "Tacky", "Magic"], ["Situation", "Bag", "Dust", "Pouch", "Powder"]],
+  bat: [["Railgun", "Fusion", "Tungsten", "Quantum", "Ion", "Carbon"], ["Driver", "Lance", "Spar", "Coil", "Rod", "Breaker"]],
+  batGloves: [["Gecko", "Haptic", "Static", "Graphene", "Servo"], ["Grips", "Gauntlets", "Palms", "Clamps", "Weaves"]],
+  cleats: [["Ion", "Pulse", "Low-Grav", "Thruster", "Vector"], ["Striders", "Boots", "Treads", "Skids", "Kickers"]],
+  glove: [["Event", "Tractor", "Graviton", "Dark", "Flux"], ["Horizon", "Net", "Field", "Trap", "Web"]],
+  shades: [["Lidar", "Infrared", "Chrome", "Hawk", "Spectral"], ["Lenses", "Visor", "Optics", "Scope", "Array"]],
+  sleeve: [["Piston", "Hydraulic", "Coil", "Vortex", "Reactor"], ["Wrap", "Sleeve", "Brace", "Drive", "Actuator"]],
+  rosin: [["Nebula", "Ion", "Static", "Comet", "Stardust"], ["Dust", "Resin", "Charge", "Powder", "Film"]],
 };
 
 const pick = (a) => a[(Math.random() * a.length) | 0];
+
+// A deterministic name from an item id (used to rename gear in old saves)
+export const nameFor = (slot, rarity, seed) => {
+  let h = 0;
+  for (const ch of String(seed)) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  const [pre, post] = NAMES[slot] || NAMES.bat;
+  const name = `${pre[h % pre.length]} ${post[(h >>> 8) % post.length]}`;
+  return rarity === 3 ? `The ${name}` : name;
+};
 
 export const genItem = (rarity, slotDef) => {
   const def = slotDef || GEAR[(Math.random() * GEAR.length) | 0];
@@ -67,9 +76,9 @@ export const dealerTier = (trophies, playoffsEver) =>
   trophies > 0 ? "champion" : playoffsEver ? "contender" : "local";
 
 export const TIER_INFO = {
-  local: { label: "LOCAL DEALERS", hint: "make the playoffs to attract rarer stock" },
-  contender: { label: "CONTENDER DEALERS", hint: "win the Cup for the full catalog" },
-  champion: { label: "CHAMPION'S CATALOG", hint: "the best gear in the league finds you" },
+  local: { label: "STATION TRADERS", hint: "make the playoffs to attract rarer stock" },
+  contender: { label: "CONTENDER SUPPLIERS", hint: "win the Cup for the full catalog" },
+  champion: { label: "FLAGSHIP ARMORY", hint: "the best gear in the league finds you" },
 };
 
 export const shipmentWeights = (tier, mega = false) => {
@@ -132,7 +141,7 @@ export const isStar = (p) => {
 };
 
 // The league-wide development cap: training stops here for everyone except
-// franchise players. Rises with every Pennant Cup, never past 97.
+// franchise players. Rises with every Zenith Pennant, never past 97.
 export const devCapFor = (trophies) =>
   Math.min(LEAGUE.statCap - 2, FRANCHISE.devCap + FRANCHISE.devPerCup * (trophies || 0));
 

@@ -6,10 +6,10 @@
 
 import { LEAGUE, ECON, TRADE, BAT_STATS, PIT_STATS, STADIUM, stadiumFx, REVENUE, revenueFx, SALARY, FRANCHISE, CREEP } from "./constants.js";
 import { fmt } from "./utils.js";
-import { genRoster, genPitcher, genBatter, genCallUp, seedUid, genDraftClass, vetPot, rollPot, pickTrait, freshName, seedNames, creepRival, seedRivalStars } from "./generators.js";
+import { genRoster, genPitcher, genBatter, genCallUp, seedUid, genDraftClass, vetPot, rollPot, pickTrait, freshName, seedNames, creepRival, seedRivalStars, genTeamIdentity } from "./generators.js";
 import { newGame, stepAtBat, playGameInstant, settleGame, ticketGate } from "./engine.js";
 import { makeRivals, makeSchedule, teamRating, quickSim, simSeries, seedOrder, runOffseason, careerWinter, seriesInfo, assignMarkets, shiftPlayer, marketOffset } from "./season.js";
-import { genShipment, genItem, playerValue, GEAR, dealerTier, shipmentWeights, devCapFor, ovr } from "./gear.js";
+import { genShipment, genItem, playerValue, GEAR, dealerTier, shipmentWeights, devCapFor, ovr, nameFor } from "./gear.js";
 import { nextPrint, cardDraw } from "./cards.js";
 import { loadoutById, applyLoadout, sortRival } from "./lineup.js";
 import { teamPayroll, luxuryTax } from "./salary.js";
@@ -35,7 +35,7 @@ export const lvlOf = (v) => (typeof v === "number" ? v : v ? 1 : 0);
 
 // ── Ledger ──
 export const LEDGER_LINES = [
-  ["gate", "Ticket gate", 1], ["winBonus", "Win bonus", 1], ["merch", "Merch", 1], ["tv", "TV share", 1],
+  ["gate", "Ticket gate", 1], ["winBonus", "Win bonus", 1], ["merch", "Merch", 1], ["tv", "Broadcast share", 1],
   ["postseason", "Playoff & Cup pay", 1], ["trades", "Trades", 0], ["away", "Away sales", 1],
   ["payroll", "Payroll", -1], ["coaching", "Coaching staff", -1], ["training", "Training", -1], ["gear", "Gear", -1], ["upgrades", "Upgrades", -1],
   ["prints", "Promotions", -1], ["draft", "Draft signings", -1], ["tax", "Luxury tax", -1],
@@ -89,6 +89,32 @@ const updatePlayer = (s, pid, fn) => {
   s.roster = mapRoster(s.roster, upd);
 };
 
+// ── The Orbital League: a one-time rename for saves from the ballpark era ──
+// Only display names change: build and gear names come from the new tables,
+// rival clubs get station names. Ids, ratings and money are untouched.
+export const LORE = 1;
+export function migrateLore(s, from) {
+  s.lore = LORE;
+  if ((from ?? 0) >= LORE) return false;
+  for (const [id, b] of Object.entries(s.builds || {})) {
+    const tier = BALLPARK.find((t) => t.id === id)?.tiers[b.tier];
+    const track = BALLPARK.find((t) => t.id === id);
+    if (tier) s.builds[id] = { ...b, name: tier.name, area: track.title.charAt(0) + track.title.slice(1).toLowerCase() };
+  }
+  const rename = (it) => (it && it.slot ? { ...it, name: nameFor(it.slot, it.rarity, it.id) } : it);
+  s.shopItems = (s.shopItems || []).map(rename);
+  if (s.roster) s.roster = mapRoster(s.roster, (p) => (p.gear ? { ...p, gear: Object.fromEntries(Object.entries(p.gear).map(([k, it]) => [k, rename(it)])) } : p));
+  if (s.rivals) {
+    const cities = new Set(s.city ? [s.city.name] : []), names = new Set(s.city ? [s.city.nickname] : []);
+    s.rivals = s.rivals.map((t) => {
+      const id = genTeamIdentity(cities, names);
+      return { ...t, name: id.name, tCity: id.tCity, batters: t.batters, rotation: t.rotation, pen: t.pen };
+    });
+  }
+  if (s.roster) pushLog(s, "The league goes orbital: welcome to the Orbital League. Same game, new stations.", "beat");
+  return true;
+}
+
 // ── Creating and loading ──
 export function blankState() {
   return {
@@ -97,7 +123,7 @@ export function blankState() {
     draftClass: null, form: [], year: 1, phase: "regular", rivals: null, schedule: null, rivalDays: null,
     gameIndex: 0, standings: Array.from({ length: 8 }, () => ({ w: 0, l: 0 })), playoffs: null,
     history: [], trophies: 0, allTime: {}, capYears: 0, lineupLoadout: "numbers", autoLineup: true,
-    speed: 1, sound: true, autoDev: defaultAutoDev(), training: defaultTraining(), unlocked: [], builds: {}, ledger: emptyLedger(), results: [],
+    speed: 1, sound: true, autoDev: defaultAutoDev(), training: defaultTraining(), lore: LORE, unlocked: [], builds: {}, ledger: emptyLedger(), results: [],
     live: null, ctx: null, rest: 0, log: [], logId: 1, events: [], lastSeen: Date.now(),
   };
 }
@@ -235,6 +261,7 @@ export function loadState(saved) {
   s.rotationTurn = S.rotationTurn ?? 0;
   s.rivalTrainedAt = S.rivalTrainedAt ?? S.gameIndex ?? 0;
   if (staffed) pushLog(s, "The club signs four starters and a closer to fill out a real pitching staff.", "beat");
+  migrateLore(s, S.lore);
   return s;
 }
 
@@ -247,7 +274,7 @@ export function toSave(s) {
     year: s.year, phase: s.phase, rivals: s.rivals, schedule: s.schedule, rivalDays: s.rivalDays,
     gameIndex: s.gameIndex, standings: s.standings, playoffs: s.playoffs, history: s.history,
     trophies: s.trophies, allTime: s.allTime, capYears: s.capYears, speed: s.speed, sound: s.sound,
-    lineupLoadout: s.lineupLoadout ?? null, autoLineup: s.autoLineup, autoDev: s.autoDev, training: s.training, unlocked: s.unlocked, builds: s.builds, yearEnd: s.yearEnd, rotationTurn: s.rotationTurn ?? 0, rivalTrainedAt: s.rivalTrainedAt ?? 0, ledger: s.ledger,
+    lineupLoadout: s.lineupLoadout ?? null, autoLineup: s.autoLineup, autoDev: s.autoDev, training: s.training, lore: s.lore, unlocked: s.unlocked, builds: s.builds, yearEnd: s.yearEnd, rotationTurn: s.rotationTurn ?? 0, rivalTrainedAt: s.rivalTrainedAt ?? 0, ledger: s.ledger,
     results: s.results.slice(0, 30), liveGame: s.live, liveContext: s.ctx,
   };
 }
@@ -374,7 +401,7 @@ function startNextGame(s) {
     const higherHome = pattern[p.gameNo] === 1;
     home = p.weAreHigherSeed ? higherHome : !higherHome;
     oppIdx = p.opp;
-    label = `${p.round === "semi" ? "Semifinal" : "Pennant Cup"} game ${p.gameNo + 1} (series ${p.wins.us}–${p.wins.them})`;
+    label = `${p.round === "semi" ? "Semifinal" : "Zenith Pennant"} game ${p.gameNo + 1} (series ${p.wins.us}–${p.wins.them})`;
   } else {
     const d = s.schedule[s.gameIndex];
     oppIdx = d.opp; home = d.home;
@@ -433,7 +460,7 @@ export function settle(s, g) {
   s.results.unshift({ won: res.won, us: g.us, them: g.them, opp: g.opp.name, home: g.home, gate: res.attendance, net: ledgerNet(s.ledger.game), fans: res.fansDelta, year: s.year, playoff: playoffLabel });
   if (s.results.length > 60) s.results.length = 60;
   pushLog(s, res.text, res.kind);
-  emit(s, "final", { won: res.won });
+  emit(s, "final", { won: res.won, net: ledgerNet(s.ledger.game) });
 
   if (s.phase === "regular") {
     const next = s.standings.map((t) => ({ ...t }));
@@ -614,7 +641,7 @@ export function advance(s) {
     return;
   }
   if (p.wins.us >= need && p.round === "final") {
-    pushLog(s, `PENNANT CUP CHAMPIONS. ${tn(s.city)} take the final ${p.wins.us}–${p.wins.them}.`, "win");
+    pushLog(s, `ZENITH PENNANT CHAMPIONS. ${tn(s.city)} take the final ${p.wins.us}–${p.wins.them}.`, "win");
     if (s.trophies === 0) pushLog(s, "MAX speed unlocked.", "win");
     emit(s, "cup");
     return offseason(s, 0, true);
@@ -624,7 +651,7 @@ export function advance(s) {
     const champ = simSeries(ratings[p.otherWinner], ratings[p.opp], 7) ? p.otherWinner : p.opp;
     return offseason(s, champ, false);
   }
-  pushLog(s, `Pennant Cup final lost ${p.wins.them}–${p.wins.us}.`, "out");
+  pushLog(s, `Zenith Pennant final lost ${p.wins.them}–${p.wins.us}.`, "out");
   return offseason(s, p.opp, false);
 }
 
@@ -648,7 +675,7 @@ function enterPlayoffs(s) {
     const w1 = simSeries(ratings[top[0]], ratings[top[3]], 5) ? top[0] : top[3];
     const w2 = simSeries(ratings[top[1]], ratings[top[2]], 5) ? top[1] : top[2];
     const champ = simSeries(ratings[w1], ratings[w2], 7) ? w1 : w2;
-    pushLog(s, `No playoffs this year. The ${name(champ)} win the Pennant Cup.`, "out");
+    pushLog(s, `No playoffs this year. The ${name(champ)} win the Zenith Pennant.`, "out");
     offseason(s, champ, false);
   }
 }
@@ -791,6 +818,7 @@ export function landTraining(s, pid, key, cost, auto) {
   afterRosterChange(s);
   const ev = spent(s, "training", cost, { pid, before, what: `${key} +1` });
   if (ev && auto) ev.auto = true;
+  emit(s, "trained", { text: `${before.name}: ${key} ${before[key] + 1}` });
   emit(s, "cash");
   return ev;
 }
@@ -823,6 +851,7 @@ export function printCard(s, pid) {
   spent(s, "prints", up.cost, { pid, before: p, what: `${up.deal} · ${up.name.toLowerCase()}` });
   pushLog(s, `${p.name} is now a ${up.name.toLowerCase()}: ${up.blurb}.`, "win");
   emit(s, "cash");
+  emit(s, "promo", { text: `${p.name} · ${up.name}` });
   return true;
 }
 
@@ -864,6 +893,7 @@ export function buyGear(s, pid, itemId) {
   spent(s, "gear", item.cost, { pid, before: p, what: item.name });
   pushLog(s, `${p.name} equips ${item.name}.`, "win");
   emit(s, "cash");
+  if (item.rarity >= 2) emit(s, "drop", { text: `${item.rarity === 3 ? "✦ Legendary" : "◆ Rare"} · ${item.name}`, rarity: item.rarity });
   return true;
 }
 
@@ -939,7 +969,7 @@ export function buildLock(s, id) {
   const track = BALLPARK.find((t) => t.id === id);
   const next = track?.tiers[trackLevel(s, id)];
   if (!next) return "Fully built";
-  if (id === "tv" && s.merch < 1) return "Needs a merch store first";
+  if (id === "tv" && s.merch < 1) return "Needs an outfitter first";
   if (s.fans < next.fans) return `Needs ${fmt(next.fans)} fans`;
   if (s.money < next.cost) return `Needs $${fmt(next.cost - s.money)} more`;
   return null;

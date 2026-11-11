@@ -8,9 +8,9 @@ import { ovr } from "./gear.js";
 
 export const CARD_TIERS = [
   { id: 0, key: "unknown", name: "Unknown", deal: null, at: 0, cost: 0, draw: 0 },
-  { id: 1, key: "local", name: "Local favorite", deal: "Jersey line", blurb: "his number on jerseys around town", at: 70, cost: 750, draw: 0.1 },
-  { id: 2, key: "regional", name: "Regional star", deal: "Bobblehead night", blurb: "a bobblehead giveaway that sells out", at: 80, cost: 10000, draw: 0.3 },
-  { id: 3, key: "national", name: "National icon", deal: "Sneaker deal", blurb: "a national sneaker campaign", at: 88, cost: 50000, draw: 0.6 },
+  { id: 1, key: "local", name: "Station favorite", deal: "Holo-card print run", blurb: "his holo-card in every dock vending slot", at: 70, cost: 750, draw: 0.1 },
+  { id: 2, key: "regional", name: "System star", deal: "Hologram night", blurb: "a life-size hologram giveaway that sells out", at: 80, cost: 10000, draw: 0.3 },
+  { id: 3, key: "national", name: "Galactic icon", deal: "Interstellar sponsor", blurb: "an interstellar sponsorship on every relay feed", at: 88, cost: 50000, draw: 0.6 },
 ];
 export const STAR_TIERS = CARD_TIERS;
 

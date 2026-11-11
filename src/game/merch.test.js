@@ -54,6 +54,6 @@ describe("away sales", () => {
     welcomeBack(s);
     expect(s.money).toBeGreaterThan(start);
     expect(s.money).toBeCloseTo(1e5 + ledgerNet(s.ledger.life) - 0, 0);
-    expect(s.log[0].text).toMatch(/fans bought \d[\d,]* caps?/);
+    expect(s.log[0].text).toMatch(/fans bought \d[\d,]* crew patch(es)?/);
   });
 });

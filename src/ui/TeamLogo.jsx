@@ -1,12 +1,12 @@
 // ── The club logo: the initials drawn in one of six styles ──
-// Pure SVG (100×100 box) using the game's own fonts; textLength keeps any
+// Pure SVG (100×100 box) using the game's display and mono faces; textLength keeps any
 // 1–3 letters inside the badge.
 
 import { clubLogo, inkOn, darken } from "../game/identity.js";
 
-const SLAB = "'Alfa Slab One', serif";
-const COND = "'Barlow Condensed', 'Arial Narrow', sans-serif";
-const PIX = "'Press Start 2P', monospace";
+const SLAB = "'Chakra Petch', 'Segoe UI', sans-serif";
+const COND = "'Chakra Petch', 'Arial Narrow', sans-serif";
+const PIX = "'JetBrains Mono', monospace";
 
 // Fit width per letter count
 const fit = (text, one, per) => Math.min(one * 1.4, per * text.length + (text.length === 1 ? one - per : 0));
@@ -31,7 +31,7 @@ function Art({ style, text, primary, secondary }) {
     case "script":
       return (
         <>
-          <rect x="4" y="4" width="92" height="92" rx="18" fill="#0d2418" stroke={primary} strokeWidth="4" />
+          <rect x="4" y="4" width="92" height="92" rx="18" fill="#0b1520" stroke={primary} strokeWidth="4" />
           <g transform="skewX(-12) translate(10 0)">
             <Letters text={text} y={45} size={text.length > 2 ? 44 : 60} width={fit(text, 40, 30)} font={COND}
               fill={primary} stroke={deep} strokeWidth={3} italic />
@@ -45,10 +45,10 @@ function Art({ style, text, primary, secondary }) {
       const x0 = 50 - (step * (letters.length - 1)) / 2;
       return (
         <>
-          <circle cx="50" cy="50" r="46" fill="#0d2418" />
+          <circle cx="50" cy="50" r="46" fill="#0b1520" />
           {letters.map((ch, i) => (
             <Letters key={i} text={ch} x={x0 + i * step} y={i % 2 ? 56 : 46} size={letters.length > 2 ? 46 : 58}
-              font={SLAB} fill={i % 2 ? secondary : primary} stroke="#0d2418" strokeWidth={5} />
+              font={SLAB} fill={i % 2 ? secondary : primary} stroke="#0b1520" strokeWidth={5} />
           ))}
         </>
       );

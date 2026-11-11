@@ -18,6 +18,7 @@ import {
 import { gearGain, winPerPointOf, valueOfWin } from "../game/advisor.js";
 import { money } from "./fmt.js";
 import { startProgram, startLock as trainLock, programFor, gamesFor, areaOf, AREAS } from "../game/training.js";
+import HoloCard from "./HoloCard.jsx";
 import { Sheet } from "./Shell.jsx";
 
 export default function PlayerSheet({ f, pid, onClose }) {
@@ -37,11 +38,14 @@ export default function PlayerSheet({ f, pid, onClose }) {
 
   return (
     <Sheet title={`${p.name} · ${own ? slotOf(s.roster, p.id) : p.pos}`} onClose={onClose}>
-      <div className="kpis">
-        <div className="kpi"><span>Overall</span><b>{ovr(p).toFixed(1)}</b><small>{trait ? trait.label : "no trait"}</small></div>
-        <div className="kpi"><span>Salary</span><b>{money(salaryOf(p))}</b><small>per season</small></div>
-        <div className="kpi"><span>Star power</span><b style={{ fontFamily: "var(--ui)", fontSize: 16 }}>{tier.name.toLowerCase()}</b><small>{up ? `${up.deal.toLowerCase()} ready` : eligibleTier(p) > (p.cardTier || 0) ? "" : `next at ${CARD_TIERS[(p.cardTier || 0) + 1]?.at ?? "—"} OVR`}</small></div>
-        <div className="kpi"><span>A point is worth</span><b>{money(perPoint)}</b><small>per game, in wins</small></div>
+      <div className="holo-head">
+        <HoloCard p={p} slot={own ? slotOf(s.roster, p.id) : p.pos} chips={[trait?.label, p.franchise ? "Franchise" : null, stage(p.age)]} />
+        <div className="kpis">
+          <div className="kpi"><span>Star power</span><b style={{ fontFamily: "var(--display)", fontSize: 16 }}>{tier.name.toLowerCase()}</b><small>{up ? `${up.deal.toLowerCase()} ready` : eligibleTier(p) > (p.cardTier || 0) ? "" : `next at ${CARD_TIERS[(p.cardTier || 0) + 1]?.at ?? "—"} OVR`}</small></div>
+          <div className="kpi"><span>Salary</span><b>{money(salaryOf(p))}</b><small>per season</small></div>
+          <div className="kpi"><span>A point is worth</span><b>{money(perPoint)}</b><small>per game, in wins</small></div>
+          <div className="kpi"><span>Overall</span><b>{ovr(p).toFixed(1)}</b><small>{trait ? trait.label : "no trait"}</small></div>
+        </div>
       </div>
 
       {own && <Development s={s} p={p} />}
@@ -103,7 +107,7 @@ export default function PlayerSheet({ f, pid, onClose }) {
           <h2>{isOpen(s, "star") ? "Star power and franchise tag" : "Franchise tag"}</h2>
           <div className="card card--m panel--pad stack">
             {isOpen(s, "star") && <div className="row">
-              <div className="grow">{up ? <><b>{up.deal}</b>: {up.blurb}. Makes him a {up.name.toLowerCase()}, sells more merch, raises his trade value.</> : <>{tier.id ? `He is a ${tier.name.toLowerCase()}.` : "Nobody outside the ballpark knows him yet."} {CARD_TIERS[(p.cardTier || 0) + 1] ? `The next deal (${CARD_TIERS[(p.cardTier || 0) + 1].deal.toLowerCase()}) opens at ${CARD_TIERS[(p.cardTier || 0) + 1].at} OVR.` : "As famous as it gets."}</>}</div>
+              <div className="grow">{up ? <><b>{up.deal}</b>: {up.blurb}. Makes him a {up.name.toLowerCase()}, sells more merch, raises his trade value.</> : <>{tier.id ? `He is a ${tier.name.toLowerCase()}.` : "Nobody outside the dome knows him yet."} {CARD_TIERS[(p.cardTier || 0) + 1] ? `The next deal (${CARD_TIERS[(p.cardTier || 0) + 1].deal.toLowerCase()}) opens at ${CARD_TIERS[(p.cardTier || 0) + 1].at} OVR.` : "As famous as it gets."}</>}</div>
               {up && <button className="btn btn--sm" disabled={winter || s.money < up.cost} onClick={() => f.act(printCard, p.id)}>{money(up.cost)}</button>}
             </div>}
             {!p.franchise && (
