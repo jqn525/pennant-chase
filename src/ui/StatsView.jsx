@@ -77,12 +77,14 @@ function Team({ f, openPlayer }) {
       <h2><span className="grow">Team rating vs the league</span><small>average overall</small></h2>
       <BarList fmt={(v) => v.toFixed(1)} rows={rt.map((t) => ({ label: t.me ? `${t.name} (you)` : t.name, value: t.r, color: t.me ? SERIES[0] : "var(--faint)" }))} />
 
+      {isOpen(s, "report") && <>
       <h2><span className="grow">Units vs the league</span><small>{s.unitsStart?.late ? "change since tracking began" : "change since opening day"}</small></h2>
       <UnitTable s={s} />
       <RunsVsTalent s={s} k={k} />
 
       <Head title="Depth chart" small="vs the same slot on 7 clubs" help="Your SP1 is measured against each club's best starter, SP2 against their second best, and so on. Tap a row to open the player." />
       <DepthChart s={s} openPlayer={openPlayer} />
+      </>}
 
       <h2>Splits</h2>
       <div className="card card--m table-wrap">

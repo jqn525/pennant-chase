@@ -19,17 +19,17 @@ const match = (k, o) => k === "All" || (k === "Yours" ? o.kind === "Build" || o.
 
 export default function SpendView({ f }) {
   const { s } = f;
-  const [sec, setSecRaw] = useState(() => { try { const v = sessionStorage.getItem(SPEND_KEY); return SECTIONS.includes(v) ? v : "buy"; } catch { return "buy"; } });
+  const [sec, setSecRaw] = useState(() => { try { const v = sessionStorage.getItem(SPEND_KEY); return SECTIONS.includes(v) && (v !== "gear" || isOpen(s, "gear")) ? v : "buy"; } catch { return "buy"; } });
   const setSec = (k) => { setSecRaw(k); try { sessionStorage.setItem(SPEND_KEY, k); } catch { /* private mode */ } };
   const [kind, setKind] = useState(() => (s.autoDev?.on && isOpen(s, "autodev") && isOpen(s, "ballpark") ? "Yours" : "All"));
   const all = options(s);
-  const kinds = KINDS.filter((k) => ({ Gear: "gear", Build: "ballpark", Promote: "star" }[k] ? isOpen(s, { Gear: "gear", Build: "ballpark", Promote: "star" }[k]) : true));
+  const kinds = KINDS.filter((k) => k !== "Yours" || isOpen(s, "ballpark") || isOpen(s, "star")).filter((k) => ({ Gear: "gear", Build: "ballpark", Promote: "star" }[k] ? isOpen(s, { Gear: "gear", Build: "ballpark", Promote: "star" }[k]) : true));
   const list = all.filter((o) => match(kind, o));
   const buyable = list.filter((o) => !o.lock || /^Needs \$/.test(o.lock));
   // far-off builds stay hidden until the club is at least halfway there
   const locked = list.filter((o) => o.lock && !/^Needs \$/.test(o.lock) && !(o.needFans && s.fans < o.needFans * 0.5));
   const ls = lanes(s);
-  const tabs = [["buy", "Buy", null], ["coach", "Coaching", ls.length ? `${ls.filter((l) => l.prog).length}/${ls.length}` : null], ["gear", "Equipment", isOpen(s, "gear") ? String(s.shopItems.length) : null]];
+  const tabs = [["buy", "Buy", null], ["coach", "Coaching", ls.length ? `${ls.filter((l) => l.prog).length}/${ls.length}` : null], ...(isOpen(s, "gear") ? [["gear", "Equipment", String(s.shopItems.length)]] : [])];
   return (
     <>
       <h1>Spend</h1>
@@ -69,7 +69,7 @@ export default function SpendView({ f }) {
       {sec === "gear" && (
         <>
           <Head title="Equipment manager" help="Buys gear after every game, best payback first, from a share of each game's earnings. Builds and star-power promotions are never bought automatically; the rest of your earnings stays in the bank for those." />
-          {isOpen(s, "autodev") ? <AutoDevCard f={f} /> : <p className="note">{nextUnlockNote.autodev} Until then, buy gear from the Buy list.</p>}
+          {isOpen(s, "autodev") ? <AutoDevCard f={f} /> : <p className="note">{nextUnlockNote.autodev} </p>}
           {isOpen(s, "gear") && (
             <>
               <Head title="Gear shipment" small={restockNote(s)} help="Each item also appears in the Buy list with the player it helps most." />

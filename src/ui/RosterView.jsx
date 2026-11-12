@@ -55,9 +55,10 @@ export default function RosterView({ f, openPlayer, goTo }) {
       <h1>Roster</h1>
       <p className="lede">Franchise tags {franchiseUsed(s)} of {franchiseSlots(s)} used. Tap a player to train, gear up, promote or trade.</p>
 
-      <Head title="Team report" small="tap a unit" help="Each unit is rated with gear and traits counted and ranked against the seven rival clubs. The bar shows the gap to the league average. Tap a unit to list its players, weakest first." />
-      <UnitCard s={s} active={unit} onPick={pickUnit} />
+      {isOpen(s, "report") && <><Head title="Team report" small="tap a unit" help="Each unit is rated with gear and traits counted and ranked against the seven rival clubs. The bar shows the gap to the league average. Tap a unit to list its players, weakest first." />
+      <UnitCard s={s} active={unit} onPick={pickUnit} /></>}
 
+      {isOpen(s, "lineup") && <>
       <Head title="Lineup" small={s.autoLineup ? "set automatically" : "custom order"} help="The order is re-applied automatically after trades, training, gear and the draft." />
       <div className="card card--m panel--pad stack">
         <label className="field">
@@ -84,6 +85,7 @@ export default function RosterView({ f, openPlayer, goTo }) {
           </div>
         )}
       </div>
+      </>}
 
       <Head innerRef={tableHead} className="jump" title={unit ? `${unitLabel(unit)}, weakest first` : "Players"} help="Next pt: cost of the cheapest next rating point. Room: points left before training stops."><button className="btn btn--quiet btn--sm" onClick={() => { setUnit(null); setSort(["order", 1]); }} disabled={!unit && sort[0] === "order"}>{unit ? "Show everyone" : "Batting order"}</button></Head>
       <div className="card card--l table-wrap">

@@ -1,6 +1,7 @@
 // ── The shell: club header with cash and pace, four tabs, overlay sheets ──
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import TeamLogo from "./TeamLogo.jsx";
+import { pendingUnlock, ackUnlock, visitTab } from "../game/unlocks.js";
 import { money } from "./fmt.js";
 import { useTween } from "./motion.js";
 import { Sparkline } from "./charts.jsx";
@@ -55,6 +56,10 @@ export default function Shell({ f }) {
   const [settings, setSettings] = useState(false);
   const [draftHidden, setDraftHidden] = useState(false);
   useEffect(() => { try { sessionStorage.setItem("pc-tab", tab); } catch { /* private mode */ } window.scrollTo(0, 0); }, [tab]);
+  // a tab's "new" dot clears once you've looked at it
+  useEffect(() => { if (s.newTabs?.[tab] && !pendingUnlock(s)) f.act(visitTab, tab); });
+  const goTo = (t, sec) => { if (sec) { try { sessionStorage.setItem(t === "spend" ? SPEND_KEY : STATS_KEY, sec); } catch { /* private mode */ } } setTab(t); };
+  const unlock = pendingUnlock(s);
   useEffect(() => { if (s.phase !== "draft") setDraftHidden(false); }, [s.phase]);
 
   const net = netPerGame(s);
@@ -98,7 +103,7 @@ export default function Shell({ f }) {
             <button className="btn btn--sm" onClick={() => setDraftHidden(false)}>Open draft</button>
           </div>
         )}
-        <View f={f} openPlayer={setPlayerId} goTo={(t, sec) => { if (sec) { try { sessionStorage.setItem(t === "spend" ? SPEND_KEY : STATS_KEY, sec); } catch { /* private mode */ } } setTab(t); }} />
+        <View f={f} openPlayer={setPlayerId} goTo={goTo} key={tab === "spend" ? `spend-${s.spendJump || 0}` : tab} />
       </main>
 
       <nav className="tabs" aria-label="Sections">
@@ -108,12 +113,14 @@ export default function Shell({ f }) {
               <span className="tabs__label">
                 {label}
                 {id === "spend" && ready > 0 && <i aria-label={`${ready} worthwhile buys`}>{ready > 99 ? "99+" : ready}</i>}
+                {s.newTabs?.[id] && tab !== id && <em className="tabs__new" aria-label="something new">new</em>}
               </span>
             </button>
           ))}
         </div>
       </nav>
 
+      {unlock && !s.yearEnd && <UnlockCard key={unlock.id} f={f} u={unlock} onGo={() => { f.act(ackUnlock); if (unlock.to) { f.act(bumpSpend); goTo(...unlock.to); } }} />}
       {s.yearEnd && <YearEndSheet f={f} />}
       {showDraft && <DraftSheet f={f} onHide={() => setDraftHidden(true)} openPlayer={setPlayerId} />}
       {playerId != null && <PlayerSheet f={f} pid={playerId} onClose={() => setPlayerId(null)} />}
@@ -135,6 +142,32 @@ export function Sheet({ title, onClose, closeLabel = "Close", children, actions 
     <div className="sheet" role="dialog" aria-modal="true" aria-label={title}>
       <div className="sheet__bar"><div className="top__in"><h3>{title}</h3>{actions}{onClose && <button className="x" onClick={onClose}>{closeLabel}</button>}</div></div>
       <div className="view">{children}</div>
+    </div>
+  );
+}
+
+// re-mount Spend so it picks up the section an unlock points at
+function bumpSpend(s) { s.spendJump = (s.spendJump || 0) + 1; }
+
+// Something new just opened: say what it is, pause the season, offer the way there
+function UnlockCard({ f, u, onGo }) {
+  useEffect(() => {
+    const was = f.paused;
+    f.setPaused(true);
+    return () => f.setPaused(was);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  return (
+    <div className="unlock" role="dialog" aria-modal="true" aria-label={`New: ${u.title}`}>
+      <div className="unlock__card">
+        <span className="unlock__eyebrow">New</span>
+        <h3>{u.title}</h3>
+        <p>{u.body}</p>
+        <div className="row">
+          <button className="btn btn--quiet grow" onClick={() => f.act(ackUnlock)}>Later</button>
+          <button className="btn grow" onClick={onGo}>Show me</button>
+        </div>
+      </div>
     </div>
   );
 }

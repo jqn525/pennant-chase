@@ -11,7 +11,7 @@ export default function Coaching({ f }) {
   const list = lanes(s);
   const [armed, setArmed] = useState(null);
   useEffect(() => { if (armed == null) return undefined; const t = setTimeout(() => setArmed(null), 4000); return () => clearTimeout(t); }, [armed]);
-  const hire = nextHire(s);
+  const hire = isOpen(s, "assistants") ? nextHire(s) : null;
   const winter = s.phase === "draft";
   const busy = list.filter((l) => l.prog).length;
   const empty = AREA_IDS.filter((a) => !list.some((l) => l.area === a));

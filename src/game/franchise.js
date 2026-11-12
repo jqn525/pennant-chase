@@ -13,7 +13,7 @@ import { genShipment, genItem, playerValue, GEAR, dealerTier, shipmentWeights, d
 import { nextPrint, cardDraw } from "./cards.js";
 import { loadoutById, applyLoadout, sortRival } from "./lineup.js";
 import { teamPayroll, luxuryTax } from "./salary.js";
-import { checkUnlocks } from "./unlocks.js";
+import { checkUnlocks, queueUnlock } from "./unlocks.js";
 import { rollAwaySales } from "./merch.js";
 import { MAX_RATING, ageOneYear, retireChance, rollTalent, drawAge, drawTier } from "./talent.js";
 import { everyone, mapRoster, starterFor, replaceSlot, ROTATION } from "./roster.js";
@@ -576,6 +576,7 @@ export function openUnlocks(s) {
   for (const u of checkUnlocks(s)) {
     if (u.news) pushLog(s, u.news, "beat");
     emit(s, "unlock", { id: u.id });
+    if (u.sheet) { queueUnlock(s, u); slowDown(s, "so you can look at what just opened"); }
   }
 }
 

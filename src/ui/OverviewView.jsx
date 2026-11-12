@@ -12,6 +12,7 @@ import BoxScore from "./BoxScore.jsx";
 import { starterFor } from "../game/roster.js";
 import { useTween } from "./motion.js";
 import { weakestLink } from "../game/units.js";
+import { isOpen, nextObjective, objectivesLeft } from "../game/unlocks.js";
 
 function Ledger({ s }) {
   const [view, setView] = useState("season");
@@ -159,6 +160,25 @@ function NowPlaying({ s }) {
   );
 }
 
+// The one step that opens the next part of the game
+function Objective({ s, goTo }) {
+  const o = nextObjective(s);
+  if (!o) return null;
+  const [cur, target] = o.progress || [];
+  const left = objectivesLeft(s);
+  return (
+    <div className="objective">
+      <div className="objective__main">
+        <small>Next step{left > 1 ? ` · ${left} to go` : ""}</small>
+        <b>{o.goal}{o.progress && <span className="num"> · {o.money ? `${money(cur)} of ${money(target)}` : `${cur} of ${target}`}</span>}</b>
+        <span className="sub">Opens {o.opens}{o.how ? ` · ${o.how}` : ""}</span>
+        {o.progress && <div className="bar"><i style={{ width: `${Math.min(100, (cur / target) * 100)}%` }} /></div>}
+      </div>
+      {o.go && <button className="btn btn--sm" onClick={() => goTo(...o.go)}>Go</button>}
+    </div>
+  );
+}
+
 // The state of the club as short facts; each one opens the screen where you act on it
 function Facts({ s, goTo }) {
   const cap = stadiumFx(s.stadium).attCap;
@@ -177,7 +197,7 @@ function Facts({ s, goTo }) {
   if (builds) facts.push({ k: "Building", v: `${builds} project${builds === 1 ? "" : "s"}`, to: ["spend", "buy"] });
   const ls = s.training?.lanes || [];
   if (ls.length) facts.push({ k: "Coaching", v: `${ls.filter((l) => l.prog).length} of ${ls.length} lanes busy`, to: ["spend", "coach"] });
-  const link = weakestLink(s);
+  const link = isOpen(s, "report") ? weakestLink(s) : null;
   if (link) {
     facts.push({ k: "Strongest", v: `${link.best.label} · ${ordinal(link.best.rank)}`, cls: "up", to: ["roster"] });
     facts.push({ k: "Weakest", v: `${link.worst.label} · ${ordinal(link.worst.rank)}`, cls: link.worst.gap < 0 ? "down" : "", to: ["roster"] });
@@ -208,6 +228,7 @@ export default function OverviewView({ f, goTo, openPlayer }) {
         <div className="kpi"><span>Payroll</span><b>{money(payroll(s))}</b><small className={share > 1 ? "down" : share > 0.8 ? "warn" : ""}>{Math.round(share * 100)}% of {money(SALARY.cap)} cap</small>
           <div className="bar"><i className={share > 1 ? "over" : share > 0.8 ? "hot" : ""} style={{ width: `${Math.min(100, share * 100)}%` }} /></div></div>
       </div>
+      <Objective s={s} goTo={goTo} />
       <Facts s={s} goTo={goTo} />
 
       <NowPlaying s={s} />
