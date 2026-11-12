@@ -224,5 +224,5 @@ function TrainNote({ s, p, keys }) {
     const free = ls.filter((l) => !l.prog).length;
     return `${AREAS[a].label}: ${free ? `${free} of ${ls.length} lane${ls.length > 1 ? "s" : ""} free` : `busy, next free in ${Math.min(...ls.map((l) => l.prog.left))} game${Math.min(...ls.map((l) => l.prog.left)) === 1 ? "" : "s"}`}`;
   });
-  return <p className="note">Each point takes games with a coach and is paid game by game. {parts.join(" · ")}.</p>;
+  return <p className="note">Coach lanes — {parts.join(" · ")}.</p>;
 }

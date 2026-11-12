@@ -22,8 +22,8 @@ export function AutoDevCard({ f }) {
     <div className="card card--l panel--pad stack">
       <div className="row">
         <div className="grow">
-          <b>Equipment manager</b>
-          <span className="sub">Buys gear after every game, best payback first, from a share of earnings. Training runs in the coaches' lanes above.</span>
+          <b>Auto-buy gear</b>
+          <span className="sub">{a.on ? "buying gear after every game" : "off: gear is yours to buy"}</span>
         </div>
         <button className={`btn btn--sm ${a.on ? "" : "btn--ghost"}`} role="switch" aria-checked={a.on}
           onClick={() => f.act(setAutoDev, { on: !a.on })}>{a.on ? "On" : "Off"}</button>
@@ -60,7 +60,6 @@ export function AutoDevCard({ f }) {
           ))}
         </ul>
       )}
-      <p className="note" style={{ margin: 0 }}>Builds and star-power promotions are never bought automatically. The rest of your earnings stays in the bank for those.</p>
     </div>
   );
 }

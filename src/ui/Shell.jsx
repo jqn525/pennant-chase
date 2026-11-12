@@ -7,7 +7,7 @@ import { Sparkline } from "./charts.jsx";
 import { netPerGame, seasonLabel } from "./metrics.js";
 import { options } from "../game/advisor.js";
 import OverviewView from "./OverviewView.jsx";
-import SpendView from "./SpendView.jsx";
+import SpendView, { SPEND_KEY } from "./SpendView.jsx";
 import RosterView from "./RosterView.jsx";
 import StatsView, { STATS_KEY } from "./StatsView.jsx";
 import PlayerSheet from "./PlayerSheet.jsx";
@@ -98,7 +98,7 @@ export default function Shell({ f }) {
             <button className="btn btn--sm" onClick={() => setDraftHidden(false)}>Open draft</button>
           </div>
         )}
-        <View f={f} openPlayer={setPlayerId} goTo={(t, sec) => { if (sec) { try { sessionStorage.setItem(STATS_KEY, sec); } catch { /* private mode */ } } setTab(t); }} />
+        <View f={f} openPlayer={setPlayerId} goTo={(t, sec) => { if (sec) { try { sessionStorage.setItem(t === "spend" ? SPEND_KEY : STATS_KEY, sec); } catch { /* private mode */ } } setTab(t); }} />
       </main>
 
       <nav className="tabs" aria-label="Sections">

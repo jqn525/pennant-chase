@@ -10,6 +10,7 @@ import { CARD_TIERS, nextPrint } from "../game/cards.js";
 import { isOpen } from "../game/unlocks.js";
 import { slotOf, starterFor } from "../game/roster.js";
 import { money } from "./fmt.js";
+import { Head } from "./Head.jsx";
 import { UnitCard } from "./TeamReport.jsx";
 import { playerUnitScore, unitLabel } from "../game/units.js";
 
@@ -54,10 +55,10 @@ export default function RosterView({ f, openPlayer, goTo }) {
       <h1>Roster</h1>
       <p className="lede">Franchise tags {franchiseUsed(s)} of {franchiseSlots(s)} used. Tap a player to train, gear up, promote or trade.</p>
 
-      <h2><span className="grow">Team report</span><small>tap a unit to see its players</small></h2>
+      <Head title="Team report" small="tap a unit" help="Each unit is rated with gear and traits counted and ranked against the seven rival clubs. The bar shows the gap to the league average. Tap a unit to list its players, weakest first." />
       <UnitCard s={s} active={unit} onPick={pickUnit} />
 
-      <h2><span className="grow">Lineup</span><small>{s.autoLineup ? "set automatically" : "custom order"}</small></h2>
+      <Head title="Lineup" small={s.autoLineup ? "set automatically" : "custom order"} help="The order is re-applied automatically after trades, training, gear and the draft." />
       <div className="card card--m panel--pad stack">
         <label className="field">
           <span>Batting order philosophy</span>
@@ -66,7 +67,6 @@ export default function RosterView({ f, openPlayer, goTo }) {
             {LOADOUTS.map((l) => <option key={l.id} value={l.id}>{l.name.charAt(0) + l.name.slice(1).toLowerCase()} — {l.blurb}</option>)}
           </select>
         </label>
-        <p className="note" style={{ margin: 0 }}>The order is re-applied automatically after trades, training, gear and the draft.</p>
         <button className="btn btn--quiet btn--sm" style={{ justifySelf: "start" }} onClick={() => setManual((m) => !m)}>{manual ? "Done reordering" : "Reorder by hand"}</button>
         {manual && (
           <div className="panel table-wrap">
@@ -85,7 +85,7 @@ export default function RosterView({ f, openPlayer, goTo }) {
         )}
       </div>
 
-      <h2 ref={tableHead} className="jump"><span className="grow">{unit ? `${unitLabel(unit)}, weakest first` : "Players"}</span><button className="btn btn--quiet btn--sm" onClick={() => { setUnit(null); setSort(["order", 1]); }} disabled={!unit && sort[0] === "order"}>{unit ? "Show everyone" : "Batting order"}</button></h2>
+      <Head innerRef={tableHead} className="jump" title={unit ? `${unitLabel(unit)}, weakest first` : "Players"} help="Next pt: cost of the cheapest next rating point. Room: points left before training stops."><button className="btn btn--quiet btn--sm" onClick={() => { setUnit(null); setSort(["order", 1]); }} disabled={!unit && sort[0] === "order"}>{unit ? "Show everyone" : "Batting order"}</button></Head>
       <div className="card card--l table-wrap">
         <table>
           <thead>
@@ -124,7 +124,6 @@ export default function RosterView({ f, openPlayer, goTo }) {
           </tbody>
         </table>
       </div>
-      <p className="note">Next pt: cost of the cheapest next rating point. Room: points left before training stops.</p>
 
       <button className="btn btn--quiet btn--block" style={{ marginTop: 12 }} onClick={() => goTo("stats", "players")}>Batting, pitching and development stats</button>
     </>

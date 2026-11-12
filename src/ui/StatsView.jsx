@@ -9,6 +9,7 @@ import { money, count, ordinal } from "./fmt.js";
 import { LineChart, BarList, StackedBars, Sparkline, Meter, SERIES } from "./charts.jsx";
 import StatTable from "./StatTable.jsx";
 import SeasonView from "./SeasonView.jsx";
+import { Head, Hint } from "./Head.jsx";
 import { UnitTable, DepthChart } from "./TeamReport.jsx";
 import { unitReport } from "../game/units.js";
 
@@ -48,7 +49,7 @@ function RunsVsTalent({ s, k }) {
         <Kpi label="Runs scored a game" value={rs.toFixed(2)} cls={rs >= side ? "up" : "down"} sub={`Hit ${ordinal(u.hit.rank)} · Power ${ordinal(u.power.rank)}`} />
         <Kpi label="Runs allowed a game" value={ra.toFixed(2)} cls={ra <= side ? "up" : "down"} sub={`Rot. ${ordinal(u.rotation.rank)} · Pen ${ordinal(u.pen.rank)}`} />
       </div>
-      <p className="note">Your games average {side.toFixed(2)} runs a side. The ranks under each number are your hitting and power, and your rotation and bullpen. If a unit ranks high but its runs lag, results are trailing the talent.</p>
+      <Hint label="Runs vs talent">Your games average {side.toFixed(2)} runs a side. The ranks under each number are your hitting and power, and your rotation and bullpen. If a unit ranks high but its runs lag, results are trailing the talent.</Hint>
     </>
   );
 }
@@ -67,7 +68,7 @@ function Team({ f, openPlayer }) {
         <Kpi label="Expected wins" value={k.expW.toFixed(1)} sub={`luck ${k.luck >= 0 ? "+" : ""}${k.luck.toFixed(1)} wins`} />
         <Kpi label="Playoff odds" value={pr ? odds(pr.playoffPct) : "—"} sub={pr ? `Cup ${odds(pr.cupPct)}` : "winter"} />
       </div>
-      <p className="note">Expected wins come from runs scored and allowed. Luck is the gap between your record and that.</p>
+      <Hint label="Expected wins and luck">Expected wins come from runs scored and allowed. Luck is the gap between your record and that.</Hint>
 
       <h2><span className="grow">Win rate through the season</span></h2>
       <LineChart label="Winning percentage by game" series={[{ label: "Win %", color: SERIES[0], points: k.winPct.filter(([g]) => g >= 5) }]}
@@ -80,9 +81,8 @@ function Team({ f, openPlayer }) {
       <UnitTable s={s} />
       <RunsVsTalent s={s} k={k} />
 
-      <h2><span className="grow">Depth chart</span><small>each slot vs the same slot on 7 clubs</small></h2>
+      <Head title="Depth chart" small="vs the same slot on 7 clubs" help="Your SP1 is measured against each club's best starter, SP2 against their second best, and so on. Tap a row to open the player." />
       <DepthChart s={s} openPlayer={openPlayer} />
-      <p className="note">Your SP1 is measured against each club's best starter, SP2 against their second best, and so on. Tap a row to open the player.</p>
 
       <h2>Splits</h2>
       <div className="card card--m table-wrap">
@@ -137,10 +137,9 @@ function MoneySection({ s }) {
   return (
     <>
       <Chips label="Season" value={span} set={setSpan} items={[...years.map((v) => [String(v), `Year ${v}`]), ...(years.length > 1 ? [["all", "All time"]] : [])]} />
-      <h2><span className="grow">Cash, and every purchase</span><small>tap the chart</small></h2>
+      <Head title="Cash, and every purchase" small="tap the chart" help="Each dot is a purchase, colored by what it bought. Dips are spending; the slope between them is your income." />
       <LineChart label="Cash after each game with purchases marked" series={[{ label: "Cash", color: "var(--fg)", points: rows.map((r) => [xOf(r), r.cash]) }]}
         markers={markers} yFmt={usd} xFmt={xFmt} zero />
-      <p className="note">Each dot is a purchase, colored by what it bought. Dips are spending; the slope between them is your income.</p>
 
       <h2>Fans</h2>
       <LineChart label="Fans after each game" series={[{ label: "Fans", color: SERIES[2], points: rows.map((r) => [xOf(r), r.fans]) }]} yFmt={compact} xFmt={xFmt} />
@@ -199,7 +198,7 @@ function Roi({ s }) {
         <Kpi label="Earned back" value={money(rep.returned)} sub={`${rep.paidOff} buys paid off`} />
         <Kpi label="Overall bought" value={`+${rep.ovrBought.toFixed(1)}`} sub={`≈ +${rep.winsPerSeason.toFixed(1)} wins a season`} />
       </div>
-      <p className="note">Estimates use the same model as the Spend tab: rating points turn into wins, wins into gate, fans and merch.</p>
+      <Hint label="How these are estimated">Estimates use the same model as the Spend tab: rating points turn into wins, wins into gate, fans and merch.</Hint>
 
       <h2>Spent vs earned back, by category</h2>
       {rep.byCat.length ? (
@@ -248,7 +247,7 @@ function Players({ s, openPlayer }) {
   const teamTr = s.hist.games.map(decode).map((r) => [r.n, r.tr]);
   return (
     <>
-      <h2><span className="grow">Overall over time</span></h2>
+      <Head title="Overall over time" help="The x-axis counts every game your club has played. Dots mark training, gear, trades and signings." />
       <label className="field" style={{ marginBottom: 8 }}>
         <span>Player</span>
         <select value={sel?.p.id ?? ""} onChange={(e) => setPid(dev.find((d) => String(d.p.id) === e.target.value)?.p.id)}>
@@ -256,12 +255,11 @@ function Players({ s, openPlayer }) {
         </select>
       </label>
       <LineChart label={`${sel?.p.name} overall over time`} series={[{ label: "Overall", color: SERIES[0], points: pts }]} markers={markers} xFmt={(x) => `#${x}`} yFmt={(v) => v.toFixed(1)} />
-      <p className="note">The x-axis counts every game your club has played. Dots mark training, gear, trades and signings.</p>
 
       <h2><span className="grow">Team rating</span><small>average overall, game by game</small></h2>
       <LineChart label="Team rating over time" series={[{ label: "Team rating", color: SERIES[6], points: teamTr }]} xFmt={(x) => `#${x}`} yFmt={(v) => v.toFixed(1)} />
 
-      <h2><span className="grow">Development</span><small>tap a player</small></h2>
+      <Head title="Development" small="tap a player" help="Season and Career: overall gained since the season began or since tracking began. Room: rating points left before training stops." />
       <div className="card card--l table-wrap stat-table">
         <table>
           <thead><tr><th>Player</th><th>OVR</th><th>Season</th><th>Career</th><th>Invested</th><th>$/pt</th><th>Room</th><th>Trend</th></tr></thead>
@@ -281,7 +279,6 @@ function Players({ s, openPlayer }) {
           </tbody>
         </table>
       </div>
-      <p className="note">Season and Career: overall gained since the season began or since tracking began. Room: rating points left before training stops.</p>
 
       <h2><span className="grow">Batting and pitching</span><small>tap a column to sort</small></h2>
       <div className="row" style={{ flexWrap: "wrap", marginBottom: 8 }}>
@@ -304,7 +301,7 @@ function Projections({ s }) {
   const reg = s.phase === "regular";
   return (
     <>
-      <h2><span className="grow">Odds</span><small>1,000 simulated finishes</small></h2>
+      <Head title="Odds" small="1,000 simulated finishes" help="Odds play out the rest of the schedule with every club's current rating, nudged by how your club has actually played this year. They move as you train and buy." />
       <div className="barlist">
         <Meter label="Make the playoffs" pct={pr.playoffPct} />
         <Meter label="Reach the Pennant Cup final" pct={pr.finalPct} />
@@ -328,7 +325,6 @@ function Projections({ s }) {
         <Kpi label="Fans at season end" value={count(pace.fans)} sub={`now ${count(s.fans)}`} />
         <Kpi label="Season net so far" value={money(pace.seasonNet, { sign: true })} cls={pace.seasonNet >= 0 ? "up" : "down"} sub="after buys" />
       </div>
-      <p className="note">Odds play out the rest of the schedule with every club's current rating, nudged by how your club has actually played this year. They move as you train and buy.</p>
     </>
   );
 }

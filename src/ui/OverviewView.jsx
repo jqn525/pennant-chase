@@ -159,14 +159,36 @@ function NowPlaying({ s }) {
   );
 }
 
-function status(s) {
-  if (s.phase === "draft") return "Winter: the draft board is open.";
-  if (s.phase === "playoffs" && s.playoffs) {
+// The state of the club as short facts; each one opens the screen where you act on it
+function Facts({ s, goTo }) {
+  const cap = stadiumFx(s.stadium).attCap;
+  const facts = [];
+  if (s.phase === "draft") facts.push({ k: "Winter", v: "the draft board is open" });
+  else if (s.phase === "playoffs" && s.playoffs) {
     const p = s.playoffs;
-    return `${p.round === "final" ? "Pennant Cup final" : "Semifinal"} vs the ${s.rivals[p.opp - 1].name}: ${p.wins.us}–${p.wins.them}, first to ${p.round === "final" ? 4 : 3}.`;
+    facts.push({ k: p.round === "final" ? "Pennant Cup final" : "Semifinal", v: `${s.rivals[p.opp - 1].name} · ${p.wins.us}–${p.wins.them} · first to ${p.round === "final" ? 4 : 3}`, to: ["stats", "team"] });
+  } else {
+    const sr = seriesNow(s);
+    if (sr) facts.push({ k: "Series", v: `${s.rivals[s.schedule[s.gameIndex].opp - 1].name} · ${sr.w}–${sr.l} · ${sr.gamesLeft} left`, to: ["stats", "team"] });
   }
-  const sr = seriesNow(s);
-  return sr ? `Series vs ${s.rivals[s.schedule[s.gameIndex].opp - 1].name}: ${sr.w}–${sr.l}, ${sr.gamesLeft} to play.` : "";
+  if (s.fans > cap) facts.push({ k: "Crowd", v: `sold out · +${Math.round((demandPremium(s.fans, cap) - 1) * 100)}% prices`, cls: "up", to: ["spend", "buy"] });
+  else facts.push({ k: "Crowd", v: `${count(attendance(s))} of ${count(cap)} seats`, to: ["spend", "buy"] });
+  const builds = Object.keys(s.builds || {}).length;
+  if (builds) facts.push({ k: "Building", v: `${builds} project${builds === 1 ? "" : "s"}`, to: ["spend", "buy"] });
+  const ls = s.training?.lanes || [];
+  if (ls.length) facts.push({ k: "Coaching", v: `${ls.filter((l) => l.prog).length} of ${ls.length} lanes busy`, to: ["spend", "coach"] });
+  const link = weakestLink(s);
+  if (link) {
+    facts.push({ k: "Strongest", v: `${link.best.label} · ${ordinal(link.best.rank)}`, cls: "up", to: ["roster"] });
+    facts.push({ k: "Weakest", v: `${link.worst.label} · ${ordinal(link.worst.rank)}`, cls: link.worst.gap < 0 ? "down" : "", to: ["roster"] });
+  }
+  return (
+    <div className="facts">
+      {facts.map((x) => (x.to
+        ? <button key={x.k} type="button" className="fact" onClick={() => goTo(...x.to)}><small>{x.k}</small><b className={x.cls || ""}>{x.v}</b></button>
+        : <div key={x.k} className="fact"><small>{x.k}</small><b className={x.cls || ""}>{x.v}</b></div>))}
+    </div>
+  );
 }
 
 export default function OverviewView({ f, goTo, openPlayer }) {
@@ -186,7 +208,7 @@ export default function OverviewView({ f, goTo, openPlayer }) {
         <div className="kpi"><span>Payroll</span><b>{money(payroll(s))}</b><small className={share > 1 ? "down" : share > 0.8 ? "warn" : ""}>{Math.round(share * 100)}% of {money(SALARY.cap)} cap</small>
           <div className="bar"><i className={share > 1 ? "over" : share > 0.8 ? "hot" : ""} style={{ width: `${Math.min(100, share * 100)}%` }} /></div></div>
       </div>
-      <p className="note">{status(s)} Crowd {count(attendance(s))} a game · {s.fans > cap ? <> sold out ({count(cap)} seats) · <span className="up">demand +{Math.round((demandPremium(s.fans, cap) - 1) * 100)}% on ticket prices</span></> : <>the park holds {count(cap)}</>}.{Object.keys(s.builds || {}).length > 0 && <> {Object.keys(s.builds).length} project{Object.keys(s.builds).length === 1 ? "" : "s"} under construction.</>}{s.training && <> Coaching: {laneSummary(s)}.</>}{weakestLink(s) && <> {weakestLink(s).short}</>}</p>
+      <Facts s={s} goTo={goTo} />
 
       <NowPlaying s={s} />
 
@@ -218,13 +240,4 @@ export default function OverviewView({ f, goTo, openPlayer }) {
       <Ledger s={s} />
     </>
   );
-}
-
-// "3 lanes: 2 hitting, 1 pitching · 2 busy"
-function laneSummary(s) {
-  const ls = s.training.lanes;
-  const by = {};
-  for (const l of ls) by[l.area] = (by[l.area] || 0) + 1;
-  const names = { hit: "hitting", pitch: "pitching", field: "field" };
-  return `${ls.length} lanes (${Object.entries(by).map(([a, n]) => `${n} ${names[a]}`).join(", ")}) · ${ls.filter((l) => l.prog).length} busy`;
 }
