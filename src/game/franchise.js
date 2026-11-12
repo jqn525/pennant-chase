@@ -20,6 +20,7 @@ import { everyone, mapRoster, starterFor, replaceSlot, ROTATION } from "./roster
 import { progressBuilds } from "./construction.js";
 import { progressTraining, defaultTraining, migrateTraining, rivalTraining } from "./training.js";
 import { noteBeats } from "./beats.js";
+import { unitRatings } from "./units.js";
 import { emptyHist, loadHist, noteGame, noteSpend, trackOvr, noteGameRecords, noteSeasonRecords, closeSeason } from "./history.js";
 
 export const EMPTY_STAT = { g: 0, ab: 0, h: 0, d: 0, t: 0, hr: 0, bb: 0, k: 0, r: 0, rbi: 0, outsP: 0, kP: 0, bbP: 0, hP: 0, raP: 0 };
@@ -251,6 +252,8 @@ export function loadState(saved) {
     lastSeen: S.lastSeen ?? Date.now(),
   });
   s.rotationTurn = S.rotationTurn ?? 0;
+  // unit ratings at opening day; saves from before the team report start tracking now
+  s.unitsStart = S.unitsStart ?? (s.roster ? { ...unitRatings(s.roster), y: s.year, late: true } : null);
   if (S.lore) undoLore(s);
   s.rivalTrainedAt = S.rivalTrainedAt ?? S.gameIndex ?? 0;
   if (staffed) pushLog(s, "The club signs four starters and a closer to fill out a real pitching staff.", "beat");
@@ -266,7 +269,7 @@ export function toSave(s) {
     year: s.year, phase: s.phase, rivals: s.rivals, schedule: s.schedule, rivalDays: s.rivalDays,
     gameIndex: s.gameIndex, standings: s.standings, playoffs: s.playoffs, history: s.history,
     trophies: s.trophies, allTime: s.allTime, capYears: s.capYears, speed: s.speed, sound: s.sound,
-    lineupLoadout: s.lineupLoadout ?? null, autoLineup: s.autoLineup, autoDev: s.autoDev, training: s.training, unlocked: s.unlocked, builds: s.builds, yearEnd: s.yearEnd, rotationTurn: s.rotationTurn ?? 0, rivalTrainedAt: s.rivalTrainedAt ?? 0, ledger: s.ledger,
+    lineupLoadout: s.lineupLoadout ?? null, autoLineup: s.autoLineup, autoDev: s.autoDev, training: s.training, unlocked: s.unlocked, builds: s.builds, yearEnd: s.yearEnd, rotationTurn: s.rotationTurn ?? 0, unitsStart: s.unitsStart ?? null, rivalTrainedAt: s.rivalTrainedAt ?? 0, ledger: s.ledger,
     results: s.results.slice(0, 30), liveGame: s.live, liveContext: s.ctx,
   };
 }
@@ -290,6 +293,7 @@ export function found(s, c) {
   s.schedule = sch.schedule;
   s.rivalDays = sch.rivalDays;
   if (s.autoLineup) s.roster.batters = applyLoadout(s.roster.batters, s.lineupLoadout || "numbers");
+  s.unitsStart = { ...unitRatings(s.roster), y: s.year };
   pushLog(s, `The ${c.name} ${c.nickname} join ${LEAGUE.name}. ${c.label}.`, "win");
 }
 
@@ -948,6 +952,7 @@ export function signRookie(s, rid) {
 export function closeDraft(s) {
   s.draftClass = null;
   s.phase = "regular";
+  if (s.roster) s.unitsStart = { ...unitRatings(s.roster), y: s.year };
   pushLog(s, `Opening day, year ${s.year}.`, "sys");
 }
 

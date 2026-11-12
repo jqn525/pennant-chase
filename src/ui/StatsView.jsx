@@ -9,6 +9,8 @@ import { money, count, ordinal } from "./fmt.js";
 import { LineChart, BarList, StackedBars, Sparkline, Meter, SERIES } from "./charts.jsx";
 import StatTable from "./StatTable.jsx";
 import SeasonView from "./SeasonView.jsx";
+import { UnitTable, DepthChart } from "./TeamReport.jsx";
+import { unitReport } from "../game/units.js";
 
 export const STATS_KEY = "pc-stats";
 const SECTIONS = [["team", "Team"], ["money", "Money", "stats-money"], ["roi", "Spending", "stats-roi"], ["players", "Players", "stats-players"], ["proj", "Projections", "projections"], ["records", "Records", "records"]];
@@ -35,6 +37,22 @@ function useProjection(s) {
   return useMemo(() => project(s, 1000), [key]);
 }
 
+// Runs scored and allowed next to the units that produce them
+function RunsVsTalent({ s, k }) {
+  if (!k.games) return null;
+  const u = Object.fromEntries(unitReport(s).map((x) => [x.id, x]));
+  const rs = k.rf / k.games, ra = k.ra / k.games, side = (rs + ra) / 2;
+  return (
+    <>
+      <div className="kpis" style={{ marginTop: 8 }}>
+        <Kpi label="Runs scored a game" value={rs.toFixed(2)} cls={rs >= side ? "up" : "down"} sub={`Hit ${ordinal(u.hit.rank)} · Power ${ordinal(u.power.rank)}`} />
+        <Kpi label="Runs allowed a game" value={ra.toFixed(2)} cls={ra <= side ? "up" : "down"} sub={`Rot. ${ordinal(u.rotation.rank)} · Pen ${ordinal(u.pen.rank)}`} />
+      </div>
+      <p className="note">Your games average {side.toFixed(2)} runs a side. The ranks under each number are your hitting and power, and your rotation and bullpen. If a unit ranks high but its runs lag, results are trailing the talent.</p>
+    </>
+  );
+}
+
 // ── Team ──
 function Team({ f, openPlayer }) {
   const { s } = f;
@@ -57,6 +75,14 @@ function Team({ f, openPlayer }) {
 
       <h2><span className="grow">Team rating vs the league</span><small>average overall</small></h2>
       <BarList fmt={(v) => v.toFixed(1)} rows={rt.map((t) => ({ label: t.me ? `${t.name} (you)` : t.name, value: t.r, color: t.me ? SERIES[0] : "var(--faint)" }))} />
+
+      <h2><span className="grow">Units vs the league</span><small>{s.unitsStart?.late ? "change since tracking began" : "change since opening day"}</small></h2>
+      <UnitTable s={s} />
+      <RunsVsTalent s={s} k={k} />
+
+      <h2><span className="grow">Depth chart</span><small>each slot vs the same slot on 7 clubs</small></h2>
+      <DepthChart s={s} openPlayer={openPlayer} />
+      <p className="note">Your SP1 is measured against each club's best starter, SP2 against their second best, and so on. Tap a row to open the player.</p>
 
       <h2>Splits</h2>
       <div className="card card--m table-wrap">

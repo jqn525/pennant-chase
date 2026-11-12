@@ -11,6 +11,7 @@ import { netPerGame, payroll, payrollShare, fansWin, place, attendance } from ".
 import BoxScore from "./BoxScore.jsx";
 import { starterFor } from "../game/roster.js";
 import { useTween } from "./motion.js";
+import { weakestLink } from "../game/units.js";
 
 function Ledger({ s }) {
   const [view, setView] = useState("season");
@@ -185,7 +186,7 @@ export default function OverviewView({ f, goTo, openPlayer }) {
         <div className="kpi"><span>Payroll</span><b>{money(payroll(s))}</b><small className={share > 1 ? "down" : share > 0.8 ? "warn" : ""}>{Math.round(share * 100)}% of {money(SALARY.cap)} cap</small>
           <div className="bar"><i className={share > 1 ? "over" : share > 0.8 ? "hot" : ""} style={{ width: `${Math.min(100, share * 100)}%` }} /></div></div>
       </div>
-      <p className="note">{status(s)} Crowd {count(attendance(s))} a game · {s.fans > cap ? <> sold out ({count(cap)} seats) · <span className="up">demand +{Math.round((demandPremium(s.fans, cap) - 1) * 100)}% on ticket prices</span></> : <>the park holds {count(cap)}</>}.{Object.keys(s.builds || {}).length > 0 && <> {Object.keys(s.builds).length} project{Object.keys(s.builds).length === 1 ? "" : "s"} under construction.</>}{s.training && <> Coaching: {laneSummary(s)}.</>}</p>
+      <p className="note">{status(s)} Crowd {count(attendance(s))} a game · {s.fans > cap ? <> sold out ({count(cap)} seats) · <span className="up">demand +{Math.round((demandPremium(s.fans, cap) - 1) * 100)}% on ticket prices</span></> : <>the park holds {count(cap)}</>}.{Object.keys(s.builds || {}).length > 0 && <> {Object.keys(s.builds).length} project{Object.keys(s.builds).length === 1 ? "" : "s"} under construction.</>}{s.training && <> Coaching: {laneSummary(s)}.</>}{weakestLink(s) && <> {weakestLink(s).short}</>}</p>
 
       <NowPlaying s={s} />
 

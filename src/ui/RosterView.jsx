@@ -1,5 +1,5 @@
 // ── Roster: the lineup philosophy and a sortable table of the club ──
-import { Fragment, useState } from "react";
+import { Fragment, useRef, useState } from "react";
 import { BAT_STATS, PIT_STATS } from "../game/constants.js";
 import { ovr } from "../game/gear.js";
 import { salaryOf } from "../game/salary.js";
@@ -10,6 +10,8 @@ import { CARD_TIERS, nextPrint } from "../game/cards.js";
 import { isOpen } from "../game/unlocks.js";
 import { slotOf, starterFor } from "../game/roster.js";
 import { money } from "./fmt.js";
+import { UnitCard } from "./TeamReport.jsx";
+import { playerUnitScore, unitLabel } from "../game/units.js";
 
 // Cheapest next training point and the points left before the ceiling
 export function trainRoom(s, p) {
@@ -35,16 +37,25 @@ export default function RosterView({ f, openPlayer, goTo }) {
   const { s } = f;
   const [sort, setSort] = useState(["order", 1]);
   const [manual, setManual] = useState(false);
+  const [unit, setUnit] = useState(null);
+  const tableHead = useRef(null);
+  // picking a unit jumps down to its players
+  const pickUnit = (u) => { setUnit(u); if (u) requestAnimationFrame(() => tableHead.current?.scrollIntoView({ block: "start", behavior: "smooth" })); };
   const order = [...s.roster.batters, ...s.roster.rotation, ...s.roster.pen];
   const nextUp = starterFor(s.roster, s.rotationTurn || 0)?.id;
   const groupAt = { 0: "Lineup", 9: "Rotation", 14: "Bullpen" };
-  const rows = sort[0] === "order" ? order
+  const score = (p) => playerUnitScore(s.roster, p, unit);
+  const rows = unit ? order.filter((p) => score(p) != null).sort((a, b) => score(a) - score(b))
+    : sort[0] === "order" ? order
     : [...order].sort((a, b) => sort[1] * (COLS.find((c) => c[0] === sort[0])[2](s, b) - COLS.find((c) => c[0] === sort[0])[2](s, a)));
-  const setCol = (k) => setSort(([c, d]) => (c === k ? [k, -d] : [k, 1]));
+  const setCol = (k) => { setUnit(null); setSort(([c, d]) => (c === k ? [k, -d] : [k, 1])); };
   return (
     <>
       <h1>Roster</h1>
       <p className="lede">Franchise tags {franchiseUsed(s)} of {franchiseSlots(s)} used. Tap a player to train, gear up, promote or trade.</p>
+
+      <h2><span className="grow">Team report</span><small>tap a unit to see its players</small></h2>
+      <UnitCard s={s} active={unit} onPick={pickUnit} />
 
       <h2><span className="grow">Lineup</span><small>{s.autoLineup ? "set automatically" : "custom order"}</small></h2>
       <div className="card card--m panel--pad stack">
@@ -74,7 +85,7 @@ export default function RosterView({ f, openPlayer, goTo }) {
         )}
       </div>
 
-      <h2><span className="grow">Players</span><button className="btn btn--quiet btn--sm" onClick={() => setSort(["order", 1])} disabled={sort[0] === "order"}>Batting order</button></h2>
+      <h2 ref={tableHead} className="jump"><span className="grow">{unit ? `${unitLabel(unit)}, weakest first` : "Players"}</span><button className="btn btn--quiet btn--sm" onClick={() => { setUnit(null); setSort(["order", 1]); }} disabled={!unit && sort[0] === "order"}>{unit ? "Show everyone" : "Batting order"}</button></h2>
       <div className="card card--l table-wrap">
         <table>
           <thead>
@@ -92,14 +103,14 @@ export default function RosterView({ f, openPlayer, goTo }) {
             {rows.map((p, i) => {
               const r = trainRoom(s, p), st = stat(s, p.id);
               const tier = CARD_TIERS[p.cardTier || 0];
-              const head = sort[0] === "order" && groupAt[i];
+              const head = !unit && sort[0] === "order" && groupAt[i];
               return (
                 <Fragment key={p.id}>
                 {head && <tr className="group"><td colSpan={6}>{head}</td></tr>}
                 <tr className="link" onClick={() => openPlayer(p.id)} tabIndex={0} onKeyDown={(e) => e.key === "Enter" && openPlayer(p.id)}>
                   <td>
                     <b>{p.name}</b>{p.franchise && <> <span className="tag tag--accent">F</span></>}{p.age >= 34 && <> <span className="tag tag--warn">final years</span></>}{nextPrint(p) && isOpen(s, "star") && <> <span className="tag tag--warn">promo ready</span></>}
-                    <span className="sub">{slotOf(s.roster, p.id)}{p.age ? ` · ${p.age}` : ""}{p.id === nextUp ? " · starts next" : ""}{tier.id > 0 ? ` · ★ ${tier.name.toLowerCase()}` : ""}</span>
+                    <span className="sub">{slotOf(s.roster, p.id)}{p.age ? ` · ${p.age}` : ""}{p.id === nextUp ? " · starts next" : ""}{unit ? ` · ${unitLabel(unit).toLowerCase()} ${score(p).toFixed(0)}` : ""}{tier.id > 0 ? ` · ★ ${tier.name.toLowerCase()}` : ""}</span>
                   </td>
                   <td className="n">{ovr(p).toFixed(0)}</td>
                   <td className="n">{r.next == null ? "max" : money(r.next)}</td>

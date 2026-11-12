@@ -270,3 +270,19 @@ th.sort.on { color: var(--fg); }
 .alert.winter { background: var(--accent-soft); color: var(--fg); }
 tr.group td { height: 30px !important; padding-top: 10px; padding-bottom: 4px; color: var(--dim); font-size: 11px; font-weight: 600; letter-spacing: .8px; text-transform: uppercase; background: var(--well); }
 .card.stack { align-content: start; }
+
+/* ── Team report: unit rows with a bar that grows from the league average ── */
+.units { display: grid; grid-template-rows: repeat(5, 1fr); overflow: hidden; }
+.unit { display: flex; align-items: center; gap: 10px; width: 100%; min-width: 0; padding: 0 12px; border: 0; border-bottom: 1px solid var(--line); background: none; text-align: left; }
+.unit:last-child { border-bottom: 0; }
+button.unit:hover, .unit.on { background: var(--well); }
+.unit.on { box-shadow: inset 3px 0 0 var(--accent); }
+.unit__main { flex: 1; min-width: 0; font-size: 14px; }
+.unit__main .sub { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.unit__num { flex: none; width: 44px; text-align: right; font-family: var(--num); font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.gapbar { position: relative; flex: none; width: 76px; height: 8px; border-radius: 4px; background: var(--well); }
+.gapbar::after { content: ""; position: absolute; left: 50%; top: -3px; bottom: -3px; width: 1px; background: var(--faint); }
+.gapbar i { position: absolute; top: 0; bottom: 0; min-width: 2px; }
+.gapbar i.pos { background: var(--good); border-radius: 0 4px 4px 0; }
+.gapbar i.neg { background: var(--bad); border-radius: 4px 0 0 4px; }
+.jump { scroll-margin-top: calc(var(--top-h, 112px) + 12px); }
