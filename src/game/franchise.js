@@ -491,7 +491,7 @@ export function settle(s, g) {
 }
 
 // The year in one card, captured before winter wipes the season's stats
-function yearReview(s, { w, l, finish, champion, cup }) {
+export function yearReview(s, { w, l, finish, champion, cup }) {
   const players = allPlayers(s);
   const ops = (x) => (x.ab ? (x.h + x.bb) / (x.ab + x.bb) + (x.h + x.d + 2 * x.t + 3 * x.hr) / x.ab : 0);
   const hitters = s.roster.batters.map((p) => ({ p, st: s.seasonStats[p.id] })).filter((x) => x.st && x.st.ab >= 100);
@@ -508,7 +508,8 @@ function yearReview(s, { w, l, finish, champion, cup }) {
     if (gain > 0 && (!riser || gain > riser.gain)) riser = { name: p.name, pos: p.pos, gain: Math.round(gain * 10) / 10 };
   }
   const buys = h.spend.filter((e) => e.y === s.year && e.gain > 0);
-  const best = buys.map((e) => ({ e, ret: e.gain * Math.max(0, h.n - (e.proj ? e.doneN ?? h.n : e.n)) / e.cost })).sort((a, b) => b.ret - a.ret)[0];
+  // the buy that earned the most money back (a percentage always crowns the cheapest)
+  const best = buys.map((e) => { const back = e.gain * Math.max(0, h.n - (e.proj ? e.doneN ?? h.n : e.n)); return { e, back, ret: back / e.cost }; }).sort((a, b) => b.back - a.back)[0];
   return {
     y: s.year, w, l, finish, champion, cup, net: Math.round(ledgerNet(s.ledger.season)),
     spent: Math.round(h.spend.filter((e) => e.y === s.year).reduce((t, e) => t + e.cost, 0)),
@@ -516,7 +517,7 @@ function yearReview(s, { w, l, finish, champion, cup }) {
     hitter: top && { name: top.p.name, pos: top.p.pos, ops: ops(top.st).toFixed(3).replace(/^0/, ""), hr: top.st.hr },
     pitcher: ace && { name: ace.p.name, era: ((ace.st.raP * 27) / ace.st.outsP).toFixed(2), k: ace.st.kP },
     riser,
-    bestBuy: best && best.ret > 0 ? { what: best.e.what, name: best.e.name, cost: best.e.cost, back: Math.round(best.ret * 100) } : null,
+    bestBuy: best && best.back > 0 ? { what: best.e.what, name: best.e.name, cost: best.e.cost, earned: Math.round(best.back), back: Math.round(best.ret * 100) } : null,
   };
 }
 export function closeYearEnd(s) { s.yearEnd = null; }

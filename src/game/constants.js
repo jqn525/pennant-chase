@@ -162,7 +162,7 @@ export const STADIUM = [
 export const REVENUE = [
   {
     id: "merch", title: "MERCH", tiers: [
-      { name: "Merch Stand", games: 2, cost: 250, fans: 1500, label: "sells caps, at games and while you are away", value: 1 },
+      { name: "Merch Stand", games: 2, cost: 1000, fans: 1500, label: "sells caps, at games and while you are away", value: 1 },
       { name: "Team Store", games: 15, cost: 2500, fans: 8000, label: "sales +75% · adds jerseys", value: 1.75 },
       { name: "Flagship Store", games: 50, cost: 10000, fans: 30000, label: "sales +150% · adds signed memorabilia", value: 2.5 },
     ],
