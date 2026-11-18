@@ -84,7 +84,6 @@ export default function SettingsSheet({ f, onClose }) {
           <li><span className="grow"><b>While you're away</b> fans keep buying: caps from the stand, jerseys from the team store, signed memorabilia from the flagship. Star power, winning and TV raise the odds; interest fades the longer you're gone.</span></li>
           <li><span className="grow"><b>Payroll</b> is due each season and rises with each player's overall. Over the cap, a luxury tax applies.</span></li>
           <li><span className="grow"><b>Playoffs</b> — the top four meet in semifinals; the Pennant Cup pays the most.</span></li>
-          <li><span className="grow"><b>Payback</b> on the Spend tab is cost divided by extra dollars per game. Lower is better.</span></li>
         </ul>
       </div>
 

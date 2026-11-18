@@ -1,3 +1,4 @@
+import { genDraftClass } from "./generators.js";
 import { startProgram } from "./training.js";
 import { describe, it, expect } from "vitest";
 import { blankState, found, tick, ledgerNet, toSave, loadState, buyGear, printCard, makeTrade, signRookie, merchTick, merchPerGame, build, allPlayers } from "./franchise.js";
@@ -105,5 +106,19 @@ describe("season end and winter", () => {
     expect(signRookie(s, s.draftClass[0].id)).toBe(true);
     expect(s.money).toBeCloseTo(s.money, 0);
     expect(ledgerNet(s.ledger.life)).toBeLessThan(1e9);
+  });
+});
+
+describe("gear belongs to the player", () => {
+  it("a released player takes his gear; a signed rookie arrives with none", () => {
+    const s = blankState(); found(s, { name: "Vancouver", nickname: "Suns", bonus: "fans", label: "HUNGRY MARKET" }); s.unlocked = null;
+    s.phase = "draft"; s.money = 1e6;
+    s.draftClass = genDraftClass(4);
+    const rook = s.draftClass[0];
+    const out = allPlayers(s).find((p) => p.pos === rook.pos) || s.roster.batters[0];
+    out.gear = { bat: { id: "bat-x", slot: "bat", rarity: 3, name: "The Thing", boosts: { power: 8 }, cost: 3500 } };
+    expect(signRookie(s, rook.id)).toBe(true);
+    const signed = allPlayers(s).find((p) => p.id === rook.id);
+    expect(signed.gear || {}).toEqual({});
   });
 });

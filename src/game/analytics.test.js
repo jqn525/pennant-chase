@@ -21,6 +21,7 @@ describe("history", () => {
     s.money = 50000;
     const p = s.roster.batters[0];
     p.pot = { ...p.pot, contact: p.contact + 10 };
+    delete p.trait; delete p.gear; // a trait or gear percentage can round one point away
     const before = s.hist.ovr[p.id].length;
     expect(startProgram(s, p.id, "contact")).toBe(true);
     finish(s);

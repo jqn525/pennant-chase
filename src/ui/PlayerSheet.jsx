@@ -15,7 +15,7 @@ import {
   allPlayers, stat, careerOf, trainCost, trainCeil, printCard,
   tagFranchise, franchiseUsed, franchiseSlots, tradeQuote, makeTrade,
 } from "../game/franchise.js";
-import { gearGain, winPerPointOf, valueOfWin } from "../game/advisor.js";
+import { gearGain } from "../game/advisor.js";
 import { money } from "./fmt.js";
 import { startProgram, startLock as trainLock, programFor, gamesFor, areaOf, AREAS } from "../game/training.js";
 import { Sheet } from "./Shell.jsx";
@@ -32,7 +32,6 @@ export default function PlayerSheet({ f, pid, onClose }) {
   const trait = PLAYER_TRAITS.find((t) => t.id === p.trait);
   const tier = CARD_TIERS[p.cardTier || 0];
   const up = nextPrint(p);
-  const perPoint = winPerPointOf(p) * valueOfWin(s);
   const slots = GEAR.filter((g) => (g.role === "bat") === (p.role === "bat"));
 
   return (
@@ -41,7 +40,6 @@ export default function PlayerSheet({ f, pid, onClose }) {
         <div className="kpi"><span>Overall</span><b>{ovr(p).toFixed(1)}</b><small>{trait ? trait.label : "no trait"}</small></div>
         <div className="kpi"><span>Salary</span><b>{money(salaryOf(p))}</b><small>per season</small></div>
         <div className="kpi"><span>Star power</span><b style={{ fontFamily: "var(--ui)", fontSize: 16 }}>{tier.name.toLowerCase()}</b><small>{up ? `${up.deal.toLowerCase()} ready` : eligibleTier(p) > (p.cardTier || 0) ? "" : `next at ${CARD_TIERS[(p.cardTier || 0) + 1]?.at ?? "—"} OVR`}</small></div>
-        <div className="kpi"><span>A point is worth</span><b>{money(perPoint)}</b><small>per game, in wins</small></div>
       </div>
 
       {own && <Development s={s} p={p} />}

@@ -23,7 +23,7 @@ export function AutoDevCard({ f }) {
       <div className="row">
         <div className="grow">
           <b>Auto-buy gear</b>
-          <span className="sub">{a.on ? "buying gear after every game" : "off: gear is yours to buy"}</span>
+          <span className="sub">{a.on ? "buys random gear now and then" : "off: gear is yours to buy"}</span>
         </div>
         <button className={`btn btn--sm ${a.on ? "" : "btn--ghost"}`} role="switch" aria-checked={a.on}
           onClick={() => f.act(setAutoDev, { on: !a.on })}>{a.on ? "On" : "Off"}</button>

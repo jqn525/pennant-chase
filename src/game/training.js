@@ -39,7 +39,7 @@ export function gamesFor(s, p, key) {
 
 export const defaultTraining = () => ({
   lanes: [{ area: "hit", prog: null }, { area: "pitch", prog: null }, { area: "field", prog: null }],
-  auto: { hit: true, pitch: true, field: true },
+  auto: { hit: false, pitch: false, field: false },
   idle: { hit: 0, pitch: 0, field: 0 },
 });
 export function migrateTraining(t) {

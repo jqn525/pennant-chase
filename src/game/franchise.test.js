@@ -89,7 +89,7 @@ describe("franchise core", () => {
     delete old.ledger; delete old.rules; delete old.autoLineup; delete old.results;
     const t = loadState(old);
     expect(t.ledger.life).toEqual({});
-    expect(t.autoDev).toMatchObject({ on: true });
+    expect(t.autoDev).toMatchObject({ on: false });
     expect(t.gameIndex).toBe(5);
   });
 });

@@ -190,40 +190,37 @@ function Roi({ s }) {
   const [who, setWho] = useState("all");
   const [more, setMore] = useState(false);
   const rep = spendReport(s);
-  const list = rep.events.filter((e) => who === "all" || (who === "auto") === !!e.auto).sort(sort === "recent" ? (a, b) => b.n - a.n || 0 : (a, b) => b.progress - a.progress);
+  const list = rep.events.filter((e) => who === "all" || (who === "auto") === !!e.auto).sort(sort === "recent" ? (a, b) => b.n - a.n || 0 : (a, b) => b.cost - a.cost);
   const shown = more ? list : list.slice(0, 25);
   return (
     <>
       <div className="kpis">
         <Kpi label="Invested" value={money(rep.total)} sub={`${rep.events.length} purchases`} />
-        <Kpi label="Added per game" value={money(rep.gainPerGame, { sign: true })} cls="up" sub="estimated, all buys" />
-        <Kpi label="Earned back" value={money(rep.returned)} sub={`${rep.paidOff} buys paid off`} />
-        <Kpi label="Overall bought" value={`+${rep.ovrBought.toFixed(1)}`} sub={`≈ +${rep.winsPerSeason.toFixed(1)} wins a season`} />
+        <Kpi label="Overall bought" value={`+${rep.ovrBought.toFixed(1)}`} sub="training and gear" />
+        <Kpi label="By your staff" value={money(rep.events.filter((e) => e.auto).reduce((t, e) => t + e.cost, 0))} sub={`${rep.events.filter((e) => e.auto).length} auto buys`} />
+        <Kpi label="Biggest buy" value={rep.events.length ? money(Math.max(...rep.events.map((e) => e.cost))) : "—"} sub={rep.events.length ? [...rep.events].sort((a, b) => b.cost - a.cost)[0].what : "nothing yet"} />
       </div>
-      <Hint label="How these are estimated">Estimates use the same model as the Spend tab: rating points turn into wins, wins into gate, fans and merch.</Hint>
+      <p className="note">Whether a buy was worth it is yours to judge: the money charts show what came in.</p>
 
-      <h2>Spent vs earned back, by category</h2>
+      <h2>Spent by category</h2>
       {rep.byCat.length ? (
-        <BarList fmt={money} legend={[{ label: "Spent", color: "var(--faint)" }, { label: "Earned back so far", color: SERIES[2] }]}
-          rows={rep.byCat.map((c) => ({ label: c.label, sub: c.gainPerGame > 0.05 ? `+${money(c.gainPerGame)}/game` : "", value: c.cost, color: "var(--faint)", value2: c.returned, color2: SERIES[2], show: `${money(c.returned)} of ${money(c.cost)}` }))} />
+        <BarList fmt={money} rows={rep.byCat.map((c) => ({ label: c.label, value: c.cost, color: CAT_COLOR[c.cat] || "var(--faint)" }))} />
       ) : <p className="note">Nothing bought yet. Every purchase from now on is tracked here.</p>}
 
       <h2><span className="grow">Purchases</span></h2>
       <div className="row" style={{ flexWrap: "wrap" }}>
-        <Chips label="Sort" value={sort} set={setSort} items={[["recent", "Most recent"], ["best", "Best return"]]} />
+        <Chips label="Sort" value={sort} set={setSort} items={[["recent", "Most recent"], ["best", "Most expensive"]]} />
         <Chips label="Bought by" value={who} set={setWho} items={[["all", "All"], ["auto", "Auto"], ["manual", "Yours"]]} />
       </div>
       <div className="card card--l table-wrap wrap-first" style={{ marginTop: 8 }}>
         <table>
-          <thead><tr><th>Purchase</th><th>Cost</th><th>+/g</th><th>Paid</th></tr></thead>
+          <thead><tr><th>Purchase</th><th>Cost</th></tr></thead>
           <tbody>
-            {shown.length === 0 && <tr><td colSpan={4} className="dim">No purchases yet.</td></tr>}
+            {shown.length === 0 && <tr><td colSpan={2} className="dim">No purchases yet.</td></tr>}
             {shown.map((e, i) => (
               <tr key={i}>
                 <td><b>{e.name || CAT_LABEL[e.cat]}</b>{e.auto && <> <span className="tag">auto</span></>}<span className="sub"><i className="dot" style={{ background: CAT_COLOR[e.cat] }} />{e.what}{e.d ? ` · OVR ${e.d > 0 ? "+" : ""}${e.d}` : ""} · Y{e.y} G{e.gi}</span></td>
                 <td className="n">{money(e.cost)}</td>
-                <td className="n up">{e.gainPerGame > 0.05 ? money(e.gainPerGame, { sign: true }) : "—"}</td>
-                <td className="n">{e.gainPerGame > 0.05 ? (e.progress >= 1 ? <span className="tag tag--accent">paid off</span> : `${Math.round(e.progress * 100)}%`) : "—"}</td>
               </tr>
             ))}
           </tbody>

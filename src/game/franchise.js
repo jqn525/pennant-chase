@@ -51,7 +51,8 @@ export function credit(s, cat, amount) {
 export const ledgerNet = (bucket) => Object.values(bucket || {}).reduce((a, b) => a + b, 0);
 
 // Auto-develop settings (the engine lives in autodev.js); old reserve rules carry over
-export const defaultAutoDev = () => ({ on: true, share: 0.4, reserve: 500, allowance: 0 });
+// staff start hands-off: buying is the player's call until they switch auto on
+export const defaultAutoDev = () => ({ on: false, share: 0.4, reserve: 500, allowance: 0 });
 export function migrateAutoDev(saved, rules) {
   const d = defaultAutoDev();
   if (saved && typeof saved === "object") return { ...d, ...saved };
@@ -507,9 +508,8 @@ export function yearReview(s, { w, l, finish, champion, cup }) {
     const gain = pts.length && before ? (pts[pts.length - 1][1] - before[1]) / 10 : 0;
     if (gain > 0 && (!riser || gain > riser.gain)) riser = { name: p.name, pos: p.pos, gain: Math.round(gain * 10) / 10 };
   }
-  const buys = h.spend.filter((e) => e.y === s.year && e.gain > 0);
-  // the buy that earned the most money back (a percentage always crowns the cheapest)
-  const best = buys.map((e) => { const back = e.gain * Math.max(0, h.n - (e.proj ? e.doneN ?? h.n : e.n)); return { e, back, ret: back / e.cost }; }).sort((a, b) => b.back - a.back)[0];
+  // the year's biggest purchase (returns are estimates, and estimates are no longer shown)
+  const best = h.spend.filter((e) => e.y === s.year).sort((a, b) => b.cost - a.cost)[0];
   return {
     y: s.year, w, l, finish, champion, cup, net: Math.round(ledgerNet(s.ledger.season)),
     spent: Math.round(h.spend.filter((e) => e.y === s.year).reduce((t, e) => t + e.cost, 0)),
@@ -517,7 +517,7 @@ export function yearReview(s, { w, l, finish, champion, cup }) {
     hitter: top && { name: top.p.name, pos: top.p.pos, ops: ops(top.st).toFixed(3).replace(/^0/, ""), hr: top.st.hr },
     pitcher: ace && { name: ace.p.name, era: ((ace.st.raP * 27) / ace.st.outsP).toFixed(2), k: ace.st.kP },
     riser,
-    bestBuy: best && best.back > 0 ? { what: best.e.what, name: best.e.name, cost: best.e.cost, earned: Math.round(best.back), back: Math.round(best.ret * 100) } : null,
+    bestBuy: best ? { what: best.what, name: best.name, cost: best.cost } : null,
   };
 }
 export function closeYearEnd(s) { s.yearEnd = null; }
@@ -943,7 +943,7 @@ export function signRookie(s, rid) {
   credit(s, "draft", -rook.signCost);
   addAT(s, { rookies: 1 });
   s.draftClass = s.draftClass.filter((p) => p.id !== rid);
-  const signed = { ...rook, gear: released.gear };
+  const signed = { ...rook }; // the released player takes his gear with him
   s.roster = replaceSlot(s.roster, released.id, signed);
   afterRosterChange(s);
   spent(s, "draft", rook.signCost, { pid: rook.id, before: released, what: `Signed ${rook.name} (${rook.pos})` });

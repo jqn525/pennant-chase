@@ -20,7 +20,7 @@ export default function Coaching({ f }) {
   return (
     <>
       <Head title="Coaching staff" small={<>{busy} of {list.length} busy · {money(programInstallments(s) + wages(s))} a game</>}
-        help={<>A point takes 2–8 games, longer at higher ratings and near a player's ceiling, and is paid game by game. An area with no lane rusts: a point lost every {TRAINING.rustAfter} games. Coaches on auto start the best-value point in their area whenever a lane frees up. An assistant opens another lane; point it at any coach.</>} />
+        help={<>A point takes 2–8 games, longer at higher ratings and near a player's ceiling, and is paid game by game. An area with no lane rusts: a point lost every {TRAINING.rustAfter} games. Coaches on auto start a random player in their area whenever a lane frees up, good value or not. An assistant opens another lane; point it at any coach.</>} />
       <div className={`card ${list.length > 4 ? "card--l" : "card--m"}`}>
         <ul className="feed build-list">
           {list.map((l, i) => {

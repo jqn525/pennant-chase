@@ -1,6 +1,6 @@
-// ── One row per way to spend: what it is, what it earns, the buy button ──
+// ── One row per way to spend: what it is, what it does, what it costs — never what it will earn ──
 import { apply } from "../game/advisor.js";
-import { money, payback } from "./fmt.js";
+import { money } from "./fmt.js";
 
 export function OptionRow({ o, f }) {
   const locked = !!o.lock;
@@ -9,9 +9,8 @@ export function OptionRow({ o, f }) {
       <div className="opt__main">
         <div className="opt__title"><span className="kind">{o.kind}</span><span>{o.title}</span></div>
         <div className="opt__meta">
-          {o.gainPerGame > 0.05 && <><b className="up">{money(o.gainPerGame, { sign: true })}</b>/game · </>}
-          {locked ? <span className="warn">{o.lock}</span> : payback(o.payback)}
-          <span> · {o.detail}</span>
+          {locked && <><span className="warn">{o.lock}</span> · </>}
+          <span>{o.detail}</span>
         </div>
       </div>
       {o.kind === "Build" ? (

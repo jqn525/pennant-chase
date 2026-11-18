@@ -22,7 +22,7 @@ export default function YearEndSheet({ f }) {
         <ul className="feed">
           <li><span className="grow"><b>Top hitter</b><span className="sub">{r.hitter ? `${r.hitter.name} (${r.hitter.pos}) · ${r.hitter.ops} OPS, ${r.hitter.hr} HR` : "nobody qualified"}</span></span></li>
           <li><span className="grow"><b>Top pitcher</b><span className="sub">{r.pitcher ? `${r.pitcher.name} · ${r.pitcher.era} ERA, ${r.pitcher.k} K` : "nobody qualified"}</span></span></li>
-          <li><span className="grow"><b>Best buy</b><span className="sub">{r.bestBuy ? `${r.bestBuy.name ? `${r.bestBuy.name}: ` : ""}${r.bestBuy.what} · ${money(r.bestBuy.cost)} spent, ${money(r.bestBuy.earned ?? Math.round(r.bestBuy.cost * r.bestBuy.back / 100))} earned back (${r.bestBuy.back}%)` : "no purchases tracked"}</span></span></li>
+          <li><span className="grow"><b>Biggest investment</b><span className="sub">{r.bestBuy ? `${r.bestBuy.name ? `${r.bestBuy.name}: ` : ""}${r.bestBuy.what} · ${money(r.bestBuy.cost)}` : "no purchases tracked"}</span></span></li>
           <li><span className="grow"><b>Finish</b><span className="sub">{ordinal(r.finish)} of 8{r.finish <= 4 ? " · made the playoffs" : " · missed the playoffs"}</span></span></li>
         </ul>
       </div>

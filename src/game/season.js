@@ -146,7 +146,7 @@ export function careerWinter(team, replace) {
   const step = (p) => {
     const q = ageOneYear(p);
     if (Math.random() < retireChance(q, ovr(q))) {
-      const n = { ...replace(p.pos), gear: p.gear };
+      const n = { ...replace(p.pos) }; // a retiree's gear leaves with him
       retired.push({ old: q, next: n });
       return n;
     }

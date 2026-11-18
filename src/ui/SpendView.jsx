@@ -46,7 +46,7 @@ export default function SpendView({ f }) {
         <>
           <Construction f={f} />
           <Head title="Your decisions" small={kind === "Yours" ? "builds and promotions" : null}
-            help="Every option is valued in dollars per game and sorted by how fast it pays for itself. Builds are paid game by game while they go up." />
+            help="Everything you can buy, by kind and price. What each one is worth is your call: watch the money charts to see what pays. Builds are paid game by game while they go up." />
           <div className="chips" role="tablist" aria-label="Filter" style={{ margin: "0 0 12px" }}>
             {kinds.map((k) => (
               <button key={k} role="tab" aria-selected={kind === k} className={kind === k ? "on" : ""} onClick={() => setKind(k)}>
@@ -68,7 +68,7 @@ export default function SpendView({ f }) {
 
       {sec === "gear" && (
         <>
-          <Head title="Equipment manager" help="Buys gear after every game, best payback first, from a share of each game's earnings. Builds and star-power promotions are never bought automatically; the rest of your earnings stays in the bank for those." />
+          <Head title="Equipment manager" help="When on, now and then buys a random piece of gear for a random player who can use it, from a share of each game's earnings. Builds and star-power promotions are never bought automatically; the rest of your earnings stays in the bank for those." />
           {isOpen(s, "autodev") ? <AutoDevCard f={f} /> : <p className="note">{nextUnlockNote.autodev} </p>}
           {isOpen(s, "gear") && (
             <>

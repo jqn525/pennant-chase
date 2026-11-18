@@ -107,7 +107,7 @@ function trainOptions(s, vWin) {
       id: `train-${p.id}-${area}`, kind: "Train", area, cost: best.cost, games, gainPerGame: gain,
       startCost: Math.ceil(best.cost / games), lock: lock || undefined,
       title: `${p.name} · ${best.k} ${p[best.k]} → ${p[best.k] + 1}`,
-      detail: `${games} games · $${best.cost.toLocaleString("en-US")} · ${AREAS[area].coach.toLowerCase()}`,
+      detail: `${games} games · ${AREAS[area].coach.toLowerCase()}`,
       action: { type: "train", pid: p.id, key: best.k },
     }];
   }));
@@ -135,7 +135,7 @@ function gearOptions(s, vWin) {
     return [{
       id: `gear-${item.id}`, kind: "Gear", cost: item.cost, gainPerGame: gain,
       title: `${item.name} → ${best.p.name}`,
-      detail: `+${best.pts} rating points · $${Math.round(item.cost / best.pts)} per point`,
+      detail: `${Object.entries(item.boosts).map(([k, n]) => `${n > 0 ? "+" : ""}${n}% ${k}`).join(", ")} · ${best.p.pos}`,
       action: { type: "gear", pid: best.p.id, itemId: item.id },
     }];
   });
@@ -151,7 +151,7 @@ function buildOptions(s, vWin) {
     let gain = 0, why = next.label;
     if (["parking", "seats", "conc"].includes(track.id)) {
       gain = gameIncome(s, { ...s.stadium, [track.id]: lvl + 1 }) - gameIncome(s, s.stadium);
-      if (track.id === "seats" && gain < 1) why = `${next.label} · pays once fans outgrow ${stadiumFx(s.stadium).attCap.toLocaleString("en-US")} seats`;
+      if (track.id === "seats" && gain < 1) why = `${next.label} (now ${stadiumFx(s.stadium).attCap.toLocaleString("en-US")})`;
     } else if (track.id === "lights") {
       const extraFans = fansPerWin(s, stadiumFx({ ...s.stadium, lights: lvl + 1 }).fansMult) - fansPerWin(s);
       gain = winRate(s) * extraFans * perFan(s) * HORIZON;
@@ -163,7 +163,7 @@ function buildOptions(s, vWin) {
     return [{
       id: `build-${track.id}`, kind: "Build", cost: next.cost, gainPerGame: gain,
       title: `${next.name}`,
-      detail: `${games} game${games === 1 ? "" : "s"} to build at $${perGame.toLocaleString("en-US")}/game · ${track.title.charAt(0) + track.title.slice(1).toLowerCase()} ${lvl + 1} · ${why}`,
+      detail: `${why} · ${track.title.charAt(0) + track.title.slice(1).toLowerCase()} ${lvl + 1}`,
       lock: startLock(s, track.id), needFans: next.fans, games, perGame, startCost: perGame,
       action: { type: "build", id: track.id },
     }];
@@ -180,7 +180,7 @@ function printOptions(s) {
     return [{
       id: `promo-${p.id}`, kind: "Promote", cost: up.cost, gainPerGame: gain,
       title: `${p.name} · ${up.deal} → ${up.name.toLowerCase()}`,
-      detail: s.merch ? `More fame sells more merch · raises trade value · ${p.pos}` : `Pays once you own a merch store · raises trade value · ${p.pos}`,
+      detail: `${up.blurb} · ${p.pos}`,
       action: { type: "print", pid: p.id },
     }];
   });
@@ -198,8 +198,10 @@ export function options(s) {
       const lock = o.lock || (s.money < need ? `Needs $${Math.ceil(need - s.money).toLocaleString("en-US")} more` : null);
       return { ...o, payback: pb, lock, affordable: !lock };
     });
-  const rank = (o) => (o.lock && !/^Needs \$/.test(o.lock) ? 2 : 0) + (Number.isFinite(o.payback) ? 0 : 1);
-  return all.sort((a, b) => rank(a) - rank(b) || a.payback - b.payback || b.gainPerGame - a.gainPerGame);
+  // listed by kind and price, never by value: judging a buy is the player's job
+  const KIND = { Build: 0, Promote: 1, Gear: 2, Train: 3 };
+  const rank = (o) => (o.lock && !/^Needs \$/.test(o.lock) ? 1 : 0);
+  return all.sort((a, b) => rank(a) - rank(b) || KIND[a.kind] - KIND[b.kind] || a.cost - b.cost || (a.title < b.title ? -1 : 1));
 }
 
 function run(s, a) {

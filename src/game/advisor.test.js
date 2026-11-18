@@ -8,13 +8,18 @@ const club = { name: "Vancouver", nickname: "Suns", bonus: "train", label: "DEV 
 const fresh = () => { const s = blankState(); found(s, club); s.unlocked = null; for (let i = 0; i < 20; i++) tick(s, "max"); return s; };
 
 describe("advisor", () => {
-  it("lists train, gear, build and is sorted by payback", () => {
+  it("lists train, gear, build in kind-and-price order, never by value", () => {
     const s = fresh();
     s.money = 50000;
     const o = options(s);
     for (const k of ["Train", "Gear", "Build"]) expect(o.some((x) => x.kind === k)).toBe(true);
-    const buyable = o.filter((x) => x.affordable && Number.isFinite(x.payback));
-    for (let i = 1; i < buyable.length; i++) expect(buyable[i].payback).toBeGreaterThanOrEqual(buyable[i - 1].payback);
+    const KIND = { Build: 0, Promote: 1, Gear: 2, Train: 3 };
+    const open = o.filter((x) => !x.lock || /^Needs \$/.test(x.lock));
+    for (let i = 1; i < open.length; i++) {
+      const a = open[i - 1], b = open[i];
+      expect(KIND[a.kind] < KIND[b.kind] || (KIND[a.kind] === KIND[b.kind] && a.cost <= b.cost)).toBe(true);
+    }
+    for (const x of o) expect(x.detail).not.toMatch(/per point|\/game|pays/);
   });
 
   it("values seats at zero until the fan base outgrows the seat cap", () => {

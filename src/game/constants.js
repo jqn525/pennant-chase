@@ -84,33 +84,33 @@ export const LEAGUE = {
   playoffTeams: 4,
   fenceCorner: 330,
   fenceCenter: 410,
-  fansPerWin: 40, // flat gain per win; streaks multiply it
+  fansPerWin: 25, // flat gain per win; streaks multiply it
   fansPerHR: 15,  // extra flat gain per homer hit
 };
 
 export const ECON = {
-  startMoney: 3000,
+  startMoney: 6000,
   startFans: 1250,
   // Ticket sales: attendance = fans × (30% cold … 60% hot, by last-10 form),
   // capped; playoff games sell out. Gate = base + attendance × ticketPrice.
   // At watchable speeds the ticket gate drips in half-inning by half-inning.
-  ticketPrice: 0.30,
+  ticketPrice: 0.25,
   gateWinBase: 150,  // winners sell concessions
   gateLossBase: 50,  // the diehards' floor
   attCap: 8000,      // biggest crowd the old yard can hold
   // Hot streaks: 3+ straight wins draw bandwagon fans, up to double growth
   streakStep: 0.15,
   streakMax: 2,
-  fanWinPct: 0.01,        // every win grows the base by up to 1% while the market has room
+  fanWinPct: 0.003,       // every win grows the base by up to 0.3% while the market has room
   fanMarket: 200000,      // the region's appetite: growth slows to nothing as fans approach it
-  fanLossPct: 0.002,      // every loss loses 0.2% of the fans above the founding base
+  fanLossPct: 0.006,      // every loss loses 0.6% of the fans above the founding base: losing clubs shrink
   playoffWinPay: 2000,    // per playoff game won
   semisSeriesPay: 6000,   // winning a semifinal series
   cupPay: 40000,          // winning the Pennant Cup
   cupFansPct: 0.25,       // a Cup swells the fan base by a quarter
   playoffFansPct: 0.10,   // made the playoffs (missed = -5% fans)
   offlineRate: 1.0,       // tunable damper on away income
-  trainBase: 24,          // training: cost per +1 = trainBase × 1.5^((stat−41)/4)
+  trainBase: 16,          // training: cost per +1 = trainBase × 1.5^((stat−41)/4)
   lastPoints: 1,          // the last 5 points under a ceiling cost up to 2× more
   eliteAt: 78,            // above this, every point also pays the surcharge…
   eliteRamp: 1.15,        // …× eliteRamp^(stat − eliteAt). Greatness is expensive.
@@ -232,9 +232,9 @@ export const RARITY = {
 // Payroll drips out per regular-season game; the winter luxury tax bills the
 // overage above the cap, escalating for consecutive years over.
 export const SALARY = {
-  base: 400,        // $/season at league-average OVR — a fresh club breaks even
+  base: 1800,       // $/season at league-average OVR — payroll is 30–45% of a young club's income
   growth10: 3,      // salary multiplies by this per +10 OVR
-  cap: 58000,       // team payroll line (16 players) — starts to bite around an all-85 roster
+  cap: 260000,      // team payroll line (16 players) — starts to bite around an all-85 roster
   taxStep: 0.5,     // +50% tax rate per consecutive year over
   posMult: { SP: 1.5, RP: 0.7, SS: 1.15, CF: 1.15, C: 0.85 },
 };
